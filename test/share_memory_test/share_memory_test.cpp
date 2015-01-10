@@ -8,7 +8,7 @@
 
 namespace share_file_test
 {
-	abc::shared_memory sm;
+	ox::shared_memory sm;
 	void test()
 	{
 		std::string str;

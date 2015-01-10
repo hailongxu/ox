@@ -53,8 +53,8 @@ namespace kvbuffer_test
 
 //namespace ipcbuff_test
 //{
-//	typedef abc::ipc_protocol::ipc_protocol_buff_helper ipc_protocol_buff_helper;
-//	typedef abc::communication_define::cdata_t cdata_t;
+//	typedef ox::ipc_protocol::ipc_protocol_buff_helper ipc_protocol_buff_helper;
+//	typedef ox::communication_define::cdata_t cdata_t;
 //	void test()
 //	{
 //		std::string buf;
