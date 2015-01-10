@@ -14,9 +14,9 @@
 *.pdb
 # igonre the idb
 *.idb
+# igonre the filters
+*.filters
 # ignore the debug folder
 Debug/
 # ignore the release folder
 Release/
-
-
