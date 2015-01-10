@@ -18,7 +18,7 @@
 #include <wchar.h>
 #include <cstring>
 
-#include "../../kernel/delegate.h"
+#include "../kernel/delegate.h"
 #include "./character_trait.h"
 #include "./logical.h"
 #include "./match_const.h"
