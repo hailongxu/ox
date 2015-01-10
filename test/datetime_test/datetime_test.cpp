@@ -4,21 +4,21 @@
 #include "stdafx.h"
 #include "windows.h"
 
-#include "../src/kernel/log_print.h"
+#include "../../src/kernel/log_print.h"
 
 
 namespace datetime_test
 {
 	void test()
 	{
-		abc::communication_log log;
+		ox::communication_log log;
 		log.init();
 		log.logln("111");
 		log.logln("22222");
 		log.logln("33333");
 		log.logln("4444");
 
-		std::string path = abc::communication_log::get_log_path();
+		std::string path = ox::communication_log::get_log_path();
 
 		SYSTEMTIME st;
 		GetLocalTime(&st);

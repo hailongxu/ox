@@ -528,6 +528,7 @@ namespace mkslike_test
 }
 
 
+#if 0
 #include "../../src/mix/mixture_feature_def.h"
 namespace tul_test
 {
@@ -582,7 +583,7 @@ namespace feature_test
 		int j = i;
 	}
 }
-
+#endif
 
 int _tmain(int argc, _TCHAR* argv[])
 {
