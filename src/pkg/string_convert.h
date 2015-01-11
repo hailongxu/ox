@@ -9,8 +9,8 @@
 #include "./string_simple_kit.h"
 #include "./character_trait.h"
 #include "../pkg/il.h"
-//#include "../alg/till.h"
-//#include "../cor/mm_m.h"
+#include "../alg/till.h"
+#include "../cor/mm_m.h"
 
 #undef max
 #undef min

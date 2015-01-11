@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "24_calculate", "24\24.vcproj", "{CF44410A-8A60-46C6-B9EE-80B3B2A92D4F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "binview", "binview\binview.vcproj", "{5C1ECEC8-191E-4DCD-A1CB-9FF40DFD2443}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "change", "change\change.vcproj", "{0F80A51B-0A66-4F76-8593-9B2213118139}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "money_change", "money_change\money_change.vcproj", "{DC27A4A9-2358-4EB1-A818-E36B00B33A38}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CF44410A-8A60-46C6-B9EE-80B3B2A92D4F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CF44410A-8A60-46C6-B9EE-80B3B2A92D4F}.Debug|Win32.Build.0 = Debug|Win32
+		{CF44410A-8A60-46C6-B9EE-80B3B2A92D4F}.Release|Win32.ActiveCfg = Release|Win32
+		{CF44410A-8A60-46C6-B9EE-80B3B2A92D4F}.Release|Win32.Build.0 = Release|Win32
+		{5C1ECEC8-191E-4DCD-A1CB-9FF40DFD2443}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5C1ECEC8-191E-4DCD-A1CB-9FF40DFD2443}.Debug|Win32.Build.0 = Debug|Win32
+		{5C1ECEC8-191E-4DCD-A1CB-9FF40DFD2443}.Release|Win32.ActiveCfg = Release|Win32
+		{5C1ECEC8-191E-4DCD-A1CB-9FF40DFD2443}.Release|Win32.Build.0 = Release|Win32
+		{0F80A51B-0A66-4F76-8593-9B2213118139}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0F80A51B-0A66-4F76-8593-9B2213118139}.Debug|Win32.Build.0 = Debug|Win32
+		{0F80A51B-0A66-4F76-8593-9B2213118139}.Release|Win32.ActiveCfg = Release|Win32
+		{0F80A51B-0A66-4F76-8593-9B2213118139}.Release|Win32.Build.0 = Release|Win32
+		{DC27A4A9-2358-4EB1-A818-E36B00B33A38}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DC27A4A9-2358-4EB1-A818-E36B00B33A38}.Debug|Win32.Build.0 = Debug|Win32
+		{DC27A4A9-2358-4EB1-A818-E36B00B33A38}.Release|Win32.ActiveCfg = Release|Win32
+		{DC27A4A9-2358-4EB1-A818-E36B00B33A38}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

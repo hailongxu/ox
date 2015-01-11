@@ -705,9 +705,9 @@ struct localpath_kit
 			strkit::null_character
 		};
 		// char * invalid_path_char = "\\/:*?\"<>|";
-		path.refp_begin()=strkit::find_first_in<false>(local_path.refp_begin(),pretext);
-		drive.refp_begin()=drive.end_=path.begin();
-		dir.refp_begin() = strkit::find_first_in<true>(path.refp_begin(),path_seps);
+		path.refp_begin() = (character*)strkit::find_first_in<false>(local_path.refp_begin(),pretext);
+		drive.refp_begin() = drive.end_=path.begin();
+		dir.refp_begin() = (character*)strkit::find_first_in<true>(path.refp_begin(),path_seps);
 
 		if (*dir.begin() && !dir.isempty()&&*(dir.begin()-1)==strkit::colon_character)
 			drive.end_=dir.begin();
@@ -718,7 +718,7 @@ struct localpath_kit
 		{
 			if (strkit::is_in_chset<true>(*curr,path_seps))
 				curr++;
-			curr = strkit::find_first_in<true>(curr,path_seps);
+			curr = (character*)strkit::find_first_in<true>(curr,path_seps);
 			if (*curr!=0) prev=curr;
 			if (*curr==0)
 			{
