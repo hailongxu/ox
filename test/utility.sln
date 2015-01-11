@@ -35,8 +35,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "filekit_test", "filekit_tes
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "has_test", "has_test\has_test.vcproj", "{356B0AAF-626D-4D83-95C6-951514AF384F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "json_test", "json_test\json_test.vcproj", "{A0B8A850-295D-4BF2-8BF1-A40CE702062E}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "macro_test", "macro_test\macro_test.vcproj", "{2AE85A2C-EDAB-4E93-8144-324A6D344D09}"
 EndProject
 Global
@@ -113,10 +111,6 @@ Global
 		{356B0AAF-626D-4D83-95C6-951514AF384F}.Debug|Win32.Build.0 = Debug|Win32
 		{356B0AAF-626D-4D83-95C6-951514AF384F}.Release|Win32.ActiveCfg = Release|Win32
 		{356B0AAF-626D-4D83-95C6-951514AF384F}.Release|Win32.Build.0 = Release|Win32
-		{A0B8A850-295D-4BF2-8BF1-A40CE702062E}.Debug|Win32.ActiveCfg = Debug|Win32
-		{A0B8A850-295D-4BF2-8BF1-A40CE702062E}.Debug|Win32.Build.0 = Debug|Win32
-		{A0B8A850-295D-4BF2-8BF1-A40CE702062E}.Release|Win32.ActiveCfg = Release|Win32
-		{A0B8A850-295D-4BF2-8BF1-A40CE702062E}.Release|Win32.Build.0 = Release|Win32
 		{2AE85A2C-EDAB-4E93-8144-324A6D344D09}.Debug|Win32.ActiveCfg = Debug|Win32
 		{2AE85A2C-EDAB-4E93-8144-324A6D344D09}.Debug|Win32.Build.0 = Debug|Win32
 		{2AE85A2C-EDAB-4E93-8144-324A6D344D09}.Release|Win32.ActiveCfg = Release|Win32
