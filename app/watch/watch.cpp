@@ -2,8 +2,8 @@
 //
 
 #include "stdafx.h"
-#include "../src/ox/io/watch.h"
-#include "../src/ox/io/filekit.h"
+#include "../../src/io/watch_file.h"
+#include "../../src/io/filekit.h"
 
 
 namespace watch_test
@@ -19,7 +19,7 @@ namespace watch_test
 		std::string buff;
 		buff.resize(length);
 		file.seek(ox::io::file_helper::__seek_begin,off);
-		file.read(buff.data(),1,length);
+		file.read((char*)buff.data(),1,length);
 		static int i = 0;
 		//printf ("%d [%s] changed\n",i++,path);
 		printf ("%s",buff.c_str());
@@ -35,7 +35,7 @@ namespace watch_test
 int _tmain(int argc, _TCHAR* argv[])
 {
 	watch_test::test();
-	abc::win_queue_thread th;
+	ox::win_queue_thread th;
 	th.start_here();
 	return 0;
 }

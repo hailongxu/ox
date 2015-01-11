@@ -37,7 +37,7 @@
 
 #include <windows.h>
 
-#include "../../kernel/delegate.h"
+#include "../kernel/delegate.h"
 #include "../pkg/character_trait.h"
 #include "../utl/path_kit.h"
 #include "./shell_kit.h"

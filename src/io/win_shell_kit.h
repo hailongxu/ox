@@ -16,8 +16,8 @@
 #include <string>
 #include <vector>
 #include <wchar.h> /// for tm
-//#include "shell_kit.h"
 #include "../utl/path_kit.h"
+#include "shell_kit.h"
 //
 //#pragma comment(lib,"Shellwapi32.lib")
 
