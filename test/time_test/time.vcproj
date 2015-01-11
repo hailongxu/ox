@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="time"
+	Name="time_test"
 	ProjectGUID="{6C952693-B934-4CB9-8104-C230B6A8A8E8}"
-	RootNamespace="time"
+	RootNamespace="time_test"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
