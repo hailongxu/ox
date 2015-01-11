@@ -25,6 +25,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "array_test", "array_test\ar
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "filekit_test", "filekit_test\filekit_test.vcproj", "{D7A81B14-8425-4AB2-8FA7-8A5339E7DAED}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "endian_test", "endian_test\endian_test.vcproj", "{42869EC2-3B65-4B3F-B645-28F7BB40E221}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -79,6 +81,10 @@ Global
 		{D7A81B14-8425-4AB2-8FA7-8A5339E7DAED}.Debug|Win32.Build.0 = Debug|Win32
 		{D7A81B14-8425-4AB2-8FA7-8A5339E7DAED}.Release|Win32.ActiveCfg = Release|Win32
 		{D7A81B14-8425-4AB2-8FA7-8A5339E7DAED}.Release|Win32.Build.0 = Release|Win32
+		{42869EC2-3B65-4B3F-B645-28F7BB40E221}.Debug|Win32.ActiveCfg = Debug|Win32
+		{42869EC2-3B65-4B3F-B645-28F7BB40E221}.Debug|Win32.Build.0 = Debug|Win32
+		{42869EC2-3B65-4B3F-B645-28F7BB40E221}.Release|Win32.ActiveCfg = Release|Win32
+		{42869EC2-3B65-4B3F-B645-28F7BB40E221}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
