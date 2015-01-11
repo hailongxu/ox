@@ -70,16 +70,17 @@ namespace ox
 		struct file_same_trait
 		{
 			typedef file_helper helper;
-			int fileno(FILE* pfile) { return _fileno(pfile); }
+			int fileno(FILE* pfile) const { return _fileno(pfile); }
 			int fclose(FILE* pfile) { return ::fclose(pfile); }
-			long filelength(int fd) { return _filelength(fd); }
+			long filelength(int fd) const { return _filelength(fd); }
+
 			size_t fread(void* buffer,size_t size,size_t count,FILE* pfile) { return ::fread(buffer,size,count,pfile); }
 			size_t fwrite(const void *buffer, size_t size, size_t count,FILE* pfile) { return ::fwrite(buffer,size,count,pfile);}
 			/// 0:successful, !0:error
 			int fseek (long offset, int origin,FILE* pfile) {return ::fseek(pfile,offset,origin);}
-			long ftell(FILE* pfile)	{return ::ftell(pfile);}
+			long ftell(FILE* pfile) const {return ::ftell(pfile);}
 			void rewind(FILE* pfile) {::rewind(pfile);}
-			bool feof(FILE* pfile) { return ::feof(pfile)!=0; }
+			bool feof(FILE* pfile) const { return ::feof(pfile)!=0; }
 			int fflush(FILE* pfile) {return ::fflush(pfile); }
 			int chsize(int fd,long size) { return ::chsize(fd, size); }
 			static int flushall () { return ::_flushall(); }

@@ -191,21 +191,21 @@ namespace shell
 		tempdir = szPath;
 		return 0;
 	}
-	//static int win_create_temp_dir(std::wstring& tempdir,wchar_t const* subdir)
-	//{
-	//	typedef ox::utl::localpath_kit<wchar_t> pathkit;
-	//	typedef ox::shell::shell_kit<wchar_t> shkit;
+	static int win_create_temp_dir(std::wstring& tempdir,wchar_t const* subdir)
+	{
+		typedef ox::utl::localpath_kit<wchar_t> pathkit;
+		typedef ox::shell::shell_kit<wchar_t> shkit;
 
-	//	wchar_t szPath[MAX_PATH] = {0};
-	//	HRESULT hr = SHGetFolderPathW(NULL,CSIDL_APPDATA|CSIDL_FLAG_CREATE, NULL,0,szPath);
-	//	if (hr!=S_OK)
-	//		return -1;
+		wchar_t szPath[MAX_PATH] = {0};
+		HRESULT hr = SHGetFolderPathW(NULL,CSIDL_APPDATA|CSIDL_FLAG_CREATE, NULL,0,szPath);
+		if (hr!=S_OK)
+			return -1;
 
-	//	tempdir = szPath;
-	//	if (subdir)
-	//		pathkit::add_rpath(tempdir,subdir,L'\\');
-	//	return shkit::rmkdir(tempdir.c_str());
-	//}
+		tempdir = szPath;
+		if (subdir)
+			pathkit::add_rpath(tempdir,subdir,L'\\');
+		return shkit::rmkdir(tempdir.c_str());
+	}
 
 	static std::wstring win_get_user_appdata()
 	{
