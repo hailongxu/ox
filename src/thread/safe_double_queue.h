@@ -12,7 +12,7 @@
 #include <windows.h>
 #include <queue>
 #include <assert.h>
-#include "delegate.h"
+#include "../cxx/delegate.h"
 #include "delegate_closure.h"
 #include "atomic_number.h"
 #include "scope_raii.h"

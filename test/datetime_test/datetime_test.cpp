@@ -4,7 +4,7 @@
 #include "stdafx.h"
 #include "windows.h"
 
-#include "../../src/kernel/log_print.h"
+#include "../../src/thread/log_print.h"
 
 
 namespace datetime_test

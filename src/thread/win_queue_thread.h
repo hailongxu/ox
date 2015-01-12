@@ -13,9 +13,9 @@
 #include <windows.h>
 #include <assert.h>
 #include <process.h>
-#include "delegate.h"
+#include "../cxx/delegate.h"
+#include "../cxx/multi_delegate.h"
 #include "delegate_closure.h"
-#include "multi_delegate.h"
 #include "atomic_number.h"
 #include "scope_raii.h"
 #include "safe_double_queue.h"

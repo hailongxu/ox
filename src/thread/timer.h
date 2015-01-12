@@ -1,7 +1,7 @@
 
 #include <Windows.h>
 #include <set>
-#include "delegate.h"
+#include "../cxx/delegate.h"
 //#include "communication_const.h"
 #include "atomic_number.h"
 

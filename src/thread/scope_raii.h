@@ -9,7 +9,7 @@
  */
 
 #include "windows.h"
-#include "delegate.h"
+#include "../cxx/delegate.h"
 
 
 #pragma once

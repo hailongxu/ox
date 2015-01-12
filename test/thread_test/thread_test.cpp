@@ -181,7 +181,7 @@ namespace mutex_test
 
 
 
-#include "../../src/thread/delegate.h"
+#include "../../src/cxx/delegate.h"
 namespace delegate_test
 {
 	void f() {}

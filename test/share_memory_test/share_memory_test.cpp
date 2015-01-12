@@ -3,7 +3,7 @@
 
 #include "stdafx.h"
 
-#include "../../src/kernel/share_file.h"
+#include "../../src/thread/share_file.h"
 
 
 namespace share_file_test

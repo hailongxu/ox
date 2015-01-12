@@ -14,10 +14,10 @@
 
 
 #include <vector>
+#include "../cxx/delegate.h"
+#include "../cxx/multi_delegate.h"
 #include "atomic_number.h"
 #include "scope_raii.h"
-#include "delegate.h"
-#include "multi_delegate.h"
 #include "win_thread.h"
 #include "win_queue_thread.h"
 #include "task_feedback.h"

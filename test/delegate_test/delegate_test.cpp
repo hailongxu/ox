@@ -39,8 +39,8 @@
 //	}
 //}
 
-#include "../../src/kernel/delegate.h"
-#include "../../src/kernel/delegate_closure.h"
+#include "../../src/cxx/delegate.h"
+#include "../../src/thread/delegate_closure.h"
 namespace single_delegate_test
 {
 	struct fc0
@@ -156,7 +156,7 @@ namespace single_delegate_test
 	}
 }
 
-#include "../../src/kernel/multi_delegate.h"
+#include "../../src/cxx/multi_delegate.h"
 namespace multi_delegate_test
 {
 	int f(int)

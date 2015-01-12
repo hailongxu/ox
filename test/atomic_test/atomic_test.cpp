@@ -2,7 +2,7 @@
 //
 
 #include "stdafx.h"
-#include "../../src/kernel/atomic_number.h"
+#include "../../src/thread/atomic_number.h"
 
 namespace atomic_test
 {

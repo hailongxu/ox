@@ -3,7 +3,7 @@
 
 #include "stdafx.h"
 
-#include "../../src/kernel/alog.h"
+#include "../../src/thread/alog.h"
 
 
 typedef ox::win_queue_thread thread_t;
