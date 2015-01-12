@@ -3,10 +3,10 @@
 
 #include "stdafx.h"
 
-#include "../../src/kernel/task_feedback.h"
-#include "../../src/kernel/win_queue_thread.h"
-#include "../../src/kernel/win_queue_multi_thread.h"
-#include "../../src/kernel/win_queue_pool_thread.h"
+#include "../../src/thread/task_feedback.h"
+#include "../../src/thread/win_queue_thread.h"
+#include "../../src/thread/win_queue_multi_thread.h"
+#include "../../src/thread/win_queue_pool_thread.h"
 #include <conio.h>
 
 
@@ -69,7 +69,7 @@ namespace win_queue_thread_test
 	}
 }
 
-#include "../../src/kernel/win_multi_thread.h"
+#include "../../src/thread/win_multi_thread.h"
 namespace multi_thread_test
 {
 	typedef ox::win_thread<unsigned()> thread_t;
@@ -130,7 +130,7 @@ namespace pool_thread_test
 	}
 }
 
-#include "../../src/kernel/timer.h"
+#include "../../src/thread/timer.h"
 namespace thread_performace_test
 {
 	ox::win_queue_thread thread;
@@ -149,7 +149,7 @@ namespace thread_performace_test
 	}
 }
 
-#include "../../src/kernel/scope_raii.h"
+#include "../../src/thread/scope_raii.h"
 namespace mutex_test
 {
 	win_mutex mutex("aa");
@@ -181,7 +181,7 @@ namespace mutex_test
 
 
 
-#include "../../src/kernel/delegate.h"
+#include "../../src/thread/delegate.h"
 namespace delegate_test
 {
 	void f() {}
