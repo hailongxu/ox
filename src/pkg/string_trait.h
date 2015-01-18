@@ -26,7 +26,7 @@
 
 namespace ox
 {
-namespace string
+namespace str
 {
 
 
@@ -273,7 +273,7 @@ class string_kit_traits :
 public:
 	typedef typename ox::character::character_trait<character_tn>::character character;
 	typedef std::basic_string<character,std::char_traits<character>,std::allocator<character>> std_string;
-	typedef typename ox::string::string_tt<character>::stringn nstring;
+	typedef typename ox::str::string_tt<character>::stringn nstring;
 	typedef std::vector<std_string> strings;
 	typedef std::vector<nstring> nstrings;
 	typedef std::vector<character*> cstrings;

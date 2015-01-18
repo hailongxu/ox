@@ -33,7 +33,7 @@
 
 namespace ox
 {
-namespace string
+namespace str
 {
 
 template <typename character_tn>

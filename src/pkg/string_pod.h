@@ -15,7 +15,7 @@
 
 namespace ox
 {
-namespace string
+namespace str
 {
 	//// form of interval : former closed latter open
 	template <typename character_tn, constant_t::string_mode_c string_mode_tc, ox::theory::polarity_c polarity_tc>

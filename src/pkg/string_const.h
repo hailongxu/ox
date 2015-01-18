@@ -10,7 +10,7 @@
 
 namespace ox
 {
-namespace string
+namespace str
 {
 
 

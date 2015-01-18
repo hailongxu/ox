@@ -2,9 +2,9 @@
 
 #include <string>
 #include "win_shell_kit.h"
-#include "../kernel/delegate.h"
-#include "../kernel/win_queue_thread_with_timer.h"
-#include "../kernel/task_feedback.h"
+#include "../cxx/delegate.h"
+#include "../thread/win_queue_thread_with_timer.h"
+#include "../thread/task_feedback.h"
 #include "../utl/destructor.h"
 
 

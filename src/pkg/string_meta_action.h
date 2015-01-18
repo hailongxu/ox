@@ -13,7 +13,7 @@
 
 namespace ox
 {
-namespace string
+namespace str
 {
 namespace met
 {
@@ -56,25 +56,25 @@ namespace met
 	};
 
 
-	template <ox::theory::polarity_c,typename element_tn,ox::string::constant_t::string_mode_c>
+	template <ox::theory::polarity_c,typename element_tn,ox::str::constant_t::string_mode_c>
 	struct endcondition_of_string;
 
 	template <ox::theory::polarity_c string_direction_tc,typename element_tn>
-	struct endcondition_of_string<string_direction_tc,element_tn,ox::string::constant_t::__string_null>
+	struct endcondition_of_string<string_direction_tc,element_tn,ox::str::constant_t::__string_null>
 	{
 		typedef element_tn element_t;
 		static bool eof(element_t const * p) { return *p==character_static_value<element_t>::null_character; }
 		static bool ueof(element_t const * p) { return *p!=character_static_value<element_t>::null_character; }
 	};
 	template <typename element_tn> // interval is former closed latter open interval
-	struct endcondition_of_string<ox::theory::__positive,element_tn,ox::string::constant_t::__string_interval>
+	struct endcondition_of_string<ox::theory::__positive,element_tn,ox::str::constant_t::__string_interval>
 	{
 		typedef element_tn element_t;
 		static bool eof(element_t const * p, element_t const * pend) { return p>=pend; }
 		static bool ueof(element_t const * p, element_t const * pend) { return p<pend; }
 	};
 	template <typename element_tn> // interval is former closed latter open interval
-	struct endcondition_of_string<ox::theory::__negative,element_tn,ox::string::constant_t::__string_interval>
+	struct endcondition_of_string<ox::theory::__negative,element_tn,ox::str::constant_t::__string_interval>
 	{
 		typedef element_tn element_t;
 		static bool eof(element_t const * p, element_t const * pend) { return p<=pend; }

@@ -1,7 +1,7 @@
 
 
 #include <map>
-#include "../kernel/delegate.h"
+#include "../cxx/delegate.h"
 #include "../pkg/string_simple_kit.h"
 #include "file.h"
 #include "directory.h"

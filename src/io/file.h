@@ -133,7 +133,7 @@ namespace ox
 		public:
 			typedef file_trait<character_tn> stdfile_trait_t;
 			typedef typename stdfile_trait_t::character character;
-			typedef ox::string::string_simple_kit<character> s_kit;
+			typedef ox::str::string_simple_kit<character> s_kit;
 			typedef typename s_kit::std_string std_string;
 			typedef file_same_trait stdfile_same_trait_t;
 
