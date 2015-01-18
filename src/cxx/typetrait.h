@@ -74,9 +74,6 @@ namespace ox
 		pair4(t1 const& a,t2 const& b,t3 const& c,t4 const& d) : first(a),second(b),third(c),fourth(d) {}
 	};
 
-	//template <typename derived_tn,typename internal_tn>
-	//struct empty_class
-	//{};
 
 	template<typename ch_tn>
 	struct interval_tt
