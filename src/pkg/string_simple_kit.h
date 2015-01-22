@@ -712,9 +712,9 @@ public:
 	{
 		typedef podstring1_tn podstring1_t;
 		typedef podstring2_tn podstring2_t;
-		typedef ox::string::met::operator_add<const character *, podstring1_t::__polarity> operator1_inc;
-		typedef ox::string::met::operator_add<const character *, podstring2_t::__polarity> operator2_inc;
-		typedef ox::string::met::operator_distance<size_t,const character *,podstring1_t::__polarity> operator_distance;
+		typedef ox::str::met::operator_add<const character *, podstring1_t::__polarity> operator1_inc;
+		typedef ox::str::met::operator_add<const character *, podstring2_t::__polarity> operator2_inc;
+		typedef ox::str::met::operator_distance<size_t,const character *,podstring1_t::__polarity> operator_distance;
 
 		operator1_inc inc_str1;
 		operator2_inc inc_str2;
@@ -851,7 +851,7 @@ public:
 		const character ** ppend)
 	{
 		typedef podstring_tn podstring_t;
-		typedef ox::string::met::operator_add<const character *, podstring_t::__polarity> operator_inc;
+		typedef ox::str::met::operator_add<const character *, podstring_t::__polarity> operator_inc;
 		operator_inc inc_str = {podstr.begin()};
 		for (;
 			podstr.isund(inc_str.element) &&

@@ -33,7 +33,7 @@ template<typename character_tn>
 struct localpath_kit
 {
 	typedef character_tn character;
-	typedef ox::string::string_simple_kit<character> strkit;
+	typedef ox::str::string_simple_kit<character> strkit;
 	typedef typename strkit::std_string std_string;
 	typedef typename strkit::stringz stringz;
 	typedef typename strkit::stringi stringi;
@@ -782,7 +782,7 @@ template <typename character_tn>
 struct localpath_ref
 {
 	typedef character_tn character;
-	typedef ox::string::string_simple_kit<character> strkit;
+	typedef ox::str::string_simple_kit<character> strkit;
 	typedef typename strkit::std_string std_string;
 	typedef localpath_kit<character> pathkit;
 
@@ -884,7 +884,7 @@ template<typename character_tn>
 struct uri_kit
 {
 	typedef character_tn character;
-	typedef ox::string::string_simple_kit<character> strkit;
+	typedef ox::str::string_simple_kit<character> strkit;
 	typedef typename strkit::std_string std_string;
 	typedef typename strkit::stringz stringz;
 	typedef typename strkit::stringi stringi;
@@ -1186,7 +1186,7 @@ public:
 	//				的格式会返回1，表示为本地或局域网主机名。
 	//static int parse_dns(const char * pszDns,dns_parts_t * dns_parts=0)
 	//{
-	//	typedef ox::string::string_simple_kit<char> strkit;
+	//	typedef ox::str::string_simple_kit<char> strkit;
 
 	//	if(pszDns==NULL)
 	//		return -1;

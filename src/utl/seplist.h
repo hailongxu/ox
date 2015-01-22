@@ -14,7 +14,7 @@ struct seplist
 	static ox::character::is_case_sensitive_c const casive = ox::character::__case_sensitive;
 	typedef cdata_t cdata_t;
 	typedef character_tn character;
-	typedef ox::string::string_simple_kit<character> strkit;
+	typedef ox::str::string_simple_kit<character> strkit;
 	typedef typename strkit::std_string std_string;
 	typedef typename strkit::foreach_line<casive> foreach_line;
 	typedef typename foreach_line::line_handle line_handle;

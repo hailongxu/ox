@@ -32,8 +32,8 @@ namespace ox
 			typedef character_tn character;
 			typedef logfile<character> logfile_t;
 			typedef std::basic_string<character> std_string;
-			typedef ox::string::string_kit_traits<character> skit_trait;
-			typedef ox::string::string_simple_kit<character> strkit;
+			typedef ox::str::string_kit_traits<character> skit_trait;
+			typedef ox::str::string_simple_kit<character> strkit;
 
 
 			circular_logfile()

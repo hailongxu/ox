@@ -72,7 +72,7 @@ namespace get_line_test
 {
 	static ox::character::is_case_sensitive_c const casive = ox::character::__case_sensitive;
 	static ox::character::is_case_sensitive_c const incasive = ox::character::__case_insensitive;
-	typedef ox::string::astring_kit strkit;
+	typedef ox::str::astring_kit strkit;
 	void test()
 	{
 		char const* str = "1,2,,";

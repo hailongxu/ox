@@ -32,7 +32,7 @@ namespace ox
 		public:
 			typedef ox::io::file<character_tn> stdfile;
 			typedef typename stdfile::character character;
-			typedef ox::string::string_kit_traits<character> skit_trait;
+			typedef ox::str::string_kit_traits<character> skit_trait;
 
 			static const character char_return_const = skit_trait::to_static_character<char,'\n'>::character_value;
 			static const character char_a_const = skit_trait::to_static_character<char,'a'>::character_value;
@@ -127,7 +127,7 @@ namespace ox
 
 			static void log_pretext_number(character* buf,size_t number)
 			{
-				typedef ox::string::string_simple_kit<character> strkit;
+				typedef ox::str::string_simple_kit<character> strkit;
 				character fmt_number[] = {'[','%','u',']','\0'};
 				strkit::sprintf(buf,fmt_number,number);
 			}
@@ -138,10 +138,10 @@ namespace ox
 				{
 					//log(skit_trait::to_static_character<char,'['>::character_value);
 					//character buffer [16];
-					//ox::string::conv::to_string(__DATE__,buffer);
+					//ox::str::conv::to_string(__DATE__,buffer);
 					//log(buffer);
 					//log(skit_trait::to_static_character<char,' '>::character_value);
-					//ox::string::conv::to_string(__TIME__,buffer);
+					//ox::str::conv::to_string(__TIME__,buffer);
 					//log(buffer);
 					//log(skit_trait::to_static_character<char,']'>::character_value);
 					//log(skit_trait::to_static_character<char,' '>::character_value);
@@ -189,7 +189,7 @@ namespace ox
 				size_t length = 0;
 				character* fmt = fmt_buffer;
 				//character buf[64] = {0};
-				typedef ox::string::string_simple_kit<character> strkit;
+				typedef ox::str::string_simple_kit<character> strkit;
 
 				SYSTEMTIME sys;
 				GetLocalTime( &sys );

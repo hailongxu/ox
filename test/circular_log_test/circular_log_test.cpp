@@ -42,7 +42,7 @@ namespace circular_log_test
 #include "../../src/pkg/string_simple_kit.h"
 namespace ss_test
 {
-	typedef ox::string::astring_kit strkit;
+	typedef ox::str::astring_kit strkit;
 	void test()
 	{
 		std::string str;
