@@ -211,12 +211,19 @@ struct scope_sync <win_mutex>
 template <bool bmanual>
 struct scope_sync <win_event<bmanual>>
 {
+	enum wait_enum
+	{
+		__success = WAIT_OBJECT_0,
+		__timeout = WAIT_TIMEOUT,
+		__abandoned = WAIT_ABANDONED,
+		__failed = WAIT_FAILED,
+	};
 	typedef win_event<bmanual> event_t;
 	scope_sync(event_t& event,size_t timeout_mill_second=-1)
 		: _m_event(event)
 	{
-		DWORD ret = ::WaitForSingleObject(_m_event.handle(),timeout_mill_second);
-		bool isok = (ret==WAIT_OBJECT_0 || ret==WAIT_ABANDONED);
+		wait_enum ret = wait(_m_event.handle(),timeout_mill_second);
+		bool isok = (ret==__success || ret==__abandoned);
 		assert(isok);
 	}
 	~scope_sync()
@@ -224,11 +231,12 @@ struct scope_sync <win_event<bmanual>>
 		if (_m_event.handle()==INVALID_HANDLE_VALUE) return;
 		if (bmanual) _m_event.set_unsignaled();
 	}
-	static void wait(HANDLE hevent,size_t timeout_mill_second=-1)
+	static wait_enum wait(HANDLE hevent,size_t timeout_mill_second=-1)
 	{
 		DWORD ret = ::WaitForSingleObject(hevent,timeout_mill_second);
 		bool isok = (ret==WAIT_OBJECT_0 || ret==WAIT_ABANDONED);
 		assert(isok);
+		return wait_enum(ret);
 	}
 	event_t& _m_event;
 };
@@ -267,7 +275,7 @@ struct scope_raii
 template <typename t>
 struct scope_task
 {
-	typedef ox::thread_task_t task_t;
+	typedef abc::thread_task_t task_t;
 	scope_task(task_t* task=0)
 		: _m_task(task)
 	{}

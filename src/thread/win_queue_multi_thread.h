@@ -74,6 +74,13 @@ namespace ox
 			}
 		};
 
+		self()
+		{}
+		self(size_t your_id,char const* your_name)
+		{
+			set_id(your_id,your_name);
+		}
+
 		thread_t* create_thread(size_t your_id=-1,char const* your_name=0,bool bstart=true)
 		{
 			thread_t* th = base::internal_create_thread(your_id,your_name);

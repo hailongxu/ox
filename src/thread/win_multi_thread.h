@@ -50,17 +50,25 @@ namespace ox
 		typedef delegate<void()> unsafe_done_d;
 
 
+		~win_multi_threads()
+		{
+			free_threads();
+		}
 		self()
 		{
 			_m_thread = 0;
+			_m_is_sub_exiting = 0;
+			set_id(0,0);
 		}
 		self(thread_control_t* thread)
 		{
 			_m_thread = thread;
+			_m_is_sub_exiting = 0;
+			set_id(0,0);
 		}
-		~win_multi_threads()
+		self(size_t your_id,char const* your_name)
 		{
-			free_threads();
+			set_id(your_id,your_name);
 		}
 
 		void set_id(size_t your_id,char const* your_name=0)
@@ -167,14 +175,21 @@ namespace ox
 			return 0;
 		}
 
-		void stop()
+		bool astop()
 		{
+			if (_m_is_sub_exiting) return false;
+			_m_is_sub_exiting = 1;
 			if (_m_thread==0 || ::GetCurrentThreadId()==_m_thread->threadid())
 				unsafe_do_stop();
 			else if (!_m_thread->is_exiting())
 				_m_thread->add(tasker_t::make(this,&self::unsafe_do_stop));
+			return true;
 		}
-
+		void stop(size_t timeout_ms=-1)
+		{
+			astop(); 
+			wait_subs(timeout_ms);
+		}
 		void stop_tid(size_t threadid)
 		{
 			if (_m_thread==0 || ::GetCurrentThreadId()==_m_thread->threadid())
@@ -183,24 +198,9 @@ namespace ox
 				_m_thread->add(tasker_t::make(this,&self::unsafe_do_stop_tid,threadid));
 		}
 
-		void unsafe_terminate(unsafe_done_d const& on_done)
-		{
-			if (_m_thread==0 || ::GetCurrentThreadId()==_m_thread->threadid())
-				unsafe_do_terminate(on_done);
-			else if (!_m_thread->is_exiting())
-				_m_thread->add(tasker_t::make(this,&self::unsafe_do_terminate,on_done));
-		}
-
-		void unsafe_terminate_tid(size_t threadid)
-		{
-			if (_m_thread==0 || ::GetCurrentThreadId()==_m_thread->threadid())
-				unsafe_do_terminate_tid(threadid);
-			else if (!_m_thread->is_exiting())
-				_m_thread->add(tasker_t::make(this,&self::unsafe_do_terminate_tid,threadid));
-		}
-
 		void wait_subs(size_t timeout_ms=-1)
 		{
+			printf("wait_subs\n");
 			HANDLE hwait = CreateEvent(0,FALSE,FALSE,0);
 			std::vector<HANDLE>* handles = new std::vector<HANDLE>;
 			assert (handles);
@@ -211,12 +211,23 @@ namespace ox
 			DWORD id = WaitForSingleObject(hwait,timeout_ms);
 			if (id==WAIT_OBJECT_0)
 			{
+				printf("get handles\n");
 				if (!handles->empty())
+				{
 					::WaitForMultipleObjects(handles->size(),&handles->front(),TRUE,timeout_ms);
+					printf("wait handles finished\n");
+				}
 			}
 			else assert(false && "wait hevent error");
 			::CloseHandle(hwait);
+			printf("close handles\n");
+			for (std::vector<HANDLE>::iterator i=handles->begin();i!=handles->end();++i)
+				CloseHandle(*i);
 			delete handles;
+			printf("thread vector is empty\n");
+			assert (_m_thread_vector.empty());
+			//if (!_m_thread_vector.empty()) DebugBreak();
+			_m_is_sub_exiting = 0;
 		}
 
 		void foreach_do(action_d action)
@@ -267,10 +278,16 @@ namespace ox
 		{
 			thread_t* th = internal_create_thread(your_id,your_name);
 			if (!th) return 0;
+			thread_t::exit_d exit_event(this,&self::on_thread_start_to_exit);
+			if (th->on_exit()!=exit_event) th->on_exit() = exit_event;
 			if (!on_thread_newed.is_empty()) on_thread_newed(th);
-			if (bstart) th->start();
-			add_thread(th);
+			add_thread(th,bstart?added_d(event_start_thread):added_d());
 			return th;
+		}
+		static void event_start_thread(thread_t* th)
+		{
+			assert (th);
+			th->start();
 		}
 
 		struct action_get_thread_handles
@@ -280,7 +297,8 @@ namespace ox
 			{}
 			bool operator()(thread_t* thread)
 			{
-				thread_handles.push_back(thread->handle());
+				printf("get thread handle\n");
+				thread_handles.push_back(thread->create_thread_handle());
 				return true;
 			}
 			std::vector<HANDLE>& thread_handles;
@@ -304,7 +322,6 @@ namespace ox
 				return;
 			action_get_thread_handles action(*handles);
 			do_foreach_do(action_d(&action));
-			//::WaitForMultipleObjects(handles.size(),&handles.front(),TRUE,timeout_ms);
 		}
 
 		void do_size(size_d const& on_size_return)
@@ -344,6 +361,7 @@ namespace ox
 
 		void unsafe_do_stop()
 		{
+			_m_is_sub_exiting = _m_thread_vector.size();
 			if (_m_thread_vector.empty())
 			{
 				do_on_exited();
@@ -357,6 +375,100 @@ namespace ox
 			}
 		}
 
+		void unsafe_do_stop_tid(size_t threadid)
+		{
+			thread_vector::iterator i = do_find_thread_vect(threadid,0);
+			if (i==_m_thread_vector.end()) return;
+			thread_t* th = *i;
+			th->stop_next();
+			_m_thread_vector.erase(i);
+		}
+
+		void do_foreach_do(action_d action)
+		{
+			typedef thread_vector::iterator I;
+			for (I i=_m_thread_vector.begin();i!=_m_thread_vector.end();++i)
+			{
+				thread_t* th = *i;
+				if (!action(th)) break;
+			}
+		}
+
+		static void on_finded_then_add_task(thread_t* thread,task_t* task)
+		{
+			if (!thread || !task)
+				return;
+			if (!thread->is_started())
+				thread->start();
+			thread->add(task);
+		}
+
+		/// run in sub-thread
+		void on_thread_start_to_exit(thread_t* th)
+		{
+			printf("on_thread_start_to_exit\n");
+
+			if (_m_thread==0 || ::GetCurrentThreadId()==_m_thread->threadid()
+				|| _m_thread->is_exiting()) /// this condition must be is exiting by terminate
+											/// or we set a flag that indicate the exit is done by terminate
+				do_on_thread_exiting(th);
+			else
+				_m_thread->add(tasker_t::make(this,&self::do_on_thread_exiting,th));
+		}
+
+		void do_on_thread_exiting(thread_t* thread)
+		{
+			printf("do_on_thread_exiting\n");
+			_m_on_exiting(thread,_m_thread_vector.size());
+			typedef thread_vector::iterator I;
+			I i = do_find_thread_vect(thread->threadid(),0);
+			if (i!=_m_thread_vector.end())
+			{
+				//delete *i;
+				_m_thread_vector.erase(i);
+			}
+			if (!_m_thread_vector.empty()) return;
+
+			//if (_m_thread==0 || ::GetCurrentThreadId()==_m_thread->threadid())
+				do_on_exited();
+			//else
+			//	_m_thread->add(tasker_t::make(this,&self::do_on_exited));
+		}
+
+		void do_on_exited()
+		{
+			printf("do_on_exited\n");
+			//free_threads();
+			assert(_m_thread_vector.empty());
+			if (!_m_on_exited.is_empty())
+				_m_on_exited();
+		}
+
+		void free_threads()
+		{
+			assert(!_m_is_sub_exiting);
+			if (_m_is_sub_exiting) DebugBreak();
+			typedef thread_vector::iterator I;
+			for (I i=_m_thread_vector.begin();i!=_m_thread_vector.end();++i)
+				delete *i;
+			_m_thread_vector.clear();
+		}
+
+#if 0
+		void unsafe_terminate(unsafe_done_d const& on_done)
+		{
+			if (_m_thread==0 || ::GetCurrentThreadId()==_m_thread->threadid())
+				unsafe_do_terminate(on_done);
+			else if (!_m_thread->is_exiting())
+				_m_thread->add(tasker_t::make(this,&self::unsafe_do_terminate,on_done));
+		}
+		void unsafe_terminate_tid(size_t threadid)
+		{
+			if (_m_thread==0 || ::GetCurrentThreadId()==_m_thread->threadid())
+				unsafe_do_terminate_tid(threadid);
+			else if (!_m_thread->is_exiting())
+				_m_thread->add(tasker_t::make(this,&self::unsafe_do_terminate_tid,threadid));
+		}
 		void unsafe_do_terminate(unsafe_done_d const& on_done)
 		{
 			/// should call the on_done before line(*****)
@@ -399,79 +511,8 @@ namespace ox
 			if (i==_m_thread_vector.end()) return;
 			_m_thread_vector.erase(i);
 		}
+#endif
 
-		void unsafe_do_stop_tid(size_t threadid)
-		{
-			thread_vector::iterator i = do_find_thread_vect(threadid,0);
-			if (i==_m_thread_vector.end()) return;
-			thread_t* th = *i;
-			th->stop_next();
-			_m_thread_vector.erase(i);
-		}
-
-		void do_foreach_do(action_d action)
-		{
-			typedef thread_vector::iterator I;
-			for (I i=_m_thread_vector.begin();i!=_m_thread_vector.end();++i)
-			{
-				thread_t* th = *i;
-				if (!action(th)) break;
-			}
-		}
-
-		static void on_finded_then_add_task(thread_t* thread,task_t* task)
-		{
-			if (!thread || !task)
-				return;
-			if (!thread->is_started())
-				thread->start();
-			thread->add(task);
-		}
-
-		/// run in sub-thread
-		void on_thread_start_to_exit(thread_t* th)
-		{
-			if (_m_thread==0 || ::GetCurrentThreadId()==_m_thread->threadid()
-				|| _m_thread->is_exiting()) /// this condition must be is exiting by terminate
-											/// or we set a flag that indicate the exit is done by terminate
-				do_on_thread_exiting(th);
-			else
-				_m_thread->add(tasker_t::make(this,&self::do_on_thread_exiting,th));
-		}
-
-		void do_on_thread_exiting(thread_t* thread)
-		{
-			_m_on_exiting(thread,_m_thread_vector.size());
-			typedef thread_vector::iterator I;
-			I i = do_find_thread_vect(thread->threadid(),0);
-			if (i!=_m_thread_vector.end())
-			{
-				delete *i;
-				_m_thread_vector.erase(i);
-			}
-			if (!_m_thread_vector.empty()) return;
-
-			//if (_m_thread==0 || ::GetCurrentThreadId()==_m_thread->threadid())
-				do_on_exited();
-			//else
-			//	_m_thread->add(tasker_t::make(this,&self::do_on_exited));
-		}
-
-		void do_on_exited()
-		{
-			//free_threads();
-			assert(_m_thread_vector.empty());
-			if (!_m_on_exited.is_empty())
-				_m_on_exited();
-		}
-
-		void free_threads()
-		{
-			typedef thread_vector::iterator I;
-			for (I i=_m_thread_vector.begin();i!=_m_thread_vector.end();++i)
-				delete *i;
-			_m_thread_vector.clear();
-		}
 
 	protected:
 		thread_t* unsafe_do_find_thread(size_t threadid,task_t* task)
@@ -500,7 +541,8 @@ namespace ox
 				_m_thread_vector.push_back(thread);
 				internal_sort_threads();
 				//thread->on_exit_before().assign(this,&self::on_thread_exit_before);
-				thread->on_exit().assign(this,&self::on_thread_start_to_exit);
+				thread_t::exit_d exit_event(this,&self::on_thread_start_to_exit);
+				if (thread->on_exit()!=exit_event) th->on_exit() = exit_event; // this action is not very safe
 				if (!on_added.is_empty())
 					on_added(thread);
 			}
@@ -527,6 +569,7 @@ namespace ox
 	protected:
 		thread_control_t* _m_thread;
 	private:
+		atomic_long _m_is_sub_exiting;
 		size_t _m_your_id;
 		char _m_your_name[32];
 		thread_vector _m_thread_vector;

@@ -172,7 +172,7 @@ namespace ox
 			if (here) return base::start_here();
 			return base::start();
 		}
-
+#if 0
 		void unsafe_terminate()
 		{
 			assert (GetCurrentThreadId()!=_m_threadid);
@@ -180,6 +180,7 @@ namespace ox
 			if (is_idle()) return;
 			base::unsafe_terminate();
 		}
+#endif
 
 		void stop_next()
 		{
@@ -190,12 +191,12 @@ namespace ox
 
 		wait_enum stop()
 		{
-			HANDLE handle = INVALID_HANDLE_VALUE;
-			wait_enum r = stop_prepared(handle);
+			//HANDLE handle = INVALID_HANDLE_VALUE;
+			wait_enum r = stop_prepared(/*handle*/);
 			if (r!=__allowed) return r;
-			assert (handle == _m_thread_handle);
+			//assert (handle == _m_sudo_thread_handle);
 			stop_next();
-			return join_thread_handle(handle);
+			return join_thread_id(_m_threadid);
 		}
 
 		void suspend_next()
@@ -404,7 +405,7 @@ namespace ox
 			_m_hcontrol[1]=0;
 			_m_exit_enabled=0;
 			_m_is_busy=0;
-			_m_thread_handle=HANDLE(-1);
+			//_m_sudo_thread_handle=HANDLE(-1);
 			_m_threadid=-1;
 			_m_service_size = 0;
 			base::on_exit().assign(this,&self::on_internal_exit);
@@ -414,16 +415,16 @@ namespace ox
 	protected:
 		/// when the function call, you'd call stop next and join
 		/// just like the stop function stop
-		wait_enum stop_prepared(HANDLE& h)
+		wait_enum stop_prepared(/*HANDLE& h*/)
 		{
 			bool is_allowed = (GetCurrentThreadId()!=_m_threadid);
 			assert (is_allowed);
 			if (!is_allowed) return __notallowed;
 			if (_m_exit_enabled==1) return __on_exiting;
 			_m_exit_enabled = 1;
-			HANDLE handle = _m_thread_handle; /// or return
-			h = handle;
-			if (handle==INVALID_HANDLE_VALUE) return __not_started;
+			//HANDLE handle = _m_sudo_thread_handle; /// or return
+			//h = handle;
+			//if (handle==INVALID_HANDLE_VALUE) return __not_started;
 			return __allowed;
 		}
 

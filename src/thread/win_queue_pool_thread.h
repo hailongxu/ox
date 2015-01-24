@@ -50,6 +50,14 @@ namespace ox
 			_m_multi_thread.on_idle().assign(this,&self::on_thread_idle);
 			_m_multi_thread.on_exiting().add(this,&self::on_thread_exiting);
 		}
+		self(size_t your_id,char const* your_name)
+		{
+			_m_thread_max_count = __thread_count_max_default;
+			_m_thread_min_count = __thread_count_min_defualt;
+			_m_multi_thread.on_idle().assign(this,&self::on_thread_idle);
+			_m_multi_thread.on_exiting().add(this,&self::on_thread_exiting);
+			set_id(your_id,your_name);
+		}
 
 		void set_id(size_t yourid,char const* your_name=0)
 		{
@@ -82,11 +90,16 @@ namespace ox
 				tasker_t::make(this,&self::do_set_max_min,thread_max_size,thread_min_size));
 		}
 
-		void stop()
+		void astop()
 		{
-			_m_multi_thread.stop();
+			_m_multi_thread.astop();
+		}
+		void stop(size_t timeout_ms=-1)
+		{
+			_m_multi_thread.stop(timeout_ms);
 		}
 
+#if 0
 		void unsafe_terminate()
 		{
 			unsafe_terminate(unsafe_done_d());
@@ -95,6 +108,7 @@ namespace ox
 		{
 			_m_multi_thread.unsafe_terminate(on_done);
 		}
+#endif
 
 		void wait_subs(size_t timeout_ms=-1)
 		{
@@ -146,7 +160,8 @@ namespace ox
 			size_t all_size = _m_multi_thread.unsafe_size();
 			if (all_size>_m_thread_min_count)
 			{
-				_m_multi_thread.unsafe_terminate_tid(threadid);
+				assert(false && "something happened error");
+				//_m_multi_thread.unsafe_terminate_tid(threadid);
 				erase_idle(threadid);
 				return;
 			}

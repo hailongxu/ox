@@ -35,18 +35,20 @@ namespace ox
 		wait_enum stop()
 		{
 			HANDLE handle = INVALID_HANDLE_VALUE;
-			wait_enum r = stop_prepared(handle);
+			wait_enum r = stop_prepared(/*handle*/);
 			if (r!=__allowed) return r;
-			assert (handle == _m_thread_handle);
+			//assert (handle == _m_sudo_thread_handle);
 			stop_next();
-			return join_thread_handle(handle);
+			return join_thread_id(_m_threadid);
 		}
 
+#if 0
 		void unsafe_terminate()
 		{
 			win_queue_thread::unsafe_terminate();
 			do_stop();
 		}
+#endif
 
 		size_t add_timer_micro(LONGLONG period_micro_seconds,timer_event_d const& timer_event,void const* binded,timer_t::timer_position* pos=0)
 		{

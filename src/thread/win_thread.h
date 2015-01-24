@@ -45,12 +45,26 @@ namespace ox
 			__timeout=WAIT_TIMEOUT,
 			__failed=WAIT_FAILED
 		};
+		enum phrase_enum
+		{
+			__th_not_started = 0,
+			__th_start_accepted,
+			__th_about_to_start,
+			__th_start_called_failly,
+			__th_start_called_successfully,
+			//__th_started_successfully,
+			__th_running,
+			__th_about_to_exit,
+			__th_exited,
+		};
 
 	public:
 		~win_thread()
 		{
 			assert(!is_running());
 			if (is_running()) DebugBreak();
+			//assert (_m_phrase!=__th_running);
+			//if (_m_phrase==__th_running) DebugBreak();
 		}
 		win_thread(size_t your_id=0,char const* your_name=0)
 		{
@@ -93,15 +107,17 @@ namespace ox
 
 		bool is_running() const
 		{
-			if (_m_thread_handle==(HANDLE)-1) return false;
+			if (_m_threadid==(size_t)-1) return false;
 			DWORD exit_code = 0;
-			BOOL b = GetExitCodeThread(_m_thread_handle,&exit_code);
-			assert (b);
-			return b && exit_code==STILL_ACTIVE;
+			//BOOL b = GetExitCodeThread(_m_sudo_thread_handle,&exit_code);
+			//assert (b);
+			//return b && exit_code==STILL_ACTIVE;
+			bool b = _m_phrase.value()==__th_start_called_successfully || _m_phrase.value()==__th_running;
+			return b;
 		}
 		bool is_started() const
 		{
-			return _m_thread_handle!=HANDLE(-1);
+			return _m_threadid != -1;
 		}
 
 		void set_id(size_t your_id,char const* your_name)
@@ -123,12 +139,16 @@ namespace ox
 		{
 			return _m_your_id;
 		}
+		size_t phrase() const
+		{
+			return _m_phrase.value();
+		}
 
 		bool start()
 		{
 			if (is_started())
 				return true;
-			_m_thread_handle = begin_thread(_m_threadid);
+			_m_threadid = begin_thread();
 			return is_started();
 		}
 		template <typename p1>
@@ -137,13 +157,12 @@ namespace ox
 			if (is_started())
 				return;
 			_m_function.assign_param<0>(_p1);
-			_m_thread_handle = begin_thread(_m_threadid);
+			_m_threadid = begin_thread();
 			return is_started();
 		}
 		bool start_here()
 		{
 			_m_threadid = GetCurrentThreadId();
-			_m_thread_handle = GetCurrentThread();
 			thread_proc(this);
 			return is_started();
 		}
@@ -157,30 +176,44 @@ namespace ox
 			bool is_allowed = (GetCurrentThreadId()!=_m_threadid);
 			assert (is_allowed);
 			if (!is_allowed) return __notallowed;
-			HANDLE handle = _m_thread_handle;
-			if (handle==INVALID_HANDLE_VALUE) return __not_started;
-			return join_thread_handle(_m_thread_handle);
+			//HANDLE handle = OpenThread(0,FALSE,_m_threadid);
+			//if (handle==0) return __okay;
+			//HANDLE handle = _m_sudo_thread_handle;
+			wait_enum ret = join_thread_id(_m_threadid);
+			//CloseHandle(handle);
+			return ret;
 		}
 		static wait_enum join_thread_handle(HANDLE thread_hanlde,size_t timeout_ms=-1)
 		{
 			DWORD id = ::WaitForSingleObject(thread_hanlde,timeout_ms);
 			return wait_enum(id);
 		}
-		void unsafe_terminate()
+		static wait_enum join_thread_id(size_t threadid,size_t timeout_ms=-1)
 		{
-			TerminateThread(_m_thread_handle,0);
-			if (!_m_on_exit.is_empty())
-				_m_on_exit(this);
+			HANDLE handle = OpenThread(0,FALSE,threadid);
+			if (handle==0) return __okay;
+			DWORD id = ::WaitForSingleObject(handle,timeout_ms);
+			CloseHandle(handle);
+			return wait_enum(id);
 		}
 
-		HANDLE handle() const
-		{
-			return _m_thread_handle;
-		}
+		//HANDLE sudo_handle() const
+		//{
+		//	return _m_sudo_thread_handle;
+		//}
 
 		size_t threadid() const
 		{
 			return _m_threadid;
+		}
+		HANDLE create_thread_handle() const
+		{
+			HANDLE handle = OpenThread(0,FALSE,_m_threadid);
+			if (handle==0)
+			{
+				DWORD err = GetLastError();
+			}
+			return handle;
 		}
 
 		started_d& on_started() {return _m_on_started;}
@@ -195,15 +228,33 @@ namespace ox
 			return _m_function;
 		}
 
+#if 0
+		void unsafe_terminate()
+		{
+			TerminateThread(_m_sudo_thread_handle,0);
+			if (!_m_on_exit.is_empty())
+				_m_on_exit(this);
+		}
+#endif
+
 	protected:
 		unsigned run()
 		{
 			return _m_function();
 		}
 
+		struct thread_start_param
+		{
+			HANDLE _m_event_handle;
+			self* const _m_this;
+		};
 		static unsigned __stdcall thread_proc(void* param)
 		{
-			self* me = (self*)param;
+			thread_start_param* start_param = (thread_start_param*)param;
+			self* me = start_param->_m_this;
+			me->_m_phrase = __th_running;
+			//me->_m_sudo_thread_handle = GetCurrentThread();
+			win_manual_event::set_signaled(start_param->_m_event_handle);
 			if (!me->_m_on_started.is_empty())
 				me->_m_on_started(me);
 #ifdef _DEBUG
@@ -223,10 +274,12 @@ namespace ox
 				OutputDebugStringA(buff);
 			}
 #endif
+			me->_m_phrase = __th_about_to_exit;
 			return exitcode;
 		}
 
-		HANDLE begin_thread(size_t& threadid)
+		/// return thread-id
+		size_t begin_thread()
 		{
 #ifdef _DEBUG
 			{
@@ -235,7 +288,22 @@ namespace ox
 				OutputDebugStringA(buff);
 			}
 #endif
-			uintptr_t h = _beginthreadex(0,0,thread_proc,this,0,&threadid);
+			_m_phrase = __th_start_accepted;
+			uintptr_t h = uintptr_t(-1);
+			size_t threadid = 0;
+			{
+				win_manual_event event_started(false);
+				thread_start_param start_param = {event_started.handle(),this};
+				_m_phrase = __th_about_to_start;
+				h = _beginthreadex(0,0,thread_proc,&start_param,0,&threadid);
+				if (h!=uintptr_t(-1))
+				{
+					_m_phrase = __th_start_called_failly;
+					CloseHandle((HANDLE)h);
+				}
+				_m_phrase = __th_start_called_successfully;
+				scope_manual_event lock(event_started);
+			}
 #ifdef _DEBUG
 			{
 				char buff [128];
@@ -243,11 +311,12 @@ namespace ox
 				OutputDebugStringA(buff);
 			}
 #endif
-			return (HANDLE)h;
+			return threadid;
 		}
 
 		void init(char const* your_name=0,size_t your_id=0)
 		{
+			_m_phrase = __th_not_started;
 			init_handleid();
 			_m_your_id = your_id;
 			set_id(your_id,your_name);
@@ -255,7 +324,7 @@ namespace ox
 
 		void init_handleid()
 		{ 
-			_m_thread_handle = HANDLE(-1); /// because reuturn -1 when beginthreadex failed
+			//_m_sudo_thread_handle = HANDLE(-1); /// because reuturn -1 when beginthreadex failed
 			_m_threadid = -1;
 		}
 
@@ -267,7 +336,8 @@ namespace ox
 		//	memset(_m_your_name,0,sizeof(_m_your_name));
 		//}
 	protected:
-		HANDLE _m_thread_handle;
+		atomic_long _m_phrase;
+		//HANDLE _m_sudo_thread_handle;
 		size_t _m_threadid;
 		char _m_your_name[32];
 		size_t _m_your_id;
