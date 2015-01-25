@@ -7,12 +7,12 @@
 /// 只是为了看起来更加舒服
 
 
-#define ___namespace_begin(ns) \
-	___namespace1_begin(ns)
-
-
-#define ___namespace_end() \
-	___namespace1_end()
+//#define ___namespace_begin(ns) \
+//	___namespace1_begin(ns)
+//
+//
+//#define ___namespace_end() \
+//	___namespace1_end()
 
 
 
@@ -73,6 +73,9 @@ namespace ns1 \
 	} \
 }
 
+
+#define ___namespace_begin(a,b,c,d) namespace a{ namespace b{ namespace c{ namespace d{
+#define ___namespace_end() }}}}
 
 
 /// 宏不能循环递归拆解，真的么？为啥，不可能呀，宏还不能重载，郁闷呢

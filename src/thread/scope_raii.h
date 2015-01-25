@@ -275,7 +275,7 @@ struct scope_raii
 template <typename t>
 struct scope_task
 {
-	typedef abc::thread_task_t task_t;
+	typedef ox::thread_task_t task_t;
 	scope_task(task_t* task=0)
 		: _m_task(task)
 	{}
