@@ -16,13 +16,13 @@ namespace ox
 		struct test_kit
 		{
 			typedef character_tn character;
-			typedef ox::string::string_simple_kit<character> string_kit;
+			typedef ox::str::string_simple_kit<character> string_kit;
 
 			static void printf_title_of_file(const character * file_title)
 			{
 				character format[256] = {0};
 				if (format[0]==0)
-				ox::string::conv::to_string(
+				ox::str::conv::to_string(
 					"\r\n"							"\r\n\r\n"
 					">>>>> >>>>>test file -- name"	"\r\n"
 					"============================"	"\r\n"
@@ -37,7 +37,7 @@ namespace ox
 			{
 				character format[256] = {0};
 				if (format[0]==0)
-				ox::string::conv::to_string(
+				ox::str::conv::to_string(
 					"\r\n"							"\r\n"
 					">>>>> test -- class"			"\r\n"
 					"-------------------"			"\r\n"
@@ -63,9 +63,9 @@ namespace ox
 				static character result_fail[10] = {0};
 
 				if (result_success[0]==0)
-					ox::string::conv::to_string("success",result_success);
+					ox::str::conv::to_string("success",result_success);
 				if (result_fail[0]==0)
-					ox::string::conv::to_string("xxxxxxx",result_fail);
+					ox::str::conv::to_string("xxxxxxx",result_fail);
 
 				return const_cast<character*>(compare_result?result_success:result_fail);
 			}
@@ -77,7 +77,7 @@ namespace ox
 			{
 				static character format[200] = {0};
 				if (format[0]==0)
-					ox::string::conv::to_string(
+					ox::str::conv::to_string(
 						"\r\n"
 						"==>run:%s!!"			"\r\n"
 						"\t%s"					"\r\n"
@@ -102,7 +102,7 @@ namespace ox
 				character std_result_buffer[32] = {0};
 				character run_result_buffer[32] = {0};
 				if (format[0]==0)
-					ox::string::conv::to_string(
+					ox::str::conv::to_string(
 					"\r\n"
 					"==>run:%s!!"			"\r\n"
 					"\t%s"					"\r\n"
@@ -125,7 +125,7 @@ namespace ox
 			{
 				static character format[200] = {0};
 				if (format[0]==0)
-					ox::string::conv::to_string(
+					ox::str::conv::to_string(
 					"\r\n"
 					"==>run:%s!!"			"\r\n"
 					"\t%s"					"\r\n"
@@ -136,7 +136,7 @@ namespace ox
 				ox::io::console::out<character>::printf(
 					format,
 					get_result_desc(
-						ox::string::string_simple_kit<character>::
+						ox::str::string_simple_kit<character>::
 							strcmp<ox::character::__case_sensitive>(
 								std_result,run_result)==0),
 					formular_desc,
@@ -151,7 +151,7 @@ namespace ox
 			{
 				static character format[200] = {0};
 				if (format[0]==0)
-					ox::string::conv::to_string(
+					ox::str::conv::to_string(
 													"\r\n"
 					"==>run:%s!!"					"\r\n"
 					"\t%s"							"\r\n"
