@@ -39,7 +39,9 @@ namespace event
 	}
 	int run()
 	{
-		printf ("thread is running");
+		printf ("thread is running\n");
+		Sleep(5*1000);
+		printf ("thread is running out\n");
 		return 0;
 	}
 	void recall(ox::win_queue_thread* th)
@@ -47,6 +49,7 @@ namespace event
 		th->add(ox::task_single<int>::make(&event::f1));
 	}
 }
+
 
 namespace thread_test
 {
@@ -56,6 +59,9 @@ namespace thread_test
 	{
 		thread.on_run().assign(event::run);
 		thread.start();
+		printf ("join\n");
+		thread.join();
+		printf ("join finished\n");
 	}
 }
 
@@ -66,41 +72,30 @@ namespace win_queue_thread_test
 	{
 		thread.add(ox::task_single<int>::make(&event::recall,&thread));
 		thread.start();
+		Sleep(10);
+		thread.stop();
 	}
 }
-
-#include "../../src/thread/win_multi_thread.h"
-namespace multi_thread_test
-{
-	typedef ox::win_thread<unsigned()> thread_t;
-	typedef ox::win_multi_threads<thread_t> mth;
-	mth m;
-	unsigned f() {return 0;}
-	void test()
-	{
-		//m.on_idle().assign(&event::on_idle);
-		//m.on_busy().assign(&event::on_busy);
-		thread_t* t = m.create_thread(&f);
-		thread_t* t2 = m.create_thread(&f);
-		m.stop();
-		//t->add(ox::task_single<int>::make(&event::f1));
-		//t2->add(ox::task_single<int>::make(&event::f1));
-	}
-}
-
 
 namespace multi_queue_thread_test
 {
 	typedef ox::win_queue_multi_threads mth;
-	mth m;
+	mth m(2,"multi_queue_thread_test");
 	void test()
 	{
+		ox::win_queue_thread control;
+		control.start();
+		m.bind(&control);
 		m.on_idle().assign(&event::on_idle);
 		m.on_busy().assign(&event::on_busy);
 		thread_t* t = m.create_thread();
 		thread_t* t2 = m.create_thread();
 		t->add(ox::task_single<int>::make(&event::f1));
 		t2->add(ox::task_single<int>::make(&event::f1));
+		m.stop();
+		printf("sub stoped \n");
+		control.stop();
+		printf("control stoped \n");
 	}
 }
 
@@ -113,9 +108,9 @@ namespace pool_thread_test
 	{
 		thread.start();
 		pool.bind(&thread);
-		pool.set_max_min(1,1);
+		pool.set_max_min(2,1);
 		pool.on_exited().add(event::on_exited);
-		for (int i=0;i<1;++i)
+		for (int i=0;i<10;++i)
 		{
 			//::_sleep(10);
 			printf ("%d++++++++\n",i);
@@ -123,7 +118,7 @@ namespace pool_thread_test
 		}
 		int i = 9;
 		Sleep(3000);
-		pool.stop();
+		pool.astop();
 		pool.wait_subs();
 		thread.stop();
 		//pool.unsafe_terminate();
@@ -149,6 +144,7 @@ namespace thread_performace_test
 	}
 }
 
+#if 0
 #include "../../src/thread/scope_raii.h"
 namespace mutex_test
 {
@@ -238,26 +234,55 @@ namespace string_pass_test
 	}
 }
 
+#endif
+
+
+#include "../../src/thread/win_multi_thread.h"
+namespace multi_thread_test
+{
+	typedef ox::win_thread<unsigned()> thread_t;
+	typedef ox::win_queue_thread control_thread_t;
+	typedef ox::win_multi_threads<thread_t> mth;
+	mth m(1,"multi_thread_test");
+	unsigned f() {return 0;}
+	void test()
+	{
+		control_thread_t thread;
+		thread.start();
+		m.bind(&thread);
+		//m.on_idle().assign(&event::on_idle);
+		//m.on_busy().assign(&event::on_busy);
+		thread_t* t = m.create_thread(&f);
+		thread_t* t2 = m.create_thread(&f);
+		m.astop();
+		m.stop();
+		thread.stop();
+		//t->add(abc::task_single<int>::make(&event::f1));
+		//t2->add(abc::task_single<int>::make(&event::f1));
+	}
+}
+
 
 //#include <vld.h>
 
 int _tmain(int argc, _TCHAR* argv[])
 {
 	do {
-		win_queue_thread_test::test();break;
+		//multi_thread_test::test();break;
+		//thread_test::test();break;
+		//win_queue_thread_test::test();break;
+		//pool_thread_test::test();break;
 		thread_performace_test::test();break;
-		thread_test::test();break;
-		string_pass_test::test();break;
-		pool_thread_test::test();break;
-		delegate_test::test();break;
-		multi_queue_thread_test::test();break;
-		multi_thread_test::test();break;
-		mutex_test::test();break;
+		//delegate_test::test();break;
+		//multi_queue_thread_test::test();break;
+		//mutex_test::test();break;
+		//string_pass_test::test();break;
 	} while(false);
 	//Sleep(-1);
 	//thread_t mt;
 	//mt.start_here();
-	getch();
+	printf ("get char and exit ... \n");
+	getchar();
 	return 0;
 }
 
