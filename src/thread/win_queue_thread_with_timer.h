@@ -35,8 +35,8 @@ namespace ox
 		wait_enum stop()
 		{
 			HANDLE handle = INVALID_HANDLE_VALUE;
-			wait_enum r = stop_prepared(/*handle*/);
-			if (r!=__allowed) return r;
+			bool b = is_stop_allowed(/*handle*/);
+			if (!b) return __notallowed;
 			//assert (handle == _m_sudo_thread_handle);
 			stop_next();
 			return join_thread_id(_m_threadid);

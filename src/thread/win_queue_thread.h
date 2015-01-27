@@ -172,28 +172,25 @@ namespace ox
 			if (here) return base::start_here();
 			return base::start();
 		}
-#if 0
-		void unsafe_terminate()
-		{
-			assert (GetCurrentThreadId()!=_m_threadid);
-			stop_next();
-			if (is_idle()) return;
-			base::unsafe_terminate();
-		}
-#endif
 
 		void stop_next()
 		{
 			if (_m_exit_enabled==1) return;
 			_m_exit_enabled = 1;
-			SetEvent(_m_hcontrol[__exit2]);
+			BOOL b = SetEvent(_m_hcontrol[__exit2]);
+			assert(b);
+			//if (!b)
+			//{
+			//	DWORD err = GetLastError();
+			//	assert(false && "SetEvent Error");
+			//}
 		}
 
 		wait_enum stop()
 		{
 			//HANDLE handle = INVALID_HANDLE_VALUE;
-			wait_enum r = stop_prepared(/*handle*/);
-			if (r!=__allowed) return r;
+			bool b = is_stop_allowed(/*handle*/);
+			if (!b) return __notallowed;
 			//assert (handle == _m_sudo_thread_handle);
 			stop_next();
 			return join_thread_id(_m_threadid);
@@ -249,6 +246,17 @@ namespace ox
 		idle_d const& on_idle() const {return _m_on_idle;}
 		busy_d& on_busy() {return _m_on_busy;}
 		busy_d const& on_busy() const {return _m_on_busy;}
+
+#if 0
+		void unsafe_terminate()
+		{
+			assert (GetCurrentThreadId()!=_m_threadid);
+			stop_next();
+			if (is_idle()) return;
+			base::unsafe_terminate();
+		}
+#endif		
+		
 	private:
 		void on_internal_exit(base* thread)
 		{
@@ -415,17 +423,18 @@ namespace ox
 	protected:
 		/// when the function call, you'd call stop next and join
 		/// just like the stop function stop
-		wait_enum stop_prepared(/*HANDLE& h*/)
+		bool is_stop_allowed(/*HANDLE& h*/)
 		{
 			bool is_allowed = (GetCurrentThreadId()!=_m_threadid);
 			assert (is_allowed);
-			if (!is_allowed) return __notallowed;
-			if (_m_exit_enabled==1) return __on_exiting;
-			_m_exit_enabled = 1;
+			return is_allowed;
+			//if (!is_allowed) return __notallowed;
+			//if (_m_exit_enabled==1) return __on_exiting;
+			//_m_exit_enabled = 1;
 			//HANDLE handle = _m_sudo_thread_handle; /// or return
 			//h = handle;
 			//if (handle==INVALID_HANDLE_VALUE) return __not_started;
-			return __allowed;
+			//return __allowed;
 		}
 
 	private:

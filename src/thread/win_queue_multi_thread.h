@@ -85,8 +85,7 @@ namespace ox
 		{
 			thread_t* th = base::internal_create_thread(your_id,your_name);
 			if (!th) return 0;
-			add_thread(th);
-			if (bstart) th->start();
+			add_thread(th,bstart?added_d(event_start_thread):added_d());
 			return th;
 		}
 
@@ -139,6 +138,11 @@ namespace ox
 		idle_d _m_on_idle;
 		busy_d _m_on_busy;
 
+		static void event_start_thread(thread_t* th)
+		{
+			assert (th);
+			th->start();
+		}
 
 		void unsafe_do_add_task(size_t threadid,task_t* task)
 		{

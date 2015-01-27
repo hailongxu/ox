@@ -52,7 +52,6 @@ namespace ox
 			__th_about_to_start,
 			__th_start_called_failly,
 			__th_start_called_successfully,
-			//__th_started_successfully,
 			__th_running,
 			__th_about_to_exit,
 			__th_exited,
@@ -190,7 +189,7 @@ namespace ox
 		}
 		static wait_enum join_thread_id(size_t threadid,size_t timeout_ms=-1)
 		{
-			HANDLE handle = OpenThread(0,FALSE,threadid);
+			HANDLE handle = OpenThread(SYNCHRONIZE,FALSE,threadid);
 			if (handle==0) return __okay;
 			DWORD id = ::WaitForSingleObject(handle,timeout_ms);
 			CloseHandle(handle);
@@ -206,13 +205,11 @@ namespace ox
 		{
 			return _m_threadid;
 		}
+		/// you should remember to close the handle
+		/// or else handle leaking will occur later
 		HANDLE create_thread_handle() const
 		{
-			HANDLE handle = OpenThread(0,FALSE,_m_threadid);
-			if (handle==0)
-			{
-				DWORD err = GetLastError();
-			}
+			HANDLE handle = OpenThread(SYNCHRONIZE,FALSE,_m_threadid);
 			return handle;
 		}
 

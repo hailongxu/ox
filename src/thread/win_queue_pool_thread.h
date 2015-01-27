@@ -89,26 +89,14 @@ namespace ox
 			_m_multi_thread.async_add(
 				tasker_t::make(this,&self::do_set_max_min,thread_max_size,thread_min_size));
 		}
-
-		void astop()
+		bool astop()
 		{
-			_m_multi_thread.astop();
+			return _m_multi_thread.astop();
 		}
 		void stop(size_t timeout_ms=-1)
 		{
 			_m_multi_thread.stop(timeout_ms);
 		}
-
-#if 0
-		void unsafe_terminate()
-		{
-			unsafe_terminate(unsafe_done_d());
-		}
-		void unsafe_terminate(unsafe_done_d const& on_done)
-		{
-			_m_multi_thread.unsafe_terminate(on_done);
-		}
-#endif
 
 		void wait_subs(size_t timeout_ms=-1)
 		{
@@ -123,6 +111,16 @@ namespace ox
 		exiting_d const& on_exiting() const {return _m_multi_thread.on_exiting();}
 		exited_d const& on_exited() const {return _m_multi_thread.on_exited();}
 		
+#if 0
+		void unsafe_terminate()
+		{
+			unsafe_terminate(unsafe_done_d());
+		}
+		void unsafe_terminate(unsafe_done_d const& on_done)
+		{
+			_m_multi_thread.unsafe_terminate(on_done);
+		}
+#endif
 	private:
 		void do_add(thread_task_t* task)
 		{
@@ -160,9 +158,10 @@ namespace ox
 			size_t all_size = _m_multi_thread.unsafe_size();
 			if (all_size>_m_thread_min_count)
 			{
-				assert(false && "something happened error");
+				//assert(false && "something happened error");
 				//_m_multi_thread.unsafe_terminate_tid(threadid);
 				erase_idle(threadid);
+				thread->stop_next();
 				return;
 			}
 			enque_idle(threadid);
