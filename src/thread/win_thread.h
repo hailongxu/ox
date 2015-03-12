@@ -13,6 +13,8 @@
 #include <windows.h>
 #include <assert.h>
 #include <process.h>
+#include "atomic_number.h"
+#include "scope_raii.h"
 #include "delegate_closure.h"
 #include "task_feedback.h"
 
@@ -162,7 +164,9 @@ namespace ox
 		bool start_here()
 		{
 			_m_threadid = GetCurrentThreadId();
-			thread_proc(this);
+			thread_start_param start_param = {0,this};
+			_m_phrase = __th_about_to_start;
+			thread_proc(&start_param);
 			return is_started();
 		}
 		void stop_next()

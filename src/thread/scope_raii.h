@@ -105,19 +105,19 @@ struct win_event
 	{
 		bool b = CloseHandle(handle)==TRUE?true:false;
 		size_t err = b?0:GetLastError();
-		assert (b);
+		assert(!handle||b);
 	}
 	static void set_signaled(HANDLE handle)
 	{
 		bool b = SetEvent(handle)==TRUE?true:false;
 		size_t err = b?0:GetLastError();
-		assert (b);
+		assert (!handle||b);
 	}
 	static void set_unsignaled(HANDLE handle)
 	{
 		bool b = ResetEvent(handle)==TRUE?true:false;
 		size_t err = b?0:GetLastError();
-		assert (b);
+		assert(!handle||b);
 	}
 
 	win_event(bool init_signed=false,char const* name=0)

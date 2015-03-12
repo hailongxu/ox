@@ -429,7 +429,7 @@ namespace ox
 			{
 				if (!_m_on_stopped.is_empty())
 					_m_handle_vector_for_stop.push_back(thread->create_thread_handle());
-				//delete *i;
+				delete *i;
 				_m_thread_vector.erase(i);
 			}
 			if (!_m_thread_vector.empty()) return;
