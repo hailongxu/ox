@@ -1036,6 +1036,10 @@ struct console
 
 struct ui
 {
+	struct always_true
+	{
+		bool operator()(char) const {return true;}
+	};
 	console _m_console;
 	point_t _m_origin;
 	void init()
@@ -1044,10 +1048,9 @@ struct ui
 		_m_console.enable_keyboard_input(true);
 	}
 
-
 	void draw_box(data_view_t const& box,point_t const& p)
 	{
-		draw_view(box,p);
+		draw_view(box,p,[](char v){return !box_t::is_value_null(v);});
 	}
 	void draw_board(data_view_t const& box_board)
 	{
@@ -1061,13 +1064,20 @@ struct ui
 	{
 		clear_view(box_board,point_t());
 	}
+
 	void draw_view(data_view_t const& data_view, point_t const& p)
+	{
+		draw_view(data_view,p,always_true());
+	}
+	template <typename cond_tn>
+	void draw_view(data_view_t const& data_view, point_t const& p,cond_tn const& cond)
 	{
 		ssize2_t size = data_view.size();
 		for (int r = 0; r < size.rc; r++)
 			for (int c = 0; c < size.cc; c++)
 			{
 				char v = data_view.value(point_t(r, c));
+				if (!cond(v)) continue;
 				_m_console.draw_point(_m_origin+p+point_t(r, c), v);
 			}
 	}
