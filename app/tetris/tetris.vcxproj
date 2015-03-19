@@ -92,6 +92,7 @@
     <ClCompile Include="tetris.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="math.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
