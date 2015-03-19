@@ -1,11 +1,21 @@
-#include "../utl/vecbuff.h"
-#include "../utl/data_helper.h"
-#include "../utl/data_t.h"
+/*
+	file: serialize.h
+	author: D¨¬o¡ê¨¢¨² xuhailong
+	date: 2012-11-22 17:55
+	msn: hailongxu@msn.com
+	Email: hailongxu@msn.com
+	copyright¡êo¡À?¡ä¨²??¨º??a?¡ä¡ä¨²??¡ê?¡ã?¨¨¡§1¨¦¨º?¡Á¡Â???¨´¨®D
+ */
+//
+
 #include <string>
 #include <vector>
 #include <list>
 #include <set>
 #include <map>
+#include "vecbuff.h"
+#include "data_helper.h"
+#include "data_t.h"
 
 
 
@@ -17,13 +27,24 @@ namespace ox
 namespace utl
 {
 
+/// serialization
+template <typename t>
+void serialize(std::string& all,t const& v);
 template <typename t1,typename t2>
-static void serialize(std::string& all,t1 const& v1,t2 const& v2);
+void serialize(std::string& all,t1 const& v1,t2 const& v2);
+
+/// deserialization
+template <typename t>
+void deserialize(std::string const& all,t& v);
 template <typename t1,typename t2>
-static void deserialize(std::string const& all,t1& v1,t2& v2);
+void deserialize(std::string const& all,t1& v1,t2& v2);
+template <typename t>
+void deserialize(cdata_t all,t& v);
+template <typename t1,typename t2>
+void deserialize(cdata_t all,t1& v1,t2& v2);
 
 
-namespace serl_ns
+namespace serialize_inside
 {
 
 
@@ -403,9 +424,9 @@ template <typename t>
 static void serialize(std::string& all,t const& v)
 {
 	all.clear();
-	vecbuff_helper help(all,0);
+	serialize_inside::vecbuff_helper help(all,0);
 	help.init();
-	serl_ns::serialize_each<t>().add(all,v);
+	serialize_inside::serialize_each<t>().add(all,v);
 }
 
 template <typename t>
@@ -414,17 +435,18 @@ static void deserialize(std::string const& all,t& v)
 	deserialize(ox::utl::to_data(all),v);
 }
 template <typename t>
-static void deserialize(serl_ns::cdata_t all,t& v)
+static void deserialize(serialize_inside::cdata_t all,t& v)
 {
-	vecbuff_t& vecbuf = *vecbuff_t::as_vecbuff(all);
+	serialize_inside::vecbuff_t& vecbuf = *vecbuff_t::as_vecbuff(all);
 	cdata_t data = vecbuf.data_item(0);
-	serl_ns::serialize_each<t>().sub(data,v);
+	serialize_inside::serialize_each<t>().sub(data,v);
 }
 
 template <typename t1,typename t2>
 static void serialize(std::string& all,t1 const& v1,t2 const& v2)
 {
-	serl_ns::vecbuff_helper help(all,0);
+	using namespace serialize_inside;
+	serialize_inside::vecbuff_helper help(all,0);
 	help.init();
 	std::string buf;
 	serialize(buf,v1);
@@ -441,8 +463,8 @@ static void deserialize(std::string const& all,t1& v1,t2& v2)
 template <typename t1,typename t2>
 static void deserialize(cdata_t all,t1& v1,t2& v2)
 {
-	serl_ns::vecbuff_t* vecbuf = serl_ns::vecbuff_t::as_vecbuff(all);
-	serl_ns::cdata_t data = vecbuf->data_item(0);
+	serialize_inside::vecbuff_t* vecbuf = serialize_inside::vecbuff_t::as_vecbuff(all);
+	cdata_t data = vecbuf->data_item(0);
 	deserialize(data,v1);
 	data = vecbuf->data_item(1);
 	deserialize(data,v2);
