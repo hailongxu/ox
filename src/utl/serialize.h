@@ -55,21 +55,6 @@ typedef ox::utl::cdata_t cdata_t;
 
 
 
-//vecbuff_t* get_vecbuf(std::string& out,path_t const& path)
-//{
-//	vecbuff_t* vb = &vecbuff_helper::as_vecbuff(out,0);
-//	for (size_t i=0;i<path.size();++i)
-//	{
-//		cdata_t data = vb->data_item(path[i]);
-//		return &vecbuff_helper::as_vecbuff(data);
-//	}
-//	return vb;
-//}
-//size_t get_vecbuff_offset(std::string& out,path_t const& path)
-//{
-//	return 0;
-//}
-
 template<typename t>
 struct serialize_each
 {};
@@ -115,21 +100,6 @@ struct serialize_each<unsigned char>
 //		vecbuff_helper help(out,0);
 //		help.add_binary(v);
 //		return ;
-//	}
-//	void sub(cdata_t data,value_type& v)
-//	{
-//		v = *(value_type*)(data.begin);
-//	}
-//};
-//template <>
-//struct serialize_each<unsigned wchar_t>
-//{
-//	typedef serialize_each self;
-//	typedef unsigned wchar_t value_type;
-//	void add(std::string& out,value_type const& v)
-//	{
-//		vecbuff_helper help(out,0);
-//		help.add_binary(v);
 //	}
 //	void sub(cdata_t data,value_type& v)
 //	{
