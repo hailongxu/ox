@@ -45,8 +45,6 @@ struct box_board
 		_m_access.set(_m_board,_m_user_rect.p);
 	}
 	rect_t _m_user_rect;
-	//point_t _m_origin;
-	//ssize2_t _m_user_size;
 	matrix_t _m_board;
 	access_t _m_access;
 	//matrix_t const& matrix() const {return _m_board;}
@@ -74,7 +72,7 @@ struct box_board
 	void remove_row_with_top_down(int rbegin,int rend)
 	{
 		revert_copy_row(0,rend-rbegin,rbegin);
-		_m_access.set(rect_t(rbegin,0,rend-rbegin,10),'.');
+		_m_access.set(rect_t(0,0,rend-rbegin,10),'.');
 	}
 	void remove_row_with_top_down(row_intv_t const* row,int n)
 	{
@@ -88,7 +86,7 @@ struct box_board
 		size_t count = 0, intv_count=0;
 		for (int r=0;r<rect.s.rc;++r)
 		{
-			if (is_row_full(r,rect.left(),rect.right()))
+			if (is_row_full(r+rect.p.r,rect.left(),rect.right()))
 			{
 				assert(intv_count<n);
 				count ++;
@@ -109,7 +107,7 @@ struct box_board
 				is_last_full = false;
 			}
 		}
-		return count;
+		return intv_count;
 	}
 	bool is_row_full(int r,int c1,int c2)
 	{
@@ -119,7 +117,7 @@ struct box_board
 	}
 	size_t get_each_row_full_list(int r1,int r2,row_intv_t* out,int n)
 	{
-		return get_each_row_full_list(rect_t(r1,0,r2,_m_user_rect.s.cc),out,n);
+		return get_each_row_full_list(rect_t(r1,0,r2-r1,_m_user_rect.s.cc),out,n);
 	}
 	rect_t get_row_rect(int row)
 	{
@@ -395,7 +393,7 @@ struct tetris_t
 	}
 	bool is_rotate_enabled(ibox_t const& i,point_t const& p)
 	{
-		box_t const& box = _m_boxes.box(boxes_t::get_next(i));
+		box_t const& box = _m_boxes.box(i);
 		return is_rotate_enabled(box,_m_board.access(),p);
 	}
 	point_t move_rotate(ibox_t const& i,point_t const& p,ibox_t& in)
@@ -481,8 +479,11 @@ struct drive
 	random _m_random;
 	typedef delegate<void(rect_t const* board_invalid,size_t size)> data_changed_d;
 	typedef delegate<void(box_trace_t const& from,box_trace_t const& to)> trace_changed_d;
+	typedef delegate<void()> finished_d;
 	data_changed_d on_data_changed;
 	trace_changed_d on_trace_changed;
+	finished_d on_finished;
+	
 
 	point_t const& area_origin() const
 	{
@@ -530,14 +531,13 @@ struct drive
 		size_t count = _m_tetris._m_board.get_each_row_full_list(from.rect.top(),from.rect.bottom(),row_full_list,__max_box_height);
 		assert(count<=__max_box_height);
 		_m_tetris.remove_rows(row_full_list,count);
-		//rect_t row_rect_full_list[__max_box_height];
 		rect_t rect_full_list[1+__max_box_height] = {from.rect};
 		for (size_t i=0;i<count;++i)
 		{
 			row_intv_t const& intv = row_full_list[i];
-			rect_full_list[i-1] = _m_tetris._m_board.get_row_rect(intv.begin,intv.end);
+			rect_full_list[i+1] = _m_tetris._m_board.get_row_rect(intv.begin,intv.end);
 		}
-		if (on_data_changed.is_empty()) on_data_changed(rect_full_list,count);
+		if (!on_data_changed.is_empty()) on_data_changed(rect_full_list,count);
 		_m_pos.set(0,0);
 	}
 	void on_move_left()
@@ -589,7 +589,7 @@ struct drive
 	{
 		int i = _m_random.get()%(_m_tetris._m_boxes.size());
 		int si = _m_random.get()%4;
-		index.i = 0;
+		index.i = i;
 		index.j = si;
 	}
 };
@@ -1072,10 +1072,20 @@ std::string to_string(obj const& b)
 	return s;
 }
 
+//void revert_copy_test()
+//{
+//	matrix2_t m(4,4);
+//	m.fill_row_by_row("12345678abcdhijk",-1);
+//	//m.set_h(3,0,4,'@');
+//	m.revert_copy(point_t(0,0),point_t(1,0),ssize2_t(3,4));
+//}
+
+
 #include "../../src/thread/win_queue_thread.h"
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	//revert_copy_test();
 	app _l_app;
 	_l_app.init();
 	_l_app.start();

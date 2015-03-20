@@ -158,6 +158,16 @@ struct matrix_tt
 			for (size_t j=0;j<_m_size.cc;++j)
 				set(i,j,v);
 	}
+	void fill_row_by_row(t const* v,size_t size)
+	{
+		size_t n = 0;
+		for (size_t i=0;i<_m_size.rc;++i)
+			for (size_t j=0;j<_m_size.cc;++j)
+			{
+				if (++n>size) return;
+				set(i,j,*v++);
+			}
+	}
 	void fill(rect_t const& r, t const& v)
 	{
 		int bottom = r.bottom();
@@ -242,8 +252,8 @@ struct matrix_tt
 		if (from == to) return;
 		point_t f (from.r + size.rc - 1,from.c);
 		point_t t (to.r+size.rc-1,to.c);
-		point_t fe(from.r-1, from.c-1);
-		for (; f.r > fe.r; --f.r, --t.r)
+		int rend = from.r-1;
+		for (; f.r > rend; --f.r, --t.r)
 			revert_copy_hor(f, t, size.cc);
 	}
 	void forward_copy_hor(point_t const& from, point_t const& to, int size)
@@ -251,7 +261,7 @@ struct matrix_tt
 		if (from == to) return;
 		point_t f = from;
 		point_t t = to;
-		point_t fe(from.r, from.c + size);
+		int cend = from.c + size;
 		for (; f.c<fe.c; ++f.c,++t.c)
 			ref(t) = ref(f);
 	}
@@ -267,7 +277,6 @@ struct matrix_tt
 private:
 	buffer _m_buffer;
 	ssize2_t _m_size;
-	//size_t _m_rc,_m_cc;
 };
 
 template <typename matrix_tn>
@@ -309,6 +318,7 @@ struct matrix_access <matrix_tt<t,buffer>>
 
 	void fill(value_type const& v) {_m_matrix->fill(v);}
 	void fill(rect_t const& r,value_type const& v) {_m_matrix->fill(rected(r),v);}
+	void fill_row_by_row(value_type const* v,size_t size) {_m_matrix->fill_row_by_row(v,size);}
 	matrix_t get(rect_t const& rect) const { return _m_matrix->get(rected(rect)); }
 	void set_rc(size_t rc) { _m_matrix->set_rc(rc); }
 	void set_cc(size_t cc) { _m_matrix->set_cc(cc); }

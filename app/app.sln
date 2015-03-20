@@ -1,13 +1,19 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "24_calculate", "24\24.vcproj", "{CF44410A-8A60-46C6-B9EE-80B3B2A92D4F}"
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30110.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "24_calculate", "24\24.vcxproj", "{CF44410A-8A60-46C6-B9EE-80B3B2A92D4F}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "binview", "binview\binview.vcproj", "{5C1ECEC8-191E-4DCD-A1CB-9FF40DFD2443}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "money_change", "money_change\money_change.vcproj", "{DC27A4A9-2358-4EB1-A818-E36B00B33A38}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "money_change", "money_change\money_change.vcxproj", "{DC27A4A9-2358-4EB1-A818-E36B00B33A38}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "watch", "watch\watch.vcproj", "{5415E319-C98A-4D15-9D72-778B65D9BCA1}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "watch", "watch\watch.vcxproj", "{5415E319-C98A-4D15-9D72-778B65D9BCA1}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dict", "dict\dict.vcxproj", "{30363843-E9E4-45C2-889C-0BB765B24896}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tetris", "tetris\tetris.vcxproj", "{5FBD087A-AE1B-472B-9814-5D78806ECEAF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,6 +37,14 @@ Global
 		{5415E319-C98A-4D15-9D72-778B65D9BCA1}.Debug|Win32.Build.0 = Debug|Win32
 		{5415E319-C98A-4D15-9D72-778B65D9BCA1}.Release|Win32.ActiveCfg = Release|Win32
 		{5415E319-C98A-4D15-9D72-778B65D9BCA1}.Release|Win32.Build.0 = Release|Win32
+		{30363843-E9E4-45C2-889C-0BB765B24896}.Debug|Win32.ActiveCfg = Debug|Win32
+		{30363843-E9E4-45C2-889C-0BB765B24896}.Debug|Win32.Build.0 = Debug|Win32
+		{30363843-E9E4-45C2-889C-0BB765B24896}.Release|Win32.ActiveCfg = Release|Win32
+		{30363843-E9E4-45C2-889C-0BB765B24896}.Release|Win32.Build.0 = Release|Win32
+		{5FBD087A-AE1B-472B-9814-5D78806ECEAF}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5FBD087A-AE1B-472B-9814-5D78806ECEAF}.Debug|Win32.Build.0 = Debug|Win32
+		{5FBD087A-AE1B-472B-9814-5D78806ECEAF}.Release|Win32.ActiveCfg = Release|Win32
+		{5FBD087A-AE1B-472B-9814-5D78806ECEAF}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
