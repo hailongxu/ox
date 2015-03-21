@@ -184,7 +184,7 @@ struct boxes_t
 	}
 };
 
-struct tetris_t
+struct tetris_core_data
 {
 	typedef box_board::matrix_t matrix_t;
 	typedef box_board::access_t access_t;
@@ -480,10 +480,10 @@ struct box_trace_t
 	rect_t rect;
 	//point_t pos;
 };
-struct drive
+struct tetris_drive
 {
-	typedef drive self;
-	tetris_t _m_tetris;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+	typedef tetris_drive self;
+	tetris_core_data _m_tetris_core_data;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
 	ibox_t _m_index;
 	point_t _m_pos;
 	bool _m_is_finished;
@@ -496,11 +496,11 @@ struct drive
 	
 	rect_t const& user_rect() const
 	{
-		return _m_tetris.user_rect();
+		return _m_tetris_core_data.user_rect();
 	}
 	point_t const& area_origin() const
 	{
-		return _m_tetris._m_board.o();
+		return _m_tetris_core_data._m_board.o();
 	}
 	ibox_t active_ibox() const
 	{
@@ -508,7 +508,7 @@ struct drive
 	}
 	box_t const& active_box() const
 	{
-		return _m_tetris.box(_m_index);
+		return _m_tetris_core_data.box(_m_index);
 	}
 	point_t const& active_point() const
 	{
@@ -516,23 +516,23 @@ struct drive
 	}
 	void on_init()
 	{
-		_m_tetris.init();
+		_m_tetris_core_data.init();
 		_m_pos.set(-1,-1);
 		_m_is_finished = true;
 	}
 	bool is_finished() const {return _m_is_finished;}
-	void on_start_game()
+	void start_game()
 	{
 		_m_is_finished = false;
-		_m_tetris.clear_board();
+		_m_tetris_core_data.clear_board();
 	}
-	void on_move_down()
+	void move_down()
 	{
 		if (is_finished()) return;
 		box_trace_t from {_m_index,_m_pos};
 		box_trace_t to {_m_index};
-		to.rect.p = _m_tetris.move_down(_m_index, _m_pos);
-		box_t const& box = _m_tetris.box(from.ibox);
+		to.rect.p = _m_tetris_core_data.move_down(_m_index, _m_pos);
+		box_t const& box = _m_tetris_core_data.box(from.ibox);
 		from.rect.s = box.size();
 		to.rect.s = from.rect.s;
 		if (from.rect.p!=to.rect.p)
@@ -550,56 +550,56 @@ struct drive
 			return;
 		}
 		/// scan the rows, remove it if full, finally trigger the data-changed event
-		_m_tetris.set_by(from.ibox,from.rect.p);
+		_m_tetris_core_data.set_by(from.ibox,from.rect.p);
 		static int const __max_box_height = 4;
 		row_intv_t row_full_list[__max_box_height] = {row_intv_t(),row_intv_t(),row_intv_t(),row_intv_t()};
-		size_t count = _m_tetris._m_board.get_each_row_full_list(from.rect.top(),from.rect.bottom(),row_full_list,__max_box_height);
+		size_t count = _m_tetris_core_data._m_board.get_each_row_full_list(from.rect.top(),from.rect.bottom(),row_full_list,__max_box_height);
 		assert(count<=__max_box_height);
-		_m_tetris.remove_rows(row_full_list,count);
+		_m_tetris_core_data.remove_rows(row_full_list,count);
 		rect_t rect_full_list[1+__max_box_height] = {from.rect};
 		for (size_t i=0;i<count;++i)
 		{
 			row_intv_t const& intv = row_full_list[i];
-			rect_full_list[i+1] = _m_tetris._m_board.get_row_rect(intv.begin,intv.end);
+			rect_full_list[i+1] = _m_tetris_core_data._m_board.get_row_rect(intv.begin,intv.end);
 		}
 		if (!on_data_changed.is_empty()) on_data_changed(rect_full_list,count);
 	}
-	void on_move_left()
+	void move_left()
 	{
 		if (is_finished()) return;
 		box_trace_t from {_m_index,_m_pos};
 		box_trace_t to {_m_index};
-		to.rect.p = _m_tetris.move_left(_m_index, _m_pos);
+		to.rect.p = _m_tetris_core_data.move_left(_m_index, _m_pos);
 		if (from.rect.p==to.rect.p) return;
 		_m_pos = to.rect.p;
-		box_t const& box = _m_tetris.box(from.ibox);
+		box_t const& box = _m_tetris_core_data.box(from.ibox);
 		from.rect.s = box.size();
 		to.rect.s = from.rect.s;
 		if (!on_trace_changed.is_empty()) on_trace_changed(from,to);
 	}
-	void on_move_right()
+	void move_right()
 	{
 		if (is_finished()) return;
 		box_trace_t from {_m_index,_m_pos};
 		box_trace_t to {_m_index};
-		to.rect.p = _m_tetris.move_right(_m_index, _m_pos);
+		to.rect.p = _m_tetris_core_data.move_right(_m_index, _m_pos);
 		if (from.rect.p==to.rect.p) return;
 		_m_pos = to.rect.p;
-		box_t const& box = _m_tetris.box(from.ibox);
+		box_t const& box = _m_tetris_core_data.box(from.ibox);
 		from.rect.s = box.size();
 		to.rect.s = from.rect.s;
 		if (!on_trace_changed.is_empty()) on_trace_changed(from,to);
 	}
-	void on_move_rotate()
+	void move_rotate()
 	{
 		if (is_finished()) return;
 		box_trace_t from {_m_index,_m_pos};
 		box_trace_t to = from;
-		to.rect.p = _m_tetris.move_rotate(_m_index,_m_pos,to.ibox);
+		to.rect.p = _m_tetris_core_data.move_rotate(_m_index,_m_pos,to.ibox);
 		if (from.rect.p==to.rect.p && from.ibox==to.ibox) return;
 		_m_pos = to.rect.p;
 		_m_index = to.ibox;
-		box_t const& box = _m_tetris.box(from.ibox);
+		box_t const& box = _m_tetris_core_data.box(from.ibox);
 		from.rect.s = box.size();
 		to.rect.s = from.rect.s;
 		if (!on_trace_changed.is_empty()) on_trace_changed(from,to);
@@ -861,17 +861,17 @@ struct app
 				//delete *i;
 			}
 		}
-		box_view_list(drive& dr) : _m_drive(dr) {}
-		drive& _m_drive;
+		box_view_list(tetris_drive& dr) : _m_drive(dr) {}
+		tetris_drive& _m_drive;
 		std::vector<box_view_t*> _m_box_view_list;
 		void init()
 		{
-			int n = _m_drive._m_tetris.boxes().size();
+			int n = _m_drive._m_tetris_core_data.boxes().size();
 			for(ibox_t index;index.i<n;++index.i)
 			{
 				for (index.j=0;index.j<4;++index.j)
 				{
-					box_t const& box2 = _m_drive._m_tetris.box(index);
+					box_t const& box2 = _m_drive._m_tetris_core_data.box(index);
 					box_view_t* box_view = new box_view_t {box2};
 					_m_box_view_list.push_back(box_view);
 				}
@@ -919,7 +919,7 @@ struct app
 	win_console _m_console;
 	ui_board _m_ui_board;
 	ui_preview _m_ui_preview;
-	drive _m_drive;
+	tetris_drive _m_drive;
 	input_event_source _m_event_source;
 	data_view_t _m_board_view;
 	box_view_list _m_box_view_list;
@@ -928,7 +928,7 @@ struct app
 	ibox_generator _m_ibox_generator;
 
 
-	self(): _m_box_view_list(_m_drive), _m_board_part_view(_m_drive._m_tetris._m_board.access())
+	self(): _m_box_view_list(_m_drive), _m_board_part_view(_m_drive._m_tetris_core_data._m_board.access())
 		, _m_ui_board(_m_console), _m_ui_preview(_m_console)
 	{}
 
@@ -951,7 +951,7 @@ struct app
 		_m_board_view = get_board_view();
 		_m_box_view_list.init();
 		_m_ibox_next.i=_m_ibox_next.j = -1;
-		_m_ibox_generator.init(_m_drive._m_tetris.boxes().size());
+		_m_ibox_generator.init(_m_drive._m_tetris_core_data.boxes().size());
 	}
 	void on_data_changed(rect_t const* invalid,size_t size)
 	{
@@ -981,7 +981,7 @@ struct app
 	}
 	void on_start_game()
 	{
-		_m_drive.on_start_game();
+		_m_drive.start_game();
 		retrieve_ibox_next();
 		clear_preview();
 		draw_active_in_preview();
@@ -989,19 +989,19 @@ struct app
 	}
 	void on_move_down()
 	{
-		_m_drive.on_move_down();
+		_m_drive.move_down();
 	}
 	void on_move_left()
 	{
-		_m_drive.on_move_left();
+		_m_drive.move_left();
 	}
 	void on_move_right()
 	{
-		_m_drive.on_move_right();
+		_m_drive.move_right();
 	}
 	void on_moved_rotate()
 	{
-		_m_drive.on_move_rotate();
+		_m_drive.move_rotate();
 	}
 	void on_quit()
 	{
@@ -1061,11 +1061,11 @@ struct app
 	}
 	char get_board_value(point_t const& p)
 	{
-		return _m_drive._m_tetris._m_board.access().get(p);
+		return _m_drive._m_tetris_core_data._m_board.access().get(p);
 	}
 	ssize2_t get_board_size()
 	{
-		return _m_drive._m_tetris._m_board.user_rect().rc().rect.s;
+		return _m_drive._m_tetris_core_data._m_board.user_rect().rc().rect.s;
 	}
 };
 
