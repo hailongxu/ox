@@ -173,8 +173,9 @@ struct matrix_tt
 		int bottom = r.bottom();
 		int top = r.top();
 		int right = r.right();
+		int left = r.left();
 		for (size_t i=top;i<bottom;++i)
-			for (size_t j=0;j<right;++j)
+			for (size_t j=left;j<right;++j)
 				set(i,j,v);
 	}
 	matrix_tt get(rect_t const& rect) const

@@ -440,7 +440,11 @@ struct tetris_t
 	{
 		_m_board.remove_row_with_top_down(rows,n);
 	}
-	void clear_board() {clear_board(_m_board.user_rect().s);}
+	void clear_board()
+	{
+		rect_t rect(point_t(0,0),_m_board.user_rect().s);
+		clear_board(rect);
+	}
 	void clear_board(rect_t const& rect)
 	{
 		_m_board.access().fill(rect,box_t::back_char());
@@ -482,7 +486,6 @@ struct drive
 	tetris_t _m_tetris;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
 	ibox_t _m_index;
 	point_t _m_pos;
-	random _m_random;
 	bool _m_is_finished;
 	typedef delegate<void(rect_t const* board_invalid,size_t size)> data_changed_d;
 	typedef delegate<void(box_trace_t const& from,box_trace_t const& to)> trace_changed_d;
@@ -514,7 +517,6 @@ struct drive
 	void on_init()
 	{
 		_m_tetris.init();
-		_m_random.init();
 		_m_pos.set(-1,-1);
 		_m_is_finished = true;
 	}
@@ -602,21 +604,32 @@ struct drive
 		to.rect.s = from.rect.s;
 		if (!on_trace_changed.is_empty()) on_trace_changed(from,to);
 	}
-	void on_get_another()
+	void set_ibox_current(ibox_t const& index)
 	{
-		get_random_next(_m_index);
+		_m_index = index;
 		ssize2_t size = active_box().size();
 		_m_pos.set(-size.rc,0);
 	}
-	void get_random_next(ibox_t& index)
+};
+struct ibox_generator
+{
+	random _m_random;
+	int _m_box_count;
+	void init(int box_count)
 	{
-		int i = _m_random.get()%(_m_tetris._m_boxes.size());
+		_m_box_count = box_count;
+		_m_random.init();
+	}
+	ibox_t operator()() const
+	{
+		ibox_t index;
+		int i = _m_random.get()%(_m_box_count);
 		int si = _m_random.get()%4;
 		index.i = i;
 		index.j = si;
+		return index;
 	}
 };
-
 
 struct draw_view_t
 {
@@ -687,7 +700,7 @@ struct ui_board
 	{
 		rect_t r = rect;
 		r.p = _m_origin+r.p;
-		_m_console.fill_rect(rect,v);
+		_m_console.fill_rect(r,v);
 	}
 	void clear_box(data_view_t const& box,point_t const& p)
 	{
@@ -911,6 +924,9 @@ struct app
 	data_view_t _m_board_view;
 	box_view_list _m_box_view_list;
 	board_part_view _m_board_part_view;
+	ibox_t _m_ibox_next;
+	ibox_generator _m_ibox_generator;
+
 
 	self(): _m_box_view_list(_m_drive), _m_board_part_view(_m_drive._m_tetris._m_board.access())
 		, _m_ui_board(_m_console), _m_ui_preview(_m_console)
@@ -934,6 +950,8 @@ struct app
 		_m_event_source.on_moved_left.assign(this, &self::on_move_left);
 		_m_board_view = get_board_view();
 		_m_box_view_list.init();
+		_m_ibox_next.i=_m_ibox_next.j = -1;
+		_m_ibox_generator.init(_m_drive._m_tetris.boxes().size());
 	}
 	void on_data_changed(rect_t const* invalid,size_t size)
 	{
@@ -959,10 +977,14 @@ struct app
 			Sleep(50);
 			_m_ui_board.draw_board(rect_t(r,0,1,user_rect.s.cc),box_t::back_char());
 		}
+		clear_preview();
 	}
 	void on_start_game()
 	{
 		_m_drive.on_start_game();
+		retrieve_ibox_next();
+		clear_preview();
+		draw_active_in_preview();
 		start_round();
 	}
 	void on_move_down()
@@ -993,9 +1015,14 @@ struct app
 	}
 	void start_round()
 	{
-		_m_drive.on_get_another();
+		_m_drive.set_ibox_current(_m_ibox_next);
+		retrieve_ibox_next();
 		clear_preview();
 		draw_active_in_preview();
+	}
+	void retrieve_ibox_next()
+	{
+		_m_ibox_next = _m_ibox_generator();
 	}
 	void draw_board()
 	{
@@ -1018,7 +1045,7 @@ struct app
 	}
 	void draw_active_in_preview()
 	{
-		data_view_t view = _m_box_view_list.get(_m_drive.active_ibox());
+		data_view_t view = _m_box_view_list.get(_m_ibox_next);
 		_m_ui_preview.draw(view,point_t(0,0));
 	}
 	void draw_active_box()
