@@ -171,8 +171,9 @@ struct matrix_tt
 	void fill(rect_t const& r, t const& v)
 	{
 		int bottom = r.bottom();
+		int top = r.top();
 		int right = r.right();
-		for (size_t i=r.r;i<bottom;++i)
+		for (size_t i=top;i<bottom;++i)
 			for (size_t j=0;j<right;++j)
 				set(i,j,v);
 	}

@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <vector>
 #include "math.h"
+#include "win_console.h"
 
 
 struct box_t : matrix2_t
@@ -21,9 +22,9 @@ struct box_t : matrix2_t
 		memset(rotate_check_point,-1,sizeof(rotate_check_point));
 	}
 	static value_type const __back_char = '.';
-	static value_type const __front_char = '$';
-	static value_type null_char() {return __back_char;}
-	static value_type real_char() { return __front_char; }
+	static value_type const __front_char = '@';
+	static value_type back_char() {return __back_char;}
+	static value_type front_char() { return __front_char; }
 	void fill() {matrix_t::fill(__back_char);}
 	matrix_t const& matrix() const {return *this;}
 	point_t next;
@@ -271,12 +272,12 @@ struct tetris_t
 	template <typename t,typename bu1,typename bu2>
 	static void clear(matrix_tt<t,bu1>& md,point_t pd,matrix_tt<t,bu2> const& ms,point_t const& ps)
 	{
-		set(md,pd,box_t::null_char(),ms,ps);
+		set(md,pd,box_t::back_char(),ms,ps);
 	}
 	template <typename m,typename t,typename bu2>
 	static void clear(matrix_access<m>& md,point_t pd,matrix_tt<t,bu2> const& ms,point_t const& ps)
 	{
-		set(md,pd,box_t::null_char(),ms,ps);
+		set(md,pd,box_t::back_char(),ms,ps);
 	}
 	template <typename t,typename bu1,typename bu2>
 	static void set(matrix_tt<t,bu1>& md,point_t pd,char const& v,matrix_tt<t,bu2> const& ms,point_t const& ps)
@@ -439,6 +440,11 @@ struct tetris_t
 	{
 		_m_board.remove_row_with_top_down(rows,n);
 	}
+	void clear_board() {clear_board(_m_board.user_rect().s);}
+	void clear_board(rect_t const& rect)
+	{
+		_m_board.access().fill(rect,box_t::back_char());
+	}
 };
 
 #include <time.h>
@@ -477,6 +483,7 @@ struct drive
 	ibox_t _m_index;
 	point_t _m_pos;
 	random _m_random;
+	bool _m_is_finished;
 	typedef delegate<void(rect_t const* board_invalid,size_t size)> data_changed_d;
 	typedef delegate<void(box_trace_t const& from,box_trace_t const& to)> trace_changed_d;
 	typedef delegate<void()> finished_d;
@@ -484,7 +491,10 @@ struct drive
 	trace_changed_d on_trace_changed;
 	finished_d on_finished;
 	
-
+	rect_t const& user_rect() const
+	{
+		return _m_tetris.user_rect();
+	}
 	point_t const& area_origin() const
 	{
 		return _m_tetris._m_board.o();
@@ -506,11 +516,17 @@ struct drive
 		_m_tetris.init();
 		_m_random.init();
 		_m_pos.set(-1,-1);
+		_m_is_finished = true;
 	}
-	bool is_round_enabled() const {return _m_pos!=point_t(-1,-1);}
+	bool is_finished() const {return _m_is_finished;}
+	void on_start_game()
+	{
+		_m_is_finished = false;
+		_m_tetris.clear_board();
+	}
 	void on_move_down()
 	{
-		if (!is_round_enabled()) return;
+		if (is_finished()) return;
 		box_trace_t from {_m_index,_m_pos};
 		box_trace_t to {_m_index};
 		to.rect.p = _m_tetris.move_down(_m_index, _m_pos);
@@ -524,6 +540,13 @@ struct drive
 			return;
 		}
 		/// reach the bottom
+		/// if top is above zero, game over
+		if (to.rect.top()<0)
+		{
+			_m_is_finished = true;
+			if (!on_finished.is_empty()) on_finished();
+			return;
+		}
 		/// scan the rows, remove it if full, finally trigger the data-changed event
 		_m_tetris.set_by(from.ibox,from.rect.p);
 		static int const __max_box_height = 4;
@@ -538,11 +561,10 @@ struct drive
 			rect_full_list[i+1] = _m_tetris._m_board.get_row_rect(intv.begin,intv.end);
 		}
 		if (!on_data_changed.is_empty()) on_data_changed(rect_full_list,count);
-		_m_pos.set(0,0);
 	}
 	void on_move_left()
 	{
-		if (!is_round_enabled()) return;
+		if (is_finished()) return;
 		box_trace_t from {_m_index,_m_pos};
 		box_trace_t to {_m_index};
 		to.rect.p = _m_tetris.move_left(_m_index, _m_pos);
@@ -555,7 +577,7 @@ struct drive
 	}
 	void on_move_right()
 	{
-		if (!is_round_enabled()) return;
+		if (is_finished()) return;
 		box_trace_t from {_m_index,_m_pos};
 		box_trace_t to {_m_index};
 		to.rect.p = _m_tetris.move_right(_m_index, _m_pos);
@@ -568,7 +590,7 @@ struct drive
 	}
 	void on_move_rotate()
 	{
-		if (!is_round_enabled()) return;
+		if (is_finished()) return;
 		box_trace_t from {_m_index,_m_pos};
 		box_trace_t to = from;
 		to.rect.p = _m_tetris.move_rotate(_m_index,_m_pos,to.ibox);
@@ -583,115 +605,18 @@ struct drive
 	void on_get_another()
 	{
 		get_random_next(_m_index);
-		_m_pos.set(-1,0);
+		ssize2_t size = active_box().size();
+		_m_pos.set(-size.rc,0);
 	}
 	void get_random_next(ibox_t& index)
 	{
 		int i = _m_random.get()%(_m_tetris._m_boxes.size());
 		int si = _m_random.get()%4;
-		index.i = i;
-		index.j = si;
+		index.i = 1;
+		index.j = 1;
 	}
 };
 
-#include <conio.h>
-#include <Windows.h>
-struct console
-{
-	HANDLE _m_hout;
-	HANDLE _m_hin;
-	console()
-	{
-		_m_hout = GetStdHandle(STD_OUTPUT_HANDLE);
-		_m_hin = GetStdHandle(STD_INPUT_HANDLE);
-		assert(_m_hin != INVALID_HANDLE_VALUE);
-		assert(_m_hout != INVALID_HANDLE_VALUE);
-	}
-	~console()
-	{
-		CloseHandle(_m_hout);
-		CloseHandle(_m_hin);
-	}
-	void draw_box(rect_t const& r, char c)
-	{
-		if (r.height() != 0)
-		{
-			draw_hor(r.left_top(), r.width(), c);
-			draw_hor(point_t(r.p.r+r.height()-1,r.p.c), r.width(), c);
-		}
-		if (r.width() != 0)
-		{
-			draw_ver(r.left_top(), r.height(), c);
-			draw_ver(point_t(r.p.r,r.p.c+r.width()-1), r.height(), c);
-		}
-	}
-	void draw_hor(point_t const& p, size_t len, char c)
-	{
-		for (int i = 0; i < len;++i)
-			WriteConsoleOutputCharacterA(_m_hout, &c, 1, COORD{ p.c+i, p.r }, 0);
-	}
-	void draw_ver(point_t const& p, size_t len, char c)
-	{
-		size_t bottom = p.r + len;
-		for (size_t r=p.r; r < bottom;++r)
-			WriteConsoleOutputCharacterA(_m_hout, &c, 1, COORD{ p.c,r }, 0);
-	}
-	void fill_box(rect_t const& rect, char c)
-	{
-		size_t bottom = rect.p.r + rect.height();
-		for (size_t r = rect.p.r; r < bottom; ++r)
-			draw_hor(point_t(r, rect.p.c), rect.width(), c);
-	}
-	void draw_point(point_t const& p, char c)
-	{
-		DWORD l;
-		WriteConsoleOutputCharacterA(_m_hout, &c, 1, COORD{ p.c, p.r }, &l);
-	}
-	void diable_except_keyboard(bool b)
-	{
-
-	}
-	void enable_keyboard_input(bool b)
-	{
-		DWORD mode;
-		BOOL br = GetConsoleMode(_m_hin, &mode);
-		assert(br);
-		if (b) mode |= ENABLE_WINDOW_INPUT; else mode &= (~ENABLE_WINDOW_INPUT);
-		br = SetConsoleMode(_m_hin, mode);
-		assert(br);
-	}
-	enum event_type_enum
-	{
-		__mouse_event=1,
-		__keyboard_event
-	};
-	void read_keyboard_input(size_t& c,bool& isdown)
-	{
-		INPUT_RECORD keyrec;
-		DWORD state = 0, res;
-		while (1)
-		{
-			ReadConsoleInput(_m_hin,&keyrec,1,&res);
-			if (keyrec.EventType != KEY_EVENT) continue;
-			c = keyrec.Event.KeyEvent.wVirtualKeyCode;
-			isdown = keyrec.Event.KeyEvent.bKeyDown?true:false;
-			break;
-		}
-	}
-	void peek_keyboard_input(size_t& c)
-	{
-		INPUT_RECORD keyrec;
-		DWORD state = 0, res;
-		PeekConsoleInput(_m_hin, &keyrec, 1, &res);
-		assert(keyrec.EventType == KEY_EVENT);
-		c = keyrec.Event.KeyEvent.wVirtualKeyCode;
-	}
-	void start()
-	{
-		draw_box(rect_t(2, 3,4,6), '1');
-		fill_box(rect_t(10, 2, 4, 4), '0');
-	}
-};
 
 struct ui
 {
@@ -699,14 +624,35 @@ struct ui
 	{
 		bool operator()(char,point_t const&) const {return true;}
 	};
-	console _m_console;
+	struct rect_view_t
+	{
+		typedef rect_view_t self;
+		self(ssize2_t const& size,char c) : _m_size(size),_m_value(c) {}
+		char _m_value;
+		ssize2_t _m_size;
+		char get_value(point_t const& p)
+		{
+			return _m_value;
+		}
+		ssize2_t get_size()
+		{
+			return _m_size;
+		}
+		data_view_t as_view()
+		{
+			data_view_t view;
+			view.size.assign(this,&self::get_size);
+			view.value.assign(this,&self::get_value);
+			return view;
+		}
+	};
+	win_console _m_console;
 	point_t _m_origin;
 	void init()
 	{
 		_m_origin.set(2,2);
 		_m_console.enable_keyboard_input(true);
 	}
-
 	void draw_box(data_view_t const& box,point_t const& p)
 	{
 		draw_view(box,p,[](char v,point_t const& p){return !box_t::is_value_null(v)&&p.r>=0;});
@@ -714,6 +660,12 @@ struct ui
 	void draw_board(data_view_t const& box_board)
 	{
 		draw_view(box_board,point_t());
+	}
+	void draw_board(rect_t const& rect,char v)
+	{
+		for (int r = 0; r < rect.s.rc; r++)
+			for (int c = 0; c < rect.s.cc; c++)
+				_m_console.draw_point(_m_origin+rect.p+point_t(r,c), v);
 	}
 	void clear_box(data_view_t const& box,point_t const& p)
 	{
@@ -791,15 +743,17 @@ struct ui
 struct input_event_source
 {
 	typedef input_event_source self;
-	typedef delegate<size_t()> moved_d;
+	typedef delegate<void()> action_d;
 	typedef ox::win_thread<unsigned()> thread_t;
-	moved_d on_moved_left;
-	moved_d on_moved_rotate;
-	moved_d on_moved_right;
-	moved_d on_moved_down;
-	moved_d on_quit;
+	
+	action_d on_start_game;
+	action_d on_moved_left;
+	action_d on_moved_rotate;
+	action_d on_moved_right;
+	action_d on_moved_down;
+	action_d on_quit;
 	thread_t _m_thread;
-	console* _m_console;
+	win_console* _m_console;
 	void init() {}
 	void start()
 	{
@@ -810,6 +764,8 @@ struct input_event_source
 	static size_t const __arrow_up = 38;
 	static size_t const __arrow_right = 39;
 	static size_t const __arrow_down = 40;
+	static size_t const __start_game_s = 's';
+	static size_t const __start_game_S = 'S';
 	static size_t const __char_q = 'q';
 	static size_t const __char_Q = 'Q';
 
@@ -827,7 +783,8 @@ struct input_event_source
 			case __arrow_left: if (!on_moved_left.is_empty()) on_moved_left(); break;
 			case __arrow_up: if (!on_moved_rotate.is_empty()) on_moved_rotate(); break;
 			case __arrow_right: if (!on_moved_right.is_empty()) on_moved_right(); break;
-			case __arrow_down:if (!on_moved_down.is_empty()) on_moved_down(); break;
+			case __arrow_down: if (!on_moved_down.is_empty()) on_moved_down(); break;
+			case __start_game_s: case __start_game_S: if (!on_start_game.is_empty()) on_start_game(); break;
 			case __char_q: case __char_Q: bquit = true; if (!on_quit.is_empty()) on_quit(); break;
 			}
 		}
@@ -965,9 +922,11 @@ struct app
 		_m_drive.on_init();
 		_m_drive.on_trace_changed.assign(this,&self::on_trace_changed);
 		_m_drive.on_data_changed.assign(this,&self::on_data_changed);
+		_m_drive.on_finished.assign(this,&self::on_finished);
 		_m_ui.init();
 		_m_event_source._m_console = &_m_ui._m_console;
 		_m_event_source.init();
+		_m_event_source.on_start_game.assign(this,&self::on_start_game);
 		_m_event_source.on_moved_rotate.assign(this, &self::on_moved_rotate);
 		_m_event_source.on_moved_down.assign(this, &self::on_move_down);
 		_m_event_source.on_moved_right.assign(this, &self::on_move_right);
@@ -985,25 +944,41 @@ struct app
 		draw_board_part(from.rect);
 		draw_box(to.ibox,to.rect.p);
 	}
-	size_t on_move_down()
+	void on_finished()
+	{
+		rect_t user_rect = _m_drive.user_rect();
+		for (int r=0;r<user_rect.s.rc;++r)
+		{
+			Sleep(50);
+			_m_ui.draw_board(rect_t(r,0,1,user_rect.s.cc),box_t::front_char());
+		}
+		Sleep(100);
+		for (int r=0;r<user_rect.s.rc;++r)
+		{
+			Sleep(50);
+			_m_ui.draw_board(rect_t(r,0,1,user_rect.s.cc),box_t::back_char());
+		}
+	}
+	void on_start_game()
+	{
+		_m_drive.on_start_game();
+		start_round();
+	}
+	void on_move_down()
 	{
 		_m_drive.on_move_down();
-		return 0;
 	}
-	size_t on_move_left()
+	void on_move_left()
 	{
 		_m_drive.on_move_left();
-		return 0;
 	}
-	size_t on_move_right()
+	void on_move_right()
 	{
 		_m_drive.on_move_right();
-		return 0;
 	}
-	size_t on_moved_rotate()
+	void on_moved_rotate()
 	{
 		_m_drive.on_move_rotate();
-		return 0;
 	}
 	size_t on_get_another()
 	{
@@ -1072,20 +1047,11 @@ std::string to_string(obj const& b)
 	return s;
 }
 
-//void revert_copy_test()
-//{
-//	matrix2_t m(4,4);
-//	m.fill_row_by_row("12345678abcdhijk",-1);
-//	//m.set_h(3,0,4,'@');
-//	m.revert_copy(point_t(0,0),point_t(1,0),ssize2_t(3,4));
-//}
-
 
 #include "../../src/thread/win_queue_thread.h"
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	//revert_copy_test();
 	app _l_app;
 	_l_app.init();
 	_l_app.start();
