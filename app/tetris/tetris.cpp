@@ -612,13 +612,33 @@ struct drive
 	{
 		int i = _m_random.get()%(_m_tetris._m_boxes.size());
 		int si = _m_random.get()%4;
-		index.i = 1;
-		index.j = 1;
+		index.i = i;
+		index.j = si;
 	}
 };
 
 
-struct ui
+struct draw_view_t
+{
+	draw_view_t(win_console& console) : _m_console(console) {}
+	point_t _m_origin;
+	win_console& _m_console;
+	template <typename cond_tn>
+	void draw(data_view_t const& data_view, point_t const& p,cond_tn const& cond)
+	{
+		ssize2_t size = data_view.size();
+		for (int r = 0; r < size.rc; r++)
+			for (int c = 0; c < size.cc; c++)
+			{
+				char v = data_view.value(point_t(r, c));
+				point_t board_point = p+point_t(r, c);
+				if (!cond(v,board_point)) continue;
+				_m_console.draw_point(_m_origin+board_point, v);
+			}
+	}
+};
+
+struct ui_board
 {
 	struct always_true
 	{
@@ -646,16 +666,18 @@ struct ui
 			return view;
 		}
 	};
-	win_console _m_console;
+	ui_board(win_console& console) : _m_console(console),_m_draw_view(_m_console) {}
+	win_console& _m_console;
 	point_t _m_origin;
+	draw_view_t _m_draw_view;
 	void init()
 	{
 		_m_origin.set(2,2);
-		_m_console.enable_keyboard_input(true);
+		_m_draw_view._m_origin = _m_origin;
 	}
 	void draw_box(data_view_t const& box,point_t const& p)
 	{
-		draw_view(box,p,[](char v,point_t const& p){return !box_t::is_value_null(v)&&p.r>=0;});
+		_m_draw_view.draw(box,p,[](char v,point_t const& p){return !box_t::is_value_null(v)&&p.r>=0;});
 	}
 	void draw_board(data_view_t const& box_board)
 	{
@@ -663,9 +685,9 @@ struct ui
 	}
 	void draw_board(rect_t const& rect,char v)
 	{
-		for (int r = 0; r < rect.s.rc; r++)
-			for (int c = 0; c < rect.s.cc; c++)
-				_m_console.draw_point(_m_origin+rect.p+point_t(r,c), v);
+		rect_t r = rect;
+		r.p = _m_origin+r.p;
+		_m_console.fill_rect(rect,v);
 	}
 	void clear_box(data_view_t const& box,point_t const& p)
 	{
@@ -678,64 +700,35 @@ struct ui
 
 	void draw_view(data_view_t const& data_view, point_t const& p)
 	{
-		draw_view(data_view,p,always_true());
-	}
-	template <typename cond_tn>
-	void draw_view(data_view_t const& data_view, point_t const& p,cond_tn const& cond)
-	{
-		ssize2_t size = data_view.size();
-		for (int r = 0; r < size.rc; r++)
-			for (int c = 0; c < size.cc; c++)
-			{
-				char v = data_view.value(point_t(r, c));
-				point_t board_point = p+point_t(r, c);
-				if (!cond(v,board_point)) continue;
-				_m_console.draw_point(_m_origin+board_point, v);
-			}
+		_m_draw_view.draw(data_view,p,always_true());
 	}
 	void clear_view(data_view_t const& data_view, point_t const& p)
 	{
-		_m_console.fill_box(rect_t(_m_origin+p, data_view.size()), '.');
+		_m_console.fill_rect(rect_t(_m_origin+p, data_view.size()), '.');
 	}
+};
 
-
-	//void draw_matrix(matrix2_t const& matrix, point_t const& p)
-	//{
-	//	draw_matrix_screen(matrix,_m_origin+p);
-	//}
-	//void clear_matrix(matrix2_t const& matrix, point_t const& p)
-	//{
-	//	clear_matrix_screen(matrix,p+_m_origin+p);
-	//}
-	//void draw_matrix_screen(matrix2_t const& matrix, point_t const& p)
-	//{
-	//	for (int r = 0; r < matrix.rc(); r++)
-	//		for (int c = 0; c < matrix.cc(); c++)
-	//		{
-	//			char v = matrix.get(r, c);
-	//			_m_console.draw_point(p+point_t(r, c), v);
-	//		}
-	//}
-	//void clear_matrix_screen(matrix2_t const& matrix, point_t const& p)
-	//{
-	//	_m_console.fill_box(rect_t(p, matrix.rc(),matrix.cc()), '.');
-	//}
-	//void draw_box_screen(box_t const& box, point_t const& p)
-	//{
-	//	draw_matrix_screen(box, p);
-	//}
-	//void draw_board_screen(box_board const& box_board, point_t const& p)
-	//{
-	//	draw_matrix_screen(box_board.matrix(), p);
-	//}
-	//void clear_box_screen(box_t const& box, point_t const& p)
-	//{
-	//	clear_matrix_screen(box, p);
-	//}
-	//void clear_board_screen(box_board const& box_board, point_t const& p)
-	//{
-	//	clear_matrix_screen(box_board.matrix(), p);
-	//}
+struct ui_preview
+{
+	ui_preview(win_console& console): _m_console(console), _m_draw_view(console)
+	{}
+	win_console& _m_console;
+	rect_t _m_rect;
+	draw_view_t _m_draw_view;
+	void init()
+	{
+		_m_rect.p.set(2,14);
+		_m_rect.s.set(4,4);
+		_m_draw_view._m_origin = _m_rect.p;
+	}
+	void draw(data_view_t const& box,point_t const& p)
+	{
+		_m_draw_view.draw(box,p,[](char v,point_t const& p){return true;});
+	}
+	void clear()
+	{
+		_m_console.fill_rect(_m_rect,box_t::back_char());
+	}
 };
 
 #include "../../src/cxx/delegate.h"
@@ -760,6 +753,10 @@ struct input_event_source
 		_m_thread.on_run().assign(this,&self::read_keyboard);
 		_m_thread.start();
 	}
+	void stop()
+	{
+		ungetch('q');
+	}
 	static size_t const __arrow_left = 37;
 	static size_t const __arrow_up = 38;
 	static size_t const __arrow_right = 39;
@@ -774,7 +771,6 @@ struct input_event_source
 		bool bquit = false;
 		while (!bquit)
 		{
-			///int c = getch();
 			size_t c; bool isdown;
 			_m_console->read_keyboard_input(c,isdown);
 			if (!isdown) continue;
@@ -794,11 +790,11 @@ struct input_event_source
 
 struct ui_drive
 {
-	ui _m_ui;
+	ui_board _m_ui_board;
 	input_event_source _m_event_source;
 	void init()
 	{
-		_m_ui.init();
+		_m_ui_board.init();
 	}
 	void start()
 	{
@@ -907,7 +903,9 @@ struct app
 		}
 	};
 
-	ui _m_ui;
+	win_console _m_console;
+	ui_board _m_ui_board;
+	ui_preview _m_ui_preview;
 	drive _m_drive;
 	input_event_source _m_event_source;
 	data_view_t _m_board_view;
@@ -915,16 +913,19 @@ struct app
 	board_part_view _m_board_part_view;
 
 	self(): _m_box_view_list(_m_drive), _m_board_part_view(_m_drive._m_tetris._m_board.access())
+		, _m_ui_board(_m_console), _m_ui_preview(_m_console)
 	{}
 
 	void init()
 	{
+		_m_console.enable_keyboard_input(true);
 		_m_drive.on_init();
 		_m_drive.on_trace_changed.assign(this,&self::on_trace_changed);
 		_m_drive.on_data_changed.assign(this,&self::on_data_changed);
 		_m_drive.on_finished.assign(this,&self::on_finished);
-		_m_ui.init();
-		_m_event_source._m_console = &_m_ui._m_console;
+		_m_ui_board.init();
+		_m_ui_preview.init();
+		_m_event_source._m_console = &_m_ui_board._m_console;
 		_m_event_source.init();
 		_m_event_source.on_start_game.assign(this,&self::on_start_game);
 		_m_event_source.on_moved_rotate.assign(this, &self::on_moved_rotate);
@@ -950,13 +951,13 @@ struct app
 		for (int r=0;r<user_rect.s.rc;++r)
 		{
 			Sleep(50);
-			_m_ui.draw_board(rect_t(r,0,1,user_rect.s.cc),box_t::front_char());
+			_m_ui_board.draw_board(rect_t(r,0,1,user_rect.s.cc),box_t::front_char());
 		}
 		Sleep(100);
 		for (int r=0;r<user_rect.s.rc;++r)
 		{
 			Sleep(50);
-			_m_ui.draw_board(rect_t(r,0,1,user_rect.s.cc),box_t::back_char());
+			_m_ui_board.draw_board(rect_t(r,0,1,user_rect.s.cc),box_t::back_char());
 		}
 	}
 	void on_start_game()
@@ -980,35 +981,45 @@ struct app
 	{
 		_m_drive.on_move_rotate();
 	}
-	size_t on_get_another()
+	void on_quit()
 	{
-		_m_drive.on_get_another();
+		_m_event_source.start();
 	}
 	void start()
 	{
 		_m_event_source.start();
 		draw_board();
-		start_round();
+		clear_preview();
 	}
 	void start_round()
 	{
 		_m_drive.on_get_another();
-		draw_active_box();
+		clear_preview();
+		draw_active_in_preview();
 	}
 	void draw_board()
 	{
-		_m_ui.draw_board(_m_board_view);
+		_m_ui_board.draw_board(_m_board_view);
 	}
 	void draw_board_part(rect_t const& rect)
 	{
 		/// the rect maybe chipped by the user rect border
 		_m_board_part_view.set(rect);
-		_m_ui.draw_view(_m_board_part_view.as_view(),_m_board_part_view.rect().p);
+		_m_ui_board.draw_view(_m_board_part_view.as_view(),_m_board_part_view.rect().p);
 	}
 	void draw_box(ibox_t const& ibox,point_t const& p)
 	{
 		data_view_t view = _m_box_view_list.get(ibox);
-		_m_ui.draw_box(view,p);
+		_m_ui_board.draw_box(view,p);
+	}
+	void clear_preview()
+	{
+		_m_ui_preview.clear();
+	}
+	void draw_active_in_preview()
+	{
+		data_view_t view = _m_box_view_list.get(_m_drive.active_ibox());
+		_m_ui_preview.draw(view,point_t(0,0));
 	}
 	void draw_active_box()
 	{

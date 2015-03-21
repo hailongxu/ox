@@ -44,7 +44,7 @@ struct win_console
 		for (size_t r=p.r; r < bottom;++r)
 			WriteConsoleOutputCharacterA(_m_hout, &c, 1, COORD{ p.c,r }, 0);
 	}
-	void fill_box(rect_t const& rect, char c)
+	void fill_rect(rect_t const& rect, char c)
 	{
 		size_t bottom = rect.p.r + rect.height();
 		for (size_t r = rect.p.r; r < bottom; ++r)
