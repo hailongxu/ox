@@ -1,5 +1,7 @@
 
+#include <string.h>
 #include "tetris_define.h"
+#include "win_console.h"
 
 
 #pragma once
@@ -116,6 +118,25 @@ struct ui_preview
 	void clear()
 	{
 		_m_console.fill_rect(_m_rect,tetris_define::back_char());
+	}
+};
+
+struct ui_information
+{
+	ui_information(win_console& console): _m_console(console)
+	{}
+	win_console& _m_console;
+	rect_t _m_rect;
+	void init()
+	{
+		_m_rect.p.set(18,14);
+		_m_rect.s.set(1,10);
+	}
+	void draw_text(int credit)
+	{
+		char str [16] ;
+		sprintf(str,"%d",credit);
+		_m_console.draw_text(_m_rect.p,str,strlen(str));
 	}
 };
 

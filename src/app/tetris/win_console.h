@@ -3,6 +3,12 @@
 #include <conio.h>
 #include <Windows.h>
 
+
+
+#pragma once
+
+
+
 struct win_console
 {
 	typedef win_console self;
@@ -53,7 +59,11 @@ struct win_console
 	void draw_point(point_t const& p, char c)
 	{
 		DWORD l;
-		WriteConsoleOutputCharacterA(_m_hout, &c, 1, COORD{ p.c, p.r }, &l);
+		WriteConsoleOutputCharacterA(_m_hout, &c, 1, COORD{p.c,p.r}, &l);
+	}
+	void draw_text(point_t const& p,char const* str,int size)
+	{
+		WriteConsoleOutputCharacterA(_m_hout, str, size, COORD{p.c,p.r}, 0);
 	}
 	void diable_except_keyboard(bool b)
 	{
