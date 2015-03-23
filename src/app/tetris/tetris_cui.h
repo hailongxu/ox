@@ -8,11 +8,12 @@
 
 
 
-struct draw_view_t
+template <typename tetris_ui_t>
+struct draw_view_tt
 {
-	draw_view_t(win_console& console) : _m_console(console) {}
+	draw_view_tt(tetris_ui_t& console) : _m_console(console) {}
 	point_t _m_origin;
-	win_console& _m_console;
+	tetris_ui_t& _m_console;
 	template <typename cond_tn>
 	void draw(data_view_t const& data_view, point_t const& p,cond_tn const& cond)
 	{
@@ -28,6 +29,7 @@ struct draw_view_t
 	}
 };
 
+template <typename tetris_ui_t>
 struct ui_board
 {
 	struct always_true
@@ -56,8 +58,9 @@ struct ui_board
 			return view;
 		}
 	};
-	ui_board(win_console& console) : _m_console(console),_m_draw_view(_m_console) {}
-	win_console& _m_console;
+	typedef draw_view_tt<tetris_ui_t> draw_view_t;
+	ui_board(tetris_ui_t& console) : _m_console(console),_m_draw_view(_m_console) {}
+	tetris_ui_t& _m_console;
 	point_t _m_origin;
 	draw_view_t _m_draw_view;
 	void init()
@@ -98,11 +101,13 @@ struct ui_board
 	}
 };
 
+template <typename tetris_ui_t>
 struct ui_preview
 {
-	ui_preview(win_console& console): _m_console(console), _m_draw_view(console)
+	typedef draw_view_tt<tetris_ui_t> draw_view_t;
+	ui_preview(tetris_ui_t& console): _m_console(console), _m_draw_view(console)
 	{}
-	win_console& _m_console;
+	tetris_ui_t& _m_console;
 	rect_t _m_rect;
 	draw_view_t _m_draw_view;
 	void init()
@@ -121,11 +126,12 @@ struct ui_preview
 	}
 };
 
+template <typename tetris_ui_t>
 struct ui_information
 {
-	ui_information(win_console& console): _m_console(console)
+	ui_information(tetris_ui_t& console): _m_console(console)
 	{}
-	win_console& _m_console;
+	tetris_ui_t& _m_console;
 	rect_t _m_rect;
 	void init()
 	{
