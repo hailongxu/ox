@@ -1,7 +1,7 @@
 
 #include <string.h>
 #include "tetris_define.h"
-#include "win_console.h"
+#include "win_cui.h"
 
 
 #pragma once
