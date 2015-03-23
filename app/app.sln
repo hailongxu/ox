@@ -15,6 +15,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dict", "dict\dict.vcxproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tetris", "tetris\tetris.vcxproj", "{5FBD087A-AE1B-472B-9814-5D78806ECEAF}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tetrisg", "tetrisg\tetrisg.vcxproj", "{861BF8C0-0BC0-482E-9F4A-ACFB46C180B6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -45,6 +47,10 @@ Global
 		{5FBD087A-AE1B-472B-9814-5D78806ECEAF}.Debug|Win32.Build.0 = Debug|Win32
 		{5FBD087A-AE1B-472B-9814-5D78806ECEAF}.Release|Win32.ActiveCfg = Release|Win32
 		{5FBD087A-AE1B-472B-9814-5D78806ECEAF}.Release|Win32.Build.0 = Release|Win32
+		{861BF8C0-0BC0-482E-9F4A-ACFB46C180B6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{861BF8C0-0BC0-482E-9F4A-ACFB46C180B6}.Debug|Win32.Build.0 = Debug|Win32
+		{861BF8C0-0BC0-482E-9F4A-ACFB46C180B6}.Release|Win32.ActiveCfg = Release|Win32
+		{861BF8C0-0BC0-482E-9F4A-ACFB46C180B6}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
