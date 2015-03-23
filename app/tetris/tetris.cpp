@@ -24,23 +24,23 @@ std::string to_string(obj const& b)
 #include "../../src/thread/win_queue_thread.h"
 #include "../../src/app/tetris/win_cui.h"
 #include "../../src/app/tetris/tetris_uic.h"
-#include "../../src/app/tetris/tetris_event_source.h"
+#include "../../src/app/tetris/tetris_uic_event_source.h"
 #include "../../src/app/tetris/tetris_app.h"
 
 struct on_application_start
 {
-	on_application_start(input_event_source& tetris_event)
+	on_application_start(tetris_uic_input_event_source& tetris_event)
 		: tetris_event(tetris_event)
 	{}
-	input_event_source& tetris_event;
+	tetris_uic_input_event_source& tetris_event;
 	void operator()() {tetris_event.start();}
 };
 int _tmain(int argc, _TCHAR* argv[])
 {
 	win_console console;
 	tetris_win_cui tetris_cui(console);
-	input_event_source tetris_event(console);
-	app<tetris_win_cui,input_event_source>  tetris_application;
+	tetris_uic_input_event_source tetris_event(console);
+	app<tetris_win_cui,tetris_uic_input_event_source>  tetris_application;
 	console.enable_keyboard_input(true);
 	tetris_application.init(&tetris_cui,&tetris_event);
 	tetris_application.on_started.assign(&on_application_start(tetris_event));

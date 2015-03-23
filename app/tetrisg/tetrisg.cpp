@@ -4,11 +4,16 @@
 #include "stdafx.h"
 #include "tetrisg.h"
 
-#include "../../src/app/tetris/tetris_gui.h"
-tetris_win_gui tetris_gui;
-ui_board<tetris_win_gui> a(tetris_gui);
-ui_preview<tetris_win_gui> b(tetris_gui);
-ui_information<tetris_win_gui> c(tetris_gui);
+#include "../../src/app/tetris/win_gui.h"
+#include "../../src/app/tetris/tetris_uig.h"
+//#include "../../src/app/tetris/tetris_event_source.h"
+
+win_gui gui;
+tetris_win_gui tetris_gui(gui);
+//ui_board<tetris_win_gui> a(tetris_gui);
+//ui_preview<tetris_win_gui> b(tetris_gui);
+//ui_information<tetris_win_gui> c(tetris_gui);
+
 
 #define MAX_LOADSTRING 100
 
