@@ -11,6 +11,9 @@
 
 struct tetris_win_gui
 {
+	win_gui& _m_gui;
+	tetris_win_gui(win_gui& gui): _m_gui(gui)
+	{}
 	void fill_rect(rect_t const& rect,char v)
 	{
 	}

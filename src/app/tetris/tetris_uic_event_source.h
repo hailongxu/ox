@@ -1,5 +1,6 @@
 
 
+#include <stdio.h>
 #include "../../src/cxx/delegate.h"
 #include "../../src/thread/win_thread.h"
 
@@ -7,9 +8,9 @@
 #pragma once
 
 
-struct input_event_source
+struct tetris_uic_input_event_source
 {
-	typedef input_event_source self;
+	typedef tetris_uic_input_event_source self;
 	typedef delegate<void()> action_d;
 	typedef ox::win_thread<unsigned()> thread_t;
 	

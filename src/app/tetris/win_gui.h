@@ -1,6 +1,7 @@
 
 
 #include <windows.h>
+#include "math.h"
 
 
 #pragma once
@@ -8,7 +9,7 @@
 
 struct win_gui
 {
-	win_gui(HDC hdc) : _m_hdc(hdc) {}
+	void init(HDC hdc) {_m_hdc=hdc;}
 	HDC _m_hdc;
 	void draw_rectangle(rect_t const& rect)
 	{
