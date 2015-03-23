@@ -12,3 +12,4 @@ struct tetris_define
 	static value_type front_char() { return __front_char; }
 	static bool is_value_null(char v) {return v==__back_char;}
 };
+

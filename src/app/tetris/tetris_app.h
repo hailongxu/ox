@@ -6,10 +6,10 @@
 #include "../../ox/nsab.h"
 #include "math.h"
 #include "tetris_define.h"
+#include "tetris_event_define.h"
 #include "tetris_credit_calculate.h"
 #include "tetris_view_interface.h"
 #include "tetris_vui.h"
-#include "tetris_event.h"
 #include "tetris.h"
 
 
@@ -134,23 +134,26 @@ struct app
 
 	ui_board _m_ui_board;
 	ui_preview _m_ui_preview;
+	ui_information _m_ui_information;
 	tetris_drive _m_drive;
 	data_view_t _m_board_view;
 	box_view_list _m_box_view_list;
 	board_part_view _m_board_part_view;
 	ibox_t _m_ibox_next;
 	ibox_generator _m_ibox_generator;
-	ui_information _m_ui_information;
 	tetris_credit_calculate _m_credit_calculate;
 	credit_info _m_credit_info;
+	started_d on_started;
 
 	self(): _m_box_view_list(_m_drive), _m_board_part_view(_m_drive._m_tetris_core_data._m_board.access())
 		, _m_ui_board(*_m_console), _m_ui_preview(*_m_console), _m_ui_information(*_m_console)
 	{}
 
-	void init()
+	void init(tetris_ui* _tetris_ui,tetris_event* event_source)
 	{
-		_m_console.enable_keyboard_input(true);
+		_m_console = _tetris_ui;
+		_m_event_source = event_source;
+
 		_m_drive.on_init();
 		_m_drive.on_trace_changed.assign(this,&self::on_trace_changed);
 		_m_drive.on_data_changed.assign(this,&self::on_data_changed);
@@ -160,13 +163,11 @@ struct app
 		_m_ui_information.init();
 		_m_board_view = get_board_view();
 		_m_box_view_list.init();
-		//_m_event_source._m_console = &_m_ui_board._m_console;
-		_m_event_source.init();
-		_m_event_source.on_start_game.assign(this,&self::on_start_game);
-		_m_event_source.on_moved_rotate.assign(this, &self::on_moved_rotate);
-		_m_event_source.on_moved_down.assign(this, &self::on_move_down);
-		_m_event_source.on_moved_right.assign(this, &self::on_move_right);
-		_m_event_source.on_moved_left.assign(this, &self::on_move_left);
+		_m_event_source->on_start_game.assign(this,&self::on_start_game);
+		_m_event_source->on_moved_rotate.assign(this, &self::on_moved_rotate);
+		_m_event_source->on_moved_down.assign(this, &self::on_move_down);
+		_m_event_source->on_moved_right.assign(this, &self::on_move_right);
+		_m_event_source->on_moved_left.assign(this, &self::on_move_left);
 		_m_ibox_next.i=_m_ibox_next.j = -1;
 		_m_ibox_generator.init(_m_drive._m_tetris_core_data.boxes().size());
 		_m_credit_calculate.init();
@@ -238,7 +239,7 @@ struct app
 	}
 	void start()
 	{
-		_m_event_source.start();
+		if (!on_started.is_empty()) on_started();
 		draw_board();
 		clear_preview();
 	}

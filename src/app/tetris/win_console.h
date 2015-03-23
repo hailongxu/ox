@@ -2,6 +2,7 @@
 
 #include <conio.h>
 #include <Windows.h>
+#include "math.h"
 
 
 

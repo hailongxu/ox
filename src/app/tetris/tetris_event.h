@@ -21,7 +21,9 @@ struct input_event_source
 	action_d on_quit;
 	thread_t _m_thread;
 	win_console* _m_console;
-	void init() {}
+
+	self(win_console& console): _m_console(&console)
+	{}
 	void start()
 	{
 		_m_thread.on_run().assign(this,&self::read_keyboard);

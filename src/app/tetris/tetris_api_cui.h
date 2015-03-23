@@ -11,6 +11,8 @@
 
 struct tetris_win_cui
 {
+	tetris_win_cui(win_console& console) : _m_console(console)
+	{}
 	win_console& _m_console;
 	void fill_rect(rect_t const& rect,char v)
 	{
