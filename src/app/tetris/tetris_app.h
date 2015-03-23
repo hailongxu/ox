@@ -8,7 +8,7 @@
 #include "tetris_define.h"
 #include "tetris_credit_calculate.h"
 #include "tetris_view_interface.h"
-#include "teris_ui.h"
+#include "teris_cui.h"
 #include "tetris_event.h"
 #include "tetris.h"
 
