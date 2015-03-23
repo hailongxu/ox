@@ -8,7 +8,7 @@
 #include "tetris_define.h"
 #include "tetris_credit_calculate.h"
 #include "tetris_view_interface.h"
-#include "teris_cui.h"
+#include "tetris_vui.h"
 #include "tetris_event.h"
 #include "tetris.h"
 
@@ -22,9 +22,14 @@
 //___namespace3_begin(ox,app,tetris_zone)
 
 
+template <typename tetris_ui,typename tetris_event>
 struct app
 {
 	typedef app self;
+	typedef tetris_ui tetris_ui;
+	typedef ui_board<tetris_ui> ui_board;
+	typedef ui_preview<tetris_ui> ui_preview;
+	typedef ui_information<tetris_ui> ui_information;
 
 	struct box_view_t
 	{
@@ -123,11 +128,13 @@ struct app
 		void clear() {_m_sum=0;}
 	};
 
-	win_console _m_console;
+	/// the outer element
+	tetris_ui* _m_console;
+	tetris_event* _m_event_source;
+
 	ui_board _m_ui_board;
 	ui_preview _m_ui_preview;
 	tetris_drive _m_drive;
-	input_event_source _m_event_source;
 	data_view_t _m_board_view;
 	box_view_list _m_box_view_list;
 	board_part_view _m_board_part_view;
@@ -138,7 +145,7 @@ struct app
 	credit_info _m_credit_info;
 
 	self(): _m_box_view_list(_m_drive), _m_board_part_view(_m_drive._m_tetris_core_data._m_board.access())
-		, _m_ui_board(_m_console), _m_ui_preview(_m_console), _m_ui_information(_m_console)
+		, _m_ui_board(*_m_console), _m_ui_preview(*_m_console), _m_ui_information(*_m_console)
 	{}
 
 	void init()
@@ -153,7 +160,7 @@ struct app
 		_m_ui_information.init();
 		_m_board_view = get_board_view();
 		_m_box_view_list.init();
-		_m_event_source._m_console = &_m_ui_board._m_console;
+		//_m_event_source._m_console = &_m_ui_board._m_console;
 		_m_event_source.init();
 		_m_event_source.on_start_game.assign(this,&self::on_start_game);
 		_m_event_source.on_moved_rotate.assign(this, &self::on_moved_rotate);
