@@ -22,9 +22,13 @@ std::string to_string(obj const& b)
 	return s;
 }
 
+
+#include "../../src/app/tetris/tetris_api_cui.h"
+#include "../../src/app/tetris/tetris_event.h"
+
 int _tmain(int argc, _TCHAR* argv[])
 {
-	/*ox::app::tetris_zone::*/app  _l_app;
+	/*ox::app::tetris_zone::*/app<tetris_win_cui,input_event_source>  _l_app;
 	_l_app.init();
 	_l_app.start();
 	ox::win_queue_thread th;
