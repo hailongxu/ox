@@ -22,9 +22,9 @@ std::string to_string(obj const& b)
 
 
 #include "../../src/thread/win_queue_thread.h"
-#include "../../src/app/tetris/win_console.h"
-#include "../../src/app/tetris/tetris_api_cui.h"
-#include "../../src/app/tetris/tetris_event.h"
+#include "../../src/app/tetris/win_cui.h"
+#include "../../src/app/tetris/tetris_uic.h"
+#include "../../src/app/tetris/tetris_event_source.h"
 #include "../../src/app/tetris/tetris_app.h"
 
 struct on_application_start
