@@ -9,7 +9,7 @@
 #include "tetris_event_define.h"
 #include "tetris_credit_calculate.h"
 #include "tetris_view_interface.h"
-#include "tetris_vui.h"
+#include "tetris_uiv.h"
 #include "tetris.h"
 
 
