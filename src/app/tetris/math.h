@@ -1,5 +1,7 @@
 
+#include <assert.h>
 #include "../../utl/intv.h"
+//#include "../../ox/tclasses.h"
 
 
 #pragma once
@@ -9,79 +11,207 @@
 typedef ox::utl::intv_tt<int> row_intv_t;
 //typedef ox::utl::data_tt<interval_t> interval
 
-template<typename t>
-struct size2_t
+struct rc_coord;
+struct xy_coord;
+
+
+template <typename t>
+struct dim_data_tt
 {
-	typedef t integer_type;
-	static size_t const __dim_size = 2;
-	size2_t() {set(0,0);}
-	size2_t(integer_type rc, integer_type cc) { set(rc, cc); }
-	void set(integer_type rc, integer_type cc) { this->rc = rc, this->cc = cc; }
-	integer_type length() const {return rc*cc;}
-	bool is_empty() const { return rc == 0 && cc == 0; }
-	integer_type rc, cc;
-};
-typedef size2_t<int> ssize2_t;
-template<typename t>
-struct point_tt
-{
-	typedef point_tt self;
-	typedef t integer_type;
-	self() { set(0,0); }
-	self(integer_type r,integer_type c) { set(r,c); }
-	self& set(integer_type r,integer_type c) { this->r=r,this->c=c;return *this; }
-	integer_type r,c;
-	bool operator==(self const& p) const { return r == p.r && c == p.c; }
+	typedef dim_data_tt self;
+	typedef t value_type;
+	self() {}
+	self(value_type d0,value_type d1) {set(d0,d1);}
+	value_type _m_d[2];
+	value_type& operator[](int i) {assert(i>=0&&i<=1);return _m_d[i];}
+	value_type const& operator[](int i) const {assert(i>=0&&i<=1);return _m_d[i];}
+	value_type& d0() {return _m_d[0];}
+	value_type& d1() {return _m_d[1];}
+	value_type const& d0() const {return _m_d[0];}
+	value_type const& d1() const {return _m_d[1];}
+	template<int i> value_type& d();
+	template<> value_type& d<0>() {return d0();}
+	template<> value_type& d<1>() {return d1();}
+	template<int i> value_type const& d() const;
+	template<> value_type const& d<0>() const {return d0();}
+	template<> value_type const& d<1>() const {return d1();}
+	void set(value_type const& d0,value_type const& d1)
+	{
+		_m_d[0] = d0;
+		_m_d[1] = d1;
+	}
+	bool operator==(self const& p) const { return d0() == p.d0() && d1() == p.d1(); }
 	bool operator!=(self const& p) const { return !operator==(p); }
 };
-typedef point_tt<int> point_t;
-point_t operator +(point_t const& a,point_t const& b)
-{
-	return point_t(a.r+b.r,a.c+b.c);
-}
-point_t operator +(point_t const& a, ssize2_t const& size)
-{
-	return point_t(a.r + size.rc, a.c + size.cc);
-}
-struct rect_t
-{
-	rect_t() {}
-	rect_t(point_t const& p): p(p) {}
-	rect_t(ssize2_t const& s): s(s) {}
-	rect_t(point_t const& p,ssize2_t const& s): p(p),s(s) {}
-	rect_t(point_t const& p,size_t rc,size_t cc): p(p),s(rc,cc) {}
-	rect_t(size_t r,size_t c,size_t rc,size_t cc): p(r,c),s(rc,cc) {}
-	
-	struct rc_t
-	{
-		rect_t const& rect;
-		rc_t(rect_t const& r) :rect(r) {}
-		point_t left_top() const { rect.p; }
-		point_t left_bottom() const { return point_t(rect.p.r + rect.s.rc, rect.p.c); }
-		point_t right_top() const { return point_t(rect.p.r, rect.p.c + rect.s.cc); }
-		point_t right_bottom() const { return point_t(rect.p.r+rect.s.rc, rect.p.c + rect.s.cc); }
-	};
-	void set(point_t const& p) {this->p=p;}
-	void set(ssize2_t const& s) {this->s=s;}
-	void set(point_t const& p,ssize2_t const& s) {this->p=p;this->s=s;}
-	void set(point_t const& p,size_t rc,size_t cc) {this->p=p;s.set(rc,cc);}
-	void set(size_t r,size_t c,size_t rc,size_t cc) {p.set(r,c),s.set(rc,cc);}
 
-	int left() const { return p.c; }
-	int right() const { return p.c+s.cc; }
-	int top() const { return p.r; }
-	int bottom() const { return p.r+s.rc; }
-	size_t width() const { return s.cc; }
-	size_t height() const { return s.rc; }
-	rc_t rc() const { return rc_t(*this); }
-	point_t left_top() const { return p; }
-	point_t left_bottom() const { return point_t(p.r+s.rc,p.c); }
-	point_t right_top() const { return point_t(p.r, p.c + s.cc); }
-	point_t right_bottom() const { return point_t(p.r+s.rc, p.c + s.cc); }
-	bool is_empty() const { return s.is_empty(); }
-	point_t p;
-	ssize2_t s;
+template<int dim_count,typename t,typename coord>
+struct size_access_tt;
+template<int dim_count,typename t,typename coord>
+struct size_tt;
+
+
+template <int dim_count,typename t>
+struct size_access_tt <dim_count,t,rc_coord>
+{
+	typedef size_access_tt self;
+	typedef dim_data_tt<t> data_type;
+	typedef t value_type;
+	typedef rc_coord coord_type;
+	typedef size_tt<dim_count,t,coord_type> mother_type;
+	
+	value_type& cc() {return data().d0();}
+	value_type& rc() {return data().d1();}
+	template<int i> value_type& d() {return data().d<i>();}
+	template<int i> value_type const& d() const {return data().d<i>();}
+	void set(value_type const& x,value_type const& y) {data().set(x,y);}
+	value_type length() const {return rc()*cc();}
+	bool is_empty() const { return rc() == 0 && cc() == 0; }
+	data_type const& data() const {return static_cast<mother_type const*>(this)->_m_data;}
+	data_type& data() {return static_cast<mother_type*>(this)->_m_data;}
 };
+template <int dim_count,typename t>
+struct size_access_tt <dim_count,t,xy_coord>
+{
+	typedef size_access_tt self;
+	typedef dim_data_tt<t> data_type;
+	typedef t value_type;
+	typedef xy_coord coord_type;
+	typedef size_tt<dim_count,t,coord_type> mother_type;
+
+	value_type& xs() {return data().d0();}
+	value_type& ys() {return  data().d1();}
+	template<int i> value_type& d() {return data().d<i>();}
+	template<int i> value_type const& d() const {return data().d<i>();}
+	void set(value_type const& x,value_type const& y) {data().set(x,y);}
+	value_type length() const {return rc()*cc();}
+	bool is_empty() const { return rc() == 0 && cc() == 0; }
+	data_type const& data() const {return static_cast<mother_type const*>(this)->_m_data;}
+	data_type& data() {return static_cast<mother_type*>(this)->_m_data;}
+};
+
+template<int dim_count,typename t,typename coord>
+struct size_tt : size_access_tt<dim_count,t,coord>
+{
+	typedef size_tt self;
+	typedef t value_type;
+	static size_t const __size = dim_count;
+	typedef dim_data_tt<t> data_type;
+	self() {set(0,0);}
+	self(value_type d0, value_type d1) { set(d0, d1); }
+	data_type _m_data;
+};
+
+
+
+
+template<typename t,typename coord_tn>
+struct point_tt ;
+template <typename t,typename coord_tn>
+struct point_access_tt;
+
+
+template <typename t>
+struct point_access_tt <t,xy_coord>
+{
+	typedef point_access_tt self;
+	typedef t value_type;
+	typedef dim_data_tt<t> data_type;
+	typedef point_tt<t,xy_coord> mother_type;
+	value_type& x() {return data().d0();}
+	value_type& y() {return data().d1();}
+	value_type const& x() const {return data().d0();}
+	value_type const& y() const {return data().d1();}
+	template<int i> value_type& d() {return data().d<i>();}
+	template<int i> value_type const& d() const {return data().d<i>();}
+	void set(value_type const& x,value_type const& y) {data().set(x,y);}
+	data_type const& data() const {return static_cast<mother_type const*>(this)->_m_data;}
+	data_type& data() {return static_cast<mother_type*>(this)->_m_data;}
+};
+
+template <typename t>
+struct point_access_tt <t,rc_coord>
+{
+	typedef point_access_tt self;
+	typedef t value_type;
+	typedef dim_data_tt<t> data_type;
+	typedef point_tt<t,rc_coord> mother_type;
+	value_type& r() {return data().d0();}
+	value_type& c() {return data().d1();}
+	value_type const& r() const {return data().d0();}
+	value_type const& c() const {return data().d1();}
+	template<int i> value_type& d() {return data().d<i>();}
+	template<int i> value_type const& d() const {return data().d<i>();}
+	void set(value_type const& r,value_type const& c) {data().set(r,c);}
+	data_type const& data() const {return static_cast<mother_type const*const>(this)->_m_data;}
+	data_type& data() {return static_cast<mother_type*const>(this)->_m_data;}
+};
+
+template<typename t,typename coord_tn>
+struct point_tt : point_access_tt<t,coord_tn>
+{
+	typedef point_tt self;
+	typedef coord_tn coord_type;
+	typedef t value_type;
+	typedef dim_data_tt<t> data_type;
+	typedef point_access_tt<t,coord_tn> access_t;
+	
+	self() { set(0,0); }
+	self(value_type d0,value_type d1) { access_t::set(d0,d1); }
+	data_type _m_data;
+	bool operator==(self const& p) const { return _m_point_data==p._m_point_data; }
+	bool operator!=(self const& p) const { return !operator==(p); }
+};
+typedef point_tt<int,rc_coord> rc_point_t;
+typedef point_tt<int,xy_coord> xy_piont_t;
+template<typename t,typename cd>
+point_tt<t,cd> operator +(point_tt<t,cd> const& a,point_tt<t,cd> const& b)
+{
+	return point_tt<t,cd>(a.d<0>()+b.d<0>(),a.d<1>()+b.d<1>());
+}
+template<typename t,typename cd>
+point_tt<t,cd> operator +(point_tt<t,cd> const& a, size_tt<2,t,cd> const& size)
+{
+	return point_tt<t,cd>(a.d<0>() + size.rc, a.d<1>() + size.cc);
+}
+
+typedef point_tt<int,rc_coord> rc_point_t;
+
+template <typename t,typename coord_tn>
+struct rect_tt
+{
+	typedef rect_tt self;
+	typedef coord_tn coord_type;
+	typedef point_tt<t,coord_type> point_type;
+	typedef size_tt<2,t,coord_type> size_type;
+	self() {}
+	self(point_type const& p): p(p) {}
+	self(size_type const& s): s(s) {}
+	self(point_type const& p,size_type const& s): p(p),s(s) {}
+	self(point_type const& p,int l0,int l1): p(p),s(l0,l1) {}
+	self(int v0,int v1,int l0,int l1): p(v0,v1),s(l0,l1) {}
+	
+	void set(point_type const& p) {this->p=p;}
+	void set(size_type const& s) {this->s=s;}
+	void set(point_type const& p,size_type const& s) {this->p=p;this->s=s;}
+	void set(point_type const& p,size_t d0,size_t d1) {this->p=p;s.set(d0,d1);}
+	void set(int v0,int v1,int l0,int l1) {p.set(v0,v1),s.set(l0,l1);}
+
+	int left() const { return p.d<0>(); }
+	int right() const { return left()+width(); }
+	int top() const { return p.d<1>(); }
+	int bottom() const { return top()+height(); }
+	size_t width() const { return s.d0(); }
+	size_t height() const { return s.d1(); }
+	point_type left_top() const { return p; }
+	point_type left_bottom() const { return point_type(left(),bottom()); }
+	point_type right_top() const { return point_type(right(),top()); }
+	point_type right_bottom() const { return point_type(right(),bottom()); }
+	bool is_empty() const { return s.is_empty(); }
+	point_type p;
+	size_type s;
+};
+
+typedef rect_tt<int,rc_coord> rc_rect_t;
 
 
 template <typename t>
@@ -138,6 +268,8 @@ struct mem_buffer
 		return *this;
 	}
 };
+#if 0
+
 template <typename t,typename buffer>
 struct matrix_tt
 {
@@ -366,3 +498,4 @@ matrix get_transposed(matrix const& m)
 	}
 	return rb;
 }
+#endif

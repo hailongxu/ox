@@ -143,7 +143,7 @@ struct app
 	ibox_generator _m_ibox_generator;
 	tetris_credit_calculate _m_credit_calculate;
 	credit_info _m_credit_info;
-	started_d on_started;
+	action_d on_started;
 
 	self(): _m_box_view_list(_m_drive), _m_board_part_view(_m_drive._m_tetris_core_data._m_board.access())
 		, _m_ui_board(*_m_console), _m_ui_preview(*_m_console), _m_ui_information(*_m_console)
