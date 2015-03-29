@@ -61,6 +61,8 @@ struct size_access_tt <dim_count,t,rc_coord>
 	
 	value_type& cc() {return data().d0();}
 	value_type& rc() {return data().d1();}
+	value_type const& cc() const {return data().d0();}
+	value_type const& rc() const {return data().d1();}
 	template<int i> value_type& d() {return data().d<i>();}
 	template<int i> value_type const& d() const {return data().d<i>();}
 	void set(value_type const& x,value_type const& y) {data().set(x,y);}
@@ -80,6 +82,8 @@ struct size_access_tt <dim_count,t,xy_coord>
 
 	value_type& xs() {return data().d0();}
 	value_type& ys() {return  data().d1();}
+	value_type const& xs() const {return data().d0();}
+	value_type const& ys() const {return data().d1();}
 	template<int i> value_type& d() {return data().d<i>();}
 	template<int i> value_type const& d() const {return data().d<i>();}
 	void set(value_type const& x,value_type const& y) {data().set(x,y);}
@@ -158,7 +162,7 @@ struct point_tt : point_access_tt<t,coord_tn>
 	self() { set(0,0); }
 	self(value_type d0,value_type d1) { access_t::set(d0,d1); }
 	data_type _m_data;
-	bool operator==(self const& p) const { return _m_point_data==p._m_point_data; }
+	bool operator==(self const& p) const { return _m_data==p._m_data; }
 	bool operator!=(self const& p) const { return !operator==(p); }
 };
 typedef point_tt<int,rc_coord> rc_point_t;
@@ -268,14 +272,18 @@ struct mem_buffer
 		return *this;
 	}
 };
-#if 0
 
-template <typename t,typename buffer>
+template <typename t,typename buffer=mem_buffer<t>>
 struct matrix_tt
 {
+	typedef matrix_tt self;
+	typedef size_tt<2,int,rc_coord> ssize_t;
+	typedef point_tt<int,rc_coord> point_t;
+	typedef rect_tt<int,rc_coord> rect_t;
+
 	typedef t value_type;
-	matrix_tt() {}
-	matrix_tt(size_t rc,size_t cc)
+	self() {}
+	self(size_t rc,size_t cc)
 	{
 		resize(rc,cc);
 	}
@@ -314,7 +322,7 @@ struct matrix_tt
 	{
 		point_t p = rect.p;
 		point_t q;
-		matrix_tt m(rect.s.rc,rect.s.cc);
+		matrix_tt m(rect.s.rc(),rect.s.cc());
 		for (;q.r<rect.s.rc;++q.r,++p.r)
 		{
 			q.c=0; p.c=rect.p.c;
@@ -323,14 +331,14 @@ struct matrix_tt
 		}
 		return m;
 	}
-	ssize2_t size() const {return _m_size;}
-	size_t rc() const {return _m_size.rc;}
-	size_t cc() const {return _m_size.cc;}
-	void set_rc(size_t rc) {_m_size.rc=rc;_m_buffer.resize(_m_size.length());}
-	void set_cc(size_t cc) {_m_size.cc=cc;_m_buffer.resize(_m_size.length());}
+	ssize_t size() const {return _m_size;}
+	size_t rc() const {return _m_size.rc();}
+	size_t cc() const {return _m_size.cc();}
+	void set_rc(size_t rc) {_m_size.rc()=rc;_m_buffer.resize(_m_size.length());}
+	void set_cc(size_t cc) {_m_size.cc()=cc;_m_buffer.resize(_m_size.length());}
 	void set_rcc(size_t rc,size_t cc) {_m_size.set(rc,cc);_m_buffer.resize(_m_size.length());}
-	size_t width() const {return _m_size.cc;}
-	size_t height() const {return _m_size.rc;}
+	size_t width() const {return _m_size.cc();}
+	size_t height() const {return _m_size.rc();}
 	value_type get(point_t const& p) const {return ref(p);}
 	value_type get(size_t r,size_t c) const {return ref(r,c);}
 	void set(size_t r,size_t c,value_type v) {ref(r,c) = v;}
@@ -361,57 +369,58 @@ struct matrix_tt
 	}
 	value_type& ref(point_t const& p)
 	{
-		assert(p.r<_m_size.rc && p.c<_m_size.cc);
-		return _m_buffer[p.r*_m_size.cc+p.c];
+		assert(p.r()<_m_size.rc() && p.c()<_m_size.cc());
+		return _m_buffer[p.r()*_m_size.cc()+p.c()];
 	}
 	value_type const& ref(point_t const& p) const
 	{
-		assert(p.r<_m_size.rc && p.c<_m_size.cc);
-		return _m_buffer[p.r*_m_size.cc+p.c];
+		assert(p.r()<_m_size.rc() && p.c()<_m_size.cc());
+		return _m_buffer[p.r()*_m_size.cc()+p.c()];
 	}
 	value_type& ref(size_t r,size_t c) { return ref(point_t(r,c)); }
 	value_type const& ref(size_t r,size_t c) const { return ref(point_t(r,c)); }
 	/// actual there has 2 directions (r,c)
-	void forward_copy(point_t const& from, point_t const& to,ssize2_t const& size)
+	void forward_copy(point_t const& from, point_t const& to,ssize_t const& size)
 	{
 		if (from == to) return;
 		point_t f = from;
 		point_t t = to;
-		point_t fe(from.r+size.rc, from.c + size.cc);
-		for (; f.r < fe.r; ++f.r, ++t.r)
-			forward_copy_hor(f, t, size.cc);
+		point_t fe(from.r()+size.rc(), from.c() + size.cc());
+		for (; f.r() < fe.r(); ++f.r(), ++t.r())
+			forward_copy_hor(f, t, size.cc());
 	}
-	void revert_copy(point_t const& from, point_t const& to,ssize2_t const& size)
+	void revert_copy(point_t const& from, point_t const& to,ssize_t const& size)
 	{
 		if (from == to) return;
-		point_t f (from.r + size.rc - 1,from.c);
-		point_t t (to.r+size.rc-1,to.c);
-		int rend = from.r-1;
-		for (; f.r > rend; --f.r, --t.r)
-			revert_copy_hor(f, t, size.cc);
+		point_t f (from.r() + size.rc() - 1,from.c());
+		point_t t (to.r()+size.rc()-1,to.c());
+		int rend = from.r()-1;
+		for (; f.r() > rend; --f.r(), --t.r())
+			revert_copy_hor(f, t, size.cc());
 	}
 	void forward_copy_hor(point_t const& from, point_t const& to, int size)
 	{
 		if (from == to) return;
 		point_t f = from;
 		point_t t = to;
-		int cend = from.c + size;
-		for (; f.c<fe.c; ++f.c,++t.c)
+		int cend = from.c() + size;
+		for (; f.c()<cend; ++f.c(),++t.c())
 			ref(t) = ref(f);
 	}
 	void revert_copy_hor(point_t const& from, point_t const& to, int size)
 	{
 		if (from == to) return;
-		point_t f {from.r,from.c+size-1};
-		point_t t {to.r, to.c + size - 1};
-		point_t fe(from.r, from.c-1);
-		for (; f.c>fe.c; --f.c, --t.c)
+		point_t f (from.r(),from.c()+size-1);
+		point_t t (to.r(), to.c() + size - 1);
+		point_t fe(from.r(), from.c()-1);
+		for (; f.c()>fe.c(); --f.c(), --t.c())
 			ref(t) = ref(f);
 	}
 private:
 	buffer _m_buffer;
-	ssize2_t _m_size;
+	ssize_t _m_size;
 };
+#if 0
 
 template <typename matrix_tn>
 struct matrix_access;
