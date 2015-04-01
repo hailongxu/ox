@@ -205,8 +205,8 @@ struct rect_tt
 	int right() const { return left()+width(); }
 	int top() const { return p.d<1>(); }
 	int bottom() const { return top()+height(); }
-	size_t width() const { return s.d0(); }
-	size_t height() const { return s.d1(); }
+	size_t width() const { return s.d<1>(); }
+	size_t height() const { return s.d<1>(); }
 	point_type left_top() const { return p; }
 	point_type left_bottom() const { return point_type(left(),bottom()); }
 	point_type right_top() const { return point_type(right(),top()); }
@@ -287,68 +287,168 @@ struct matrix_trait_helper
 	typedef t value_type;
 };
 
+template <typename t,typename coord>
+struct coord_conv_null
+{
+	typedef point_tt<t,coord> point_t;
+	typedef rect_tt<t,coord> rect_t;
+	point_t const& get(point_t const& p) {return p;}
+	rect_t const& get(rect_t const& r) {return r;}
+	point_t& get(point_t& p) {return p;}
+	rect_t& get(rect_t& r) {return r;}
+};
 
-
-
-
-template <typename t,typename buffer,typename tag>
-struct matrix_access_tt;
+template <typename t,typename coord>
+struct coord_conv_translational
+{
+	typedef coord_conv_translational self;
+	typedef point_tt<t,coord> point_t;
+	typedef rect_tt<t,coord> rect_t;
+	self() {}
+	self(point_t const& o) : _m_origin(o) {}
+	point_t get(point_t const& p) {return _m_origin+p;}
+	rect_t get(rect_t const& r) {return rect_t(get(r.p),r.s);}
+	point_t& get(point_t& p) {p+=_m_origin;return p;}
+	rect_t& get(rect_t& r) {r.p+=_m_origin;return r;}
+	point_t _m_origin;
+};
 
 template <typename t,typename buffer=mem_buffer<t>>
 struct matrix_tt;
 
+template <typename t,typename buffer,typename tag>
+struct matrix_access_method_tt;
+
+template <typename matrix_tn>
+struct matrix_access_tt;
+
+
+template <typename t,typename buffer,typename tag>
+struct get_derived_type;
+
 template <typename t,typename buffer>
-matrix_tt<t,buffer>* get_matrix(matrix_access_tt<t,buffer,hard_bind_tag>* access)
+struct get_derived_type <t,buffer,hard_bind_tag>
+{
+	typedef matrix_tt<t,buffer> type;
+};
+
+template <typename t,typename buffer>
+struct get_derived_type <t,buffer,soft_bind_tag>
+{
+	typedef matrix_access_tt<matrix_tt<t,buffer>> type;
+};
+
+
+template <typename t,typename buffer>
+matrix_tt<t,buffer>* get_matrix(matrix_access_method_tt<t,buffer,hard_bind_tag>* access)
 {
 	typedef matrix_tt<t,buffer> matrix_type;
 	matrix_type* m = static_cast<matrix_type*>(access);
 	return m;
 }
 template <typename t,typename buffer>
-matrix_tt<t,buffer> const* get_matrix(matrix_access_tt<t,buffer,hard_bind_tag> const* access)
+matrix_tt<t,buffer> const* get_matrix(matrix_access_method_tt<t,buffer,hard_bind_tag> const* access)
 {
 	typedef matrix_tt<t,buffer> matrix_type;
 	matrix_type const* m = static_cast<matrix_type const*>(access);
 	return m;
 }
 template <typename t,typename buffer>
-matrix_tt<t,buffer>* get_matrix(matrix_access_tt<t,buffer,soft_bind_tag>* access)
-{
-	return access->_m_matrix;
-}
-template <typename t,typename buffer>
-matrix_tt<t,buffer> const* get_matrix(matrix_access_tt<t,buffer,soft_bind_tag> const* access)
-{
-	return access->_m_matrix;
-}
-
-
-template <typename t,typename buffer>
-struct matrix_access_tt <t,buffer,hard_bind_tag>
+matrix_tt<t,buffer>* get_matrix(matrix_access_method_tt<t,buffer,soft_bind_tag>* access)
 {
 	typedef matrix_tt<t,buffer> matrix_type;
-	typedef hard_bind_tag access_tag;
+	typedef matrix_access_tt<matrix_type> matrix_access_t;
+	matrix_access_t* access = static_cast<matrix_type*>(access);
+	return access->_m_matrix;
+}
+template <typename t,typename buffer>
+matrix_tt<t,buffer> const* get_matrix(matrix_access_method_tt<t,buffer,soft_bind_tag> const* access)
+{
+	typedef matrix_tt<t,buffer> matrix_type;
+	typedef matrix_access_tt<matrix_type> matrix_access_t;
+	matrix_access_t const* access = static_cast<matrix_type const*>(access);
+	return access->_m_matrix;
+}
+template <typename t,typename buffer>
+typename matrix_tt<t,buffer>::coord_conv_t get_coord(matrix_access_method_tt<t,buffer,hard_bind_tag>* access)
+{
+	return get_matrix(access)->coord_conv();
+}
+template <typename t,typename buffer>
+typename matrix_tt<t,buffer>::coord_conv_t get_coord(matrix_access_method_tt<t,buffer,hard_bind_tag> const* access)
+{
+	return get_matrix(access)->coord_conv();
+}
+
+
+template <typename t,typename buffer,typename bind_tag>
+struct matrix_access_method_tt
+{
+	typedef matrix_tt<t,buffer> matrix_type;
+	typedef bind_tag access_tag;
 	typedef typename matrix_trait_helper<t>::value_type value_type;
 	typedef typename matrix_trait_helper<t>::rect_t rect_t;
 	typedef typename matrix_trait_helper<t>::ssize_t ssize_t;
 	typedef typename matrix_trait_helper<t>::point_t point_t;
 
+	/// no coord
+	ssize_t size() const {matrix_type const* m = get_matrix(this);return m->_m_size;}
+	size_t rc() const {return size().rc();}
+	size_t cc() const {return size().cc();}
+	void set_rc(size_t rc) {matrix_type* m = get_matrix(this);m->_m_size.rc()=rc;m->_m_buffer.resize(m->_m_size.length());}
+	void set_cc(size_t cc) {matrix_type* m = get_matrix(this);m->_m_size.cc()=cc;m->_m_buffer.resize(m->_m_size.length());}
+	void set_rcc(size_t rc,size_t cc) {resize(rc,cc);}
+	size_t width() const {return cc();}
+	size_t height() const {return rc();}
 	void resize(size_t rc,size_t cc)
 	{
 		matrix_type* m = get_matrix(this);
 		m->_m_size.set(rc,cc);
 		m->_m_buffer.resize(m->_m_size.length());
 	}
-	void fill(value_type const& v)
+
+	point_t pointed(point_t const& p) const {return get_coord(this).get(p);}
+	rect_t rected(rect_t const& rect) const { return get_coord(this).get(rect); }
+	point_t pointed(int r,int c) { return get_coord(this).get(point_t(r,c)); }
+
+	void fill(value_type const& v) {do_fill(v);}
+	void fill(rect_t const& r,value_type const& v) {do_fill(rected(r),v);}
+	void fill_row_by_row(value_type const* v,size_t size) {do_fill_row_by_row(v,size);}
+	matrix_type get(rect_t const& rect) const { return do_get(rected(rect)); }
+	value_type get(point_t const& p) const { return do_ref(pointed(p)); }
+	value_type get(size_t r,size_t c) const { return get(point_t(r,c)); }
+	void set(int r,int c,value_type v) { set(point_t(r,c),v); }
+	void set(point_t const& p,value_type v) { do_ref(pointed(p)) = v; }
+
+	void set_h(size_t r,size_t c,size_t size,value_type const& v) { set_h(point_t(r,c),size,v); }
+	void set_h(point_t const& p,size_t size,value_type const& v) { do_set_h(pointed(p),size,v); }
+	void set_h(size_t r,size_t c,size_t size,value_type const* p) { set_h(point_t(r,c),size,p); }
+	void set_h(point_t const& p,size_t size,value_type const* v) { do_set_h(pointed(p),size,v); }
+	void set_v(size_t r,size_t c,size_t size,value_type const& v) {set_v(point_t(r,c),size,v);}
+	void set_v(point_t const& p,size_t size,value_type const& v) {do_set_v(pointed(p),size,v);}
+	void set(rect_t const& rect,value_type const& v) { do_set(rected(rect),v); }
+	value_type& ref(point_t const& p) { return do_ref(pointed(p)); }
+	value_type& ref(size_t r,size_t c) { return ref(point_t(r,c)); }
+	value_type const& ref(point_t const& p) const { return do_ref(pointed(p)); }
+	value_type const& ref(size_t r,size_t c) const { return ref(point_t(r,c)); }
+	/// actual there has 2 directions (r,c)
+	void forward_copy(point_t const& from,point_t const& to,ssize_t const& size) { do_forward_copy(pointed(from),pointed(to),size); }
+	void revert_copy(point_t const& from,point_t const& to,ssize_t const& size) { do_revert_copy(pointed(from),pointed(to),size); }
+	void forward_copy_hor(point_t const& from,point_t const& to,int size) { do_forward_copy_hor(pointed(from),pointed(to),size); }
+	void revert_copy_hor(point_t const& from,point_t const& to,int size) { do_revert_copy_hor(pointed(from),pointed(to),size); }
+
+
+private:
+	void do_fill(value_type const& v)
 	{
 		matrix_type* m = get_matrix(this);
 		typedef typename matrix_type::size_type size_type;
 		size_type const& size = m->_m_size;
 		for (size_t i=0;i<size.rc();++i)
 			for (size_t j=0;j<size.cc();++j)
-				set(i,j,v);
+				do_set(i,j,v);
 	}
-	void fill_row_by_row(value_type const* v,size_t size)
+	void do_fill_row_by_row(value_type const* v,size_t size)
 	{
 		matrix_type* m = get_matrix<matrix_type>(this);
 		typedef typename matrix_type::size_type size_type;
@@ -358,136 +458,130 @@ struct matrix_access_tt <t,buffer,hard_bind_tag>
 			for (size_t j=0;j<msize.cc();++j)
 			{
 				if (++n>size) return;
-				set(i,j,*v++);
+				do_set(i,j,*v++);
 			}
 	}
-	void fill(rect_t const& r, value_type const& v)
+	void do_fill(rect_t const& r, value_type const& v)
 	{
+		//rect_t const& r = get_coord(this).get(rect);
 		int bottom = r.bottom();
 		int top = r.top();
 		int right = r.right();
 		int left = r.left();
 		for (size_t i=top;i<bottom;++i)
 			for (size_t j=left;j<right;++j)
-				set(i,j,v);
+				do_set(i,j,v);
 	}
-	matrix_type get(rect_t const& rect) const
+	matrix_type do_get(rect_t const& rect) const
 	{
-		point_t p = rect.p;
+		rect_t const& r = get_coord(this).get(rect);
+		point_t p = r.p;
 		point_t q;
-		matrix_type m(rect.s.rc(),rect.s.cc());
-		for (;q.r<rect.s.rc();++q.r(),++p.r())
+		matrix_type m(r.s.rc(),r.s.cc());
+		for (;q.r<r.s.rc();++q.r(),++p.r())
 		{
-			q.c()=0; p.c()=rect.p.c();
-			for (;q.c()<rect.s.cc();++q.c(),++p.c())
-				m.set(q,get(p));
+			q.c()=0; p.c()=r.p.c();
+			for (;q.c()<r.s.cc();++q.c(),++p.c())
+				m.do_set(q,do_get(p));
 		}
 		return m;
 	}
-	ssize_t size() const {matrix_type const* m = get_matrix(this);return m->_m_size;}
-	size_t rc() const {return size().rc();}
-	size_t cc() const {return size().cc();}
-	void set_rc(size_t rc) {matrix_type* m = get_matrix(this);m->_m_size.rc()=rc;m->_m_buffer.resize(m->_m_size.length());}
-	void set_cc(size_t cc) {matrix_type* m = get_matrix(this);m->_m_size.cc()=cc;m->_m_buffer.resize(m->_m_size.length());}
-	void set_rcc(size_t rc,size_t cc) {resize(rc,cc);}
-	size_t width() const {return cc();}
-	size_t height() const {return rc();}
-	value_type get(point_t const& p) const {return ref(p);}
-	value_type get(size_t r,size_t c) const {return ref(r,c);}
-	void set(size_t r,size_t c,value_type v) {ref(r,c) = v;}
-	void set(point_t const& p,value_type v) {ref(p) = v;}
 
-	void set_h(size_t r,size_t c,size_t size, value_type const& v) {set_h(point_t(r,c),size,v);}
-	void set_h(point_t const& p, size_t size, value_type const& v)
+	void do_set_h(size_t r,size_t c,size_t size, value_type const& v) {do_set_h(point_t(r,c),size,v);}
+	void do_set_h(point_t const& p, size_t size, value_type const& v)
 	{
 		for (size_t i=0;i<size;++i) set(p+point_t(0,i),v);
 	}
-	void set_h(size_t r, size_t c, size_t size, value_type const* p) {set_h(point_t(r,c),size,p);}
-	void set_h(point_t const& p, size_t size, value_type const* v)	{
-		for (size_t i=0;i<size;++i) set(p+point_t(0,i),*v++);
+	void do_set_h(size_t r, size_t c, size_t size, value_type const* p) {do_set_h(point_t(r,c),size,p);}
+	void do_set_h(point_t const& p, size_t size, value_type const* v)
+	{
+		for (size_t i=0;i<size;++i) do_set(p+point_t(0,i),*v++);
 	}
 
-	void set_v(size_t r, size_t c, size_t size, value_type const& v)
+	void do_set_v(size_t r, size_t c, size_t size, value_type const& v)
 	{
-		set_v(point_t(r,c),size,v);
+		do_set_v(point_t(r,c),size,v);
 	}
-	void set_v(point_t const& p, size_t size, value_type const& v)
+	void do_set_v(point_t const& p, size_t size, value_type const& v)
 	{
-		for (size_t i=0;i<size;++i) set(p+point_t(i,0),v);
+		for (size_t i=0;i<size;++i) do_set(p+point_t(i,0),v);
 	}
-	void set(rect_t const& rect,value_type const& v)
+	void do_set(rect_t const& rect,value_type const& v)
 	{
 		for (size_t i=0;i<rect.s.rc();++i)
-			set_h(rect.p+point_t(i,0),rect.s.cc(),v);
+			do_set_h(rect.p+point_t(i,0),rect.s.cc(),v);
 	}
-	value_type& ref(point_t const& p)
-	{
-		matrix_type* m = get_matrix(this);
-		ssize_t const& size = m->_m_size;
-		assert(p.r()<size.rc() && p.c()<size.cc());
-		return m->_m_buffer[p.r()*size.cc()+p.c()];
-	}
-	value_type const& ref(point_t const& p) const
-	{
-		matrix_type* m = get_matrix(this);
-		ssize_t const& size = m->_m_size;
-		assert(p.r()<size.rc() && p.c()<size.cc());
-		return m->_m_buffer[p.r()*size.cc()+p.c()];
-	}
-	value_type& ref(size_t r,size_t c) { return ref(point_t(r,c)); }
-	value_type const& ref(size_t r,size_t c) const { return ref(point_t(r,c)); }
 
 	/// actual there has 2 directions (r,c)
-	void forward_copy(point_t const& from, point_t const& to,ssize_t const& size)
+	void do_forward_copy(point_t const& from, point_t const& to,ssize_t const& size)
 	{
 		if (from == to) return;
 		point_t f = from;
 		point_t t = to;
 		point_t fe(from.r()+size.rc(), from.c() + size.cc());
 		for (; f.r() < fe.r(); ++f.r(), ++t.r())
-			forward_copy_hor(f, t, size.cc());
+			do_forward_copy_hor(f, t, size.cc());
 	}
-	void revert_copy(point_t const& from, point_t const& to,ssize_t const& size)
+	void do_revert_copy(point_t const& from, point_t const& to,ssize_t const& size)
 	{
 		if (from == to) return;
 		point_t f (from.r() + size.rc() - 1,from.c());
 		point_t t (to.r()+size.rc()-1,to.c());
 		int rend = from.r()-1;
 		for (; f.r() > rend; --f.r(), --t.r())
-			revert_copy_hor(f, t, size.cc());
+			do_revert_copy_hor(f, t, size.cc());
 	}
-	void forward_copy_hor(point_t const& from, point_t const& to, int size)
+	void do_forward_copy_hor(point_t const& from, point_t const& to, int size)
 	{
 		if (from == to) return;
 		point_t f = from;
 		point_t t = to;
 		int cend = from.c() + size;
 		for (; f.c()<cend; ++f.c(),++t.c())
-			ref(t) = ref(f);
+			do_ref(t) = do_ref(f);
 	}
-	void revert_copy_hor(point_t const& from, point_t const& to, int size)
+	void do_revert_copy_hor(point_t const& from, point_t const& to, int size)
 	{
 		if (from == to) return;
 		point_t f (from.r(),from.c()+size-1);
 		point_t t (to.r(), to.c() + size - 1);
 		point_t fe(from.r(), from.c()-1);
 		for (; f.c()>fe.c(); --f.c(), --t.c())
-			ref(t) = ref(f);
+			do_ref(t) = do_ref(f);
 	}
-//private:
-//	//ssize_t& size() {matrix_type* m = get_matrix<matrix_type>(this);return m->_m_size;}
 
+	value_type do_get(point_t const& p) const {return do_ref(p);}
+	value_type do_get(size_t r,size_t c) const {return do_ref(r,c);}
+	void do_set(size_t r,size_t c,value_type v) {do_ref(r,c) = v;}
+	void do_set(point_t const& p,value_type v) {do_ref(p) = v;}
+	value_type& do_ref(point_t const& p)
+	{
+		matrix_type* m = get_matrix(this);
+		ssize_t const& size = m->_m_size;
+		assert(p.r()<size.rc() && p.c()<size.cc());
+		return m->_m_buffer[p.r()*size.cc()+p.c()];
+	}
+	value_type const& do_ref(point_t const& p) const
+	{
+		matrix_type* m = get_matrix(this);
+		ssize_t const& size = m->_m_size;
+		assert(p.r()<size.rc() && p.c()<size.cc());
+		return m->_m_buffer[p.r()*size.cc()+p.c()];
+	}
+	value_type& do_ref(size_t r,size_t c) { return do_ref(point_t(r,c)); }
+	value_type const& do_ref(size_t r,size_t c) const { return do_ref(point_t(r,c)); }
 };
 
 
 
 template <typename t,typename buffer>
-struct matrix_tt : matrix_access_tt<t,buffer,hard_bind_tag>
+struct matrix_tt : matrix_access_method_tt<t,buffer,hard_bind_tag>
 {
-	friend matrix_access_tt<t,buffer,hard_bind_tag>;
+	friend matrix_access_method_tt<t,buffer,hard_bind_tag>;
 
 	typedef matrix_tt self;
 	typedef buffer buffer_type;
+	typedef coord_conv_null<int,rc_coord> coord_conv_t;
 	typedef typename matrix_trait_helper<t>::value_type value_type;
 	typedef typename matrix_trait_helper<t>::rect_t rect_t;
 	typedef typename matrix_trait_helper<t>::ssize_t ssize_t;
@@ -498,76 +592,82 @@ struct matrix_tt : matrix_access_tt<t,buffer,hard_bind_tag>
 	{
 		resize(rc,cc);
 	}
+	coord_conv_t coord_conv() const {return coord_conv();}
 private:
 	buffer_type _m_buffer;
 	ssize_t _m_size;
 };
 
 
-template <typename matrix_tn>
-struct matrix_access;
 
 
 template <typename t,typename buffer>
-struct matrix_access <matrix_tt<t,buffer>>
+struct matrix_access_tt <matrix_tt<t,buffer>>
+	: matrix_access_method_tt<t,buffer,soft_bind_tag>
 {
-	typedef matrix_access self;
+	typedef matrix_access_tt self;
 	typedef matrix_tt<t,buffer> matrix_t;
 	typedef t value_type;
 	typedef point_tt<int,rc_coord> point_t;
 	typedef rect_tt<int,rc_coord> rect_t;
 	typedef size_tt<2,int,rc_coord> ssize_t;
+	typedef coord_conv_translational<int,rc_coord> coord_conv_t;
 	matrix_t* _m_matrix;
 	point_t _m_origin;
+	coord_conv_t _m_coord_conv;
 	self(): _m_matrix(0) {}
 	self(matrix_t* matrix): _m_matrix(matrix) {}
 	self(matrix_t& matrix): _m_matrix(&matrix) {}
 	self(matrix_t* matrix,point_t const& origin): _m_matrix(matrix),_m_origin(origin) {}
 	self(matrix_t& matrix,point_t const& origin): _m_matrix(&matrix),_m_origin(origin) {}
-	void set(matrix_t* m,point_t const& origin) { _m_matrix=m;_m_origin=origin; }
-	void set(matrix_t& m,point_t const& origin) { _m_matrix=&m;_m_origin=origin; }
-	matrix_t& matrix() { return *_m_matrix; }
-	matrix_t const& matrix() const { return *_m_matrix; }
-	point_t pointed(point_t const& p) const { return p+_m_origin; }
-	rect_t rected(rect_t const& rect) const { return rect_t(pointed(rect.p),rect.s); }
-	point_t pointed(int r,int c) { return point_t(r,c)+_m_origin; }
+	coord_conv_t coord_conv() const {return _m_coord_conv;}
 
-	size_t rc() const { return _m_matrix->rc(); }
-	size_t cc() const { return _m_matrix->cc(); }
-	point_t const& offset() const { return _m_origin; }
-	//int offset_r() const { return _m_origin.r; }
-	//int offset_c() const { return _m_origin.c; }
 
-	void fill(value_type const& v) {_m_matrix->fill(v);}
-	void fill(rect_t const& r,value_type const& v) {_m_matrix->fill(rected(r),v);}
-	void fill_row_by_row(value_type const* v,size_t size) {_m_matrix->fill_row_by_row(v,size);}
-	matrix_t get(rect_t const& rect) const { return _m_matrix->get(rected(rect)); }
-	void set_rc(size_t rc) { _m_matrix->set_rc(rc); }
-	void set_cc(size_t cc) { _m_matrix->set_cc(cc); }
-	void set_rcc(size_t rc,size_t cc) { _m_matrix->set_rcc(rc,cc); }
-	size_t width() const { return _m_matrix->width(); }
-	size_t height() const { return _m_matrix->height(); }
-	value_type get(point_t const& p) const { return _m_matrix->ref(pointed(p)); }
-	value_type get(size_t r,size_t c) const { return get(point_t(r,c)); }
-	void set(int r,int c,value_type v) { set(point_t(r,c),v); }
-	void set(point_t const& p,value_type v) { _m_matrix->ref(pointed(p)) = v; }
+	//void set(matrix_t* m,point_t const& origin) { _m_matrix=m;_m_origin=origin; }
+	//void set(matrix_t& m,point_t const& origin) { _m_matrix=&m;_m_origin=origin; }
+	//matrix_t& matrix() { return *_m_matrix; }
+	//matrix_t const& matrix() const { return *_m_matrix; }
+	//point_t pointed(point_t const& p) const { return p+_m_origin; }
+	//rect_t rected(rect_t const& rect) const { return rect_t(pointed(rect.p),rect.s); }
+	//point_t pointed(int r,int c) { return point_t(r,c)+_m_origin; }
+	//coord_conv_t const& coord_conv() {return _m_coord_conv;}
 
-	void set_h(size_t r,size_t c,size_t size,value_type const& v) { set_h(point_t(r,c),size,v); }
-	void set_h(point_t const& p,size_t size,value_type const& v) { _m_matrix->set_h(pointed(p),size,v); }
-	void set_h(size_t r,size_t c,size_t size,value_type const* p) { set_h(point_t(r,c),size,p); }
-	void set_h(point_t const& p,size_t size,value_type const* v) { _m_matrix->set_h(pointed(p),size,v); }
-	void set_v(size_t r,size_t c,size_t size,value_type const& v) {set_v(point_t(r,c),size,v);}
-	void set_v(point_t const& p,size_t size,value_type const& v) {_m_matrix->set_v(pointed(p),size,v);}
-	void set(rect_t const& rect,value_type const& v) { _m_matrix->set(rected(rect),v); }
-	value_type& ref(point_t const& p) { return _m_matrix->ref(pointed(p)); }
-	value_type& ref(size_t r,size_t c) { return ref(point_t(r,c)); }
-	value_type const& ref(point_t const& p) const { return _m_matrix->ref(pointed(p)); }
-	value_type const& ref(size_t r,size_t c) const { return ref(point_t(r,c)); }
-	/// actual there has 2 directions (r,c)
-	void forward_copy(point_t const& from,point_t const& to,ssize_t const& size) { _m_matrix->forward_copy(pointed(from),pointed(to),size); }
-	void revert_copy(point_t const& from,point_t const& to,ssize_t const& size) { _m_matrix->revert_copy(pointed(from),pointed(to),size); }
-	void forward_copy_hor(point_t const& from,point_t const& to,int size) { _m_matrix->forward_copy_hor(pointed(from),pointed(to),size); }
-	void revert_copy_hor(point_t const& from,point_t const& to,int size) { _m_matrix->revert_copy_hor(pointed(from),pointed(to),size); }
+	//size_t rc() const { return _m_matrix->rc(); }
+	//size_t cc() const { return _m_matrix->cc(); }
+	//point_t const& offset() const { return _m_origin; }
+	////int offset_r() const { return _m_origin.r; }
+	////int offset_c() const { return _m_origin.c; }
+
+	//void fill(value_type const& v) {_m_matrix->fill(v);}
+	//void fill(rect_t const& r,value_type const& v) {_m_matrix->fill(rected(r),v);}
+	//void fill_row_by_row(value_type const* v,size_t size) {_m_matrix->fill_row_by_row(v,size);}
+	//matrix_t get(rect_t const& rect) const { return _m_matrix->get(rected(rect)); }
+	//void set_rc(size_t rc) { _m_matrix->set_rc(rc); }
+	//void set_cc(size_t cc) { _m_matrix->set_cc(cc); }
+	//void set_rcc(size_t rc,size_t cc) { _m_matrix->set_rcc(rc,cc); }
+	//size_t width() const { return _m_matrix->width(); }
+	//size_t height() const { return _m_matrix->height(); }
+	//value_type get(point_t const& p) const { return _m_matrix->ref(pointed(p)); }
+	//value_type get(size_t r,size_t c) const { return get(point_t(r,c)); }
+	//void set(int r,int c,value_type v) { set(point_t(r,c),v); }
+	//void set(point_t const& p,value_type v) { _m_matrix->ref(pointed(p)) = v; }
+
+	//void set_h(size_t r,size_t c,size_t size,value_type const& v) { set_h(point_t(r,c),size,v); }
+	//void set_h(point_t const& p,size_t size,value_type const& v) { _m_matrix->set_h(pointed(p),size,v); }
+	//void set_h(size_t r,size_t c,size_t size,value_type const* p) { set_h(point_t(r,c),size,p); }
+	//void set_h(point_t const& p,size_t size,value_type const* v) { _m_matrix->set_h(pointed(p),size,v); }
+	//void set_v(size_t r,size_t c,size_t size,value_type const& v) {set_v(point_t(r,c),size,v);}
+	//void set_v(point_t const& p,size_t size,value_type const& v) {_m_matrix->set_v(pointed(p),size,v);}
+	//void set(rect_t const& rect,value_type const& v) { _m_matrix->set(rected(rect),v); }
+	//value_type& ref(point_t const& p) { return _m_matrix->ref(pointed(p)); }
+	//value_type& ref(size_t r,size_t c) { return ref(point_t(r,c)); }
+	//value_type const& ref(point_t const& p) const { return _m_matrix->ref(pointed(p)); }
+	//value_type const& ref(size_t r,size_t c) const { return ref(point_t(r,c)); }
+	///// actual there has 2 directions (r,c)
+	//void forward_copy(point_t const& from,point_t const& to,ssize_t const& size) { _m_matrix->forward_copy(pointed(from),pointed(to),size); }
+	//void revert_copy(point_t const& from,point_t const& to,ssize_t const& size) { _m_matrix->revert_copy(pointed(from),pointed(to),size); }
+	//void forward_copy_hor(point_t const& from,point_t const& to,int size) { _m_matrix->forward_copy_hor(pointed(from),pointed(to),size); }
+	//void revert_copy_hor(point_t const& from,point_t const& to,int size) { _m_matrix->revert_copy_hor(pointed(from),pointed(to),size); }
 };
 
 
