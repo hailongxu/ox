@@ -27,44 +27,44 @@ struct win_console
 		assert(_m_hin != INVALID_HANDLE_VALUE);
 		assert(_m_hout != INVALID_HANDLE_VALUE);
 	}
-	void draw_box(rect_t const& r, char c)
+	void draw_box(rc_rect_t const& r, char c)
 	{
 		if (r.height() != 0)
 		{
 			draw_hor(r.left_top(), r.width(), c);
-			draw_hor(point_t(r.p.r+r.height()-1,r.p.c), r.width(), c);
+			draw_hor(rc_point_t(r.p.r()+r.height()-1,r.p.c()), r.width(), c);
 		}
 		if (r.width() != 0)
 		{
 			draw_ver(r.left_top(), r.height(), c);
-			draw_ver(point_t(r.p.r,r.p.c+r.width()-1), r.height(), c);
+			draw_ver(rc_point_t(r.p.r(),r.p.c()+r.width()-1), r.height(), c);
 		}
 	}
-	void draw_hor(point_t const& p, size_t len, char c)
+	void draw_hor(rc_point_t const& p, size_t len, char c)
 	{
 		for (int i = 0; i < len;++i)
-			WriteConsoleOutputCharacterA(_m_hout, &c, 1, COORD{ p.c+i, p.r }, 0);
+			WriteConsoleOutputCharacterA(_m_hout, &c, 1, COORD{ p.c()+i, p.r() }, 0);
 	}
-	void draw_ver(point_t const& p, size_t len, char c)
+	void draw_ver(rc_point_t const& p, size_t len, char c)
 	{
-		size_t bottom = p.r + len;
-		for (size_t r=p.r; r < bottom;++r)
-			WriteConsoleOutputCharacterA(_m_hout, &c, 1, COORD{ p.c,r }, 0);
+		size_t bottom = p.r() + len;
+		for (size_t r=p.r(); r < bottom;++r)
+			WriteConsoleOutputCharacterA(_m_hout, &c, 1, COORD{ p.c(),r }, 0);
 	}
-	void fill_rect(rect_t const& rect, char c)
+	void fill_rect(rc_rect_t const& rect, char c)
 	{
-		size_t bottom = rect.p.r + rect.height();
-		for (size_t r = rect.p.r; r < bottom; ++r)
-			draw_hor(point_t(r, rect.p.c), rect.width(), c);
+		size_t bottom = rect.p.r() + rect.height();
+		for (size_t r = rect.p.r(); r < bottom; ++r)
+			draw_hor(rc_point_t(r, rect.p.c()), rect.width(), c);
 	}
-	void draw_point(point_t const& p, char c)
+	void draw_point(rc_point_t const& p, char c)
 	{
 		DWORD l;
-		WriteConsoleOutputCharacterA(_m_hout, &c, 1, COORD{p.c,p.r}, &l);
+		WriteConsoleOutputCharacterA(_m_hout, &c, 1, COORD{p.c(),p.r()}, &l);
 	}
-	void draw_text(point_t const& p,char const* str,int size)
+	void draw_text(rc_point_t const& p,char const* str,int size)
 	{
-		WriteConsoleOutputCharacterA(_m_hout, str, size, COORD{p.c,p.r}, 0);
+		WriteConsoleOutputCharacterA(_m_hout, str, size, COORD{p.c(),p.r()}, 0);
 	}
 	void diable_except_keyboard(bool b)
 	{

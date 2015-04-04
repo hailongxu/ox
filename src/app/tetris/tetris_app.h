@@ -37,13 +37,13 @@ struct app
 		self(box_t const* box) : _m_box(box) {}
 		self(box_t const& box) : _m_box(&box) {}
 		box_t const* _m_box;
-		char get_value(point_t const& p)
+		char get_value(rc_point_t const& p)
 		{
 			return _m_box->get(p);
 		}
-		ssize2_t get_size()
+		rc_size_t get_size()
 		{
-			return ssize2_t(_m_box->rc(),_m_box->cc());
+			return rc_size_t(_m_box->rc(),_m_box->cc());
 		}
 		data_view_t as_view()
 		{
@@ -94,10 +94,10 @@ struct app
 		typedef board_part_view self;
 		self(box_board::access_t& access): _m_access(access)
 		{}
-		rect_t _m_rect;
+		rc_rect_t _m_rect;
 		box_board::access_t& _m_access;
-		rect_t const& rect() const {return _m_rect;}
-		void set(rect_t const& rect)
+		rc_rect_t const& rect() const {return _m_rect;}
+		void set(rc_rect_t const& rect)
 		{
 			_m_rect=rect;
 			if (_m_rect.p.r<0)
@@ -106,11 +106,11 @@ struct app
 				_m_rect.p.r = 0;
 			}
 		}
-		char get_value(point_t const& p)
+		char get_value(rc_point_t const& p)
 		{
 			return _m_access.get(_m_rect.p+p);
 		}
-		ssize2_t get_size()
+		rc_size_t get_size()
 		{
 			return _m_rect.s;
 		}
@@ -173,7 +173,7 @@ struct app
 		_m_credit_calculate.init();
 	}
 	/// 0: active, 1...: each rows
-	void on_data_changed(rect_t const* invalid,size_t size)
+	void on_data_changed(rc_rect_t const* invalid,size_t size)
 	{
 		assert(size>=1);
 		on_credit_changed(invalid+1,size-1);
@@ -185,7 +185,7 @@ struct app
 		draw_board_part(from.rect);
 		draw_box(to.ibox,to.rect.p);
 	}
-	void on_credit_changed(rect_t const* invalid,size_t size)
+	void on_credit_changed(rc_rect_t const* invalid,size_t size)
 	{
 		int this_credits = _m_credit_calculate.get(invalid,size);
 		_m_credit_info._m_sum += this_credits;
@@ -193,17 +193,17 @@ struct app
 	}
 	void on_finished()
 	{
-		rect_t user_rect = _m_drive.user_rect();
+		rc_rect_t user_rect = _m_drive.user_rect();
 		for (int r=0;r<user_rect.s.rc;++r)
 		{
 			Sleep(50);
-			_m_ui_board.draw_board(rect_t(r,0,1,user_rect.s.cc),tetris_define::front_char());
+			_m_ui_board.draw_board(rc_rect_t(r,0,1,user_rect.s.cc),tetris_define::front_char());
 		}
 		Sleep(100);
 		for (int r=0;r<user_rect.s.rc;++r)
 		{
 			Sleep(50);
-			_m_ui_board.draw_board(rect_t(r,0,1,user_rect.s.cc),tetris_define::back_char());
+			_m_ui_board.draw_board(rc_rect_t(r,0,1,user_rect.s.cc),tetris_define::back_char());
 		}
 		clear_preview();
 		clear_credit();
@@ -258,13 +258,13 @@ struct app
 	{
 		_m_ui_board.draw_board(_m_board_view);
 	}
-	void draw_board_part(rect_t const& rect)
+	void draw_board_part(rc_rect_t const& rect)
 	{
 		/// the rect maybe chipped by the user rect border
 		_m_board_part_view.set(rect);
 		_m_ui_board.draw_view(_m_board_part_view.as_view(),_m_board_part_view.rect().p);
 	}
-	void draw_box(ibox_t const& ibox,point_t const& p)
+	void draw_box(ibox_t const& ibox,rc_point_t const& p)
 	{
 		data_view_t view = _m_box_view_list.get(ibox);
 		_m_ui_board.draw_box(view,p);
@@ -276,7 +276,7 @@ struct app
 	void draw_active_in_preview()
 	{
 		data_view_t view = _m_box_view_list.get(_m_ibox_next);
-		_m_ui_preview.draw(view,point_t(0,0));
+		_m_ui_preview.draw(view,rc_point_t(0,0));
 	}
 	void draw_active_box()
 	{
@@ -294,11 +294,11 @@ struct app
 		view.value.assign(this,&self::get_board_value);
 		return view;
 	}
-	char get_board_value(point_t const& p)
+	char get_board_value(rc_point_t const& p)
 	{
 		return _m_drive._m_tetris_core_data._m_board.access().get(p);
 	}
-	ssize2_t get_board_size()
+	rc_size_t get_board_size()
 	{
 		return _m_drive._m_tetris_core_data._m_board.user_rect().rc().rect.s;
 	}

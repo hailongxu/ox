@@ -37,17 +37,17 @@ struct box_t : matrix2_t
 	//static value_type front_char() { return __front_char; }
 	void fill() {matrix_t::fill(tetris_define::__back_char);}
 	matrix_t const& matrix() const {return *this;}
-	point_t next;
-	point_t rotate_check_point[4*4];
+	rc_point_t next;
+	rc_point_t rotate_check_point[4*4];
 	
-	bool is_null(point_t const& p) const {return tetris_define::is_value_null(get(p));}
+	bool is_null(rc_point_t const& p) const {return tetris_define::is_value_null(get(p));}
 	bool is_null(size_t r,size_t c) const {return tetris_define::is_value_null(get(r,c));}
 };
 
 struct box_board
 {
 	typedef matrix2_t matrix_t;
-	typedef matrix_access<matrix_t> access_t;
+	typedef matrix_access_tt<matrix_t> access_t;
 
 	box_board()
 	{
@@ -55,25 +55,25 @@ struct box_board
 		_m_board.resize(28,18);
 		_m_access.set(_m_board,_m_user_rect.p);
 	}
-	rect_t _m_user_rect;
+	rc_rect_t _m_user_rect;
 	matrix_t _m_board;
 	access_t _m_access;
 	//matrix_t const& matrix() const {return _m_board;}
 	//matrix_t& matrix() {return _m_board;}
 	access_t& access() {return _m_access;}
-	point_t const& o() const { return _m_user_rect.p; }
+	rc_point_t const& o() const { return _m_user_rect.p; }
 	void init()
 	{
 		_m_board.set(user_rect(),'.');
-		_m_board.set(rect_t(point_t(0,4),ssize2_t(4,14)),'.');
-		_m_board.set(rect_t(point_t(0,0),ssize2_t(28,4)),'@');
-		_m_board.set(rect_t(point_t(0,14),ssize2_t(28,4)),'@');
-		_m_board.set(rect_t(point_t(24,4),ssize2_t(4,10)),'@');
+		_m_board.set(rc_rect_t(rc_point_t(0,4),rc_size_t(4,14)),'.');
+		_m_board.set(rc_rect_t(rc_point_t(0,0),rc_size_t(28,4)),'@');
+		_m_board.set(rc_rect_t(rc_point_t(0,14),rc_size_t(28,4)),'@');
+		_m_board.set(rc_rect_t(rc_point_t(24,4),rc_size_t(4,10)),'@');
 	}
-	rect_t user_rect() const {return rect_t(point_t(4,4),ssize2_t(20,10));}
+	rc_rect_t user_rect() const {return rc_rect_t(rc_point_t(4,4),rc_size_t(20,10));}
 	void revert_copy_row(size_t r1begin,size_t r2begin,size_t size)
 	{
-		_m_access.revert_copy(point_t(r1begin,0), point_t(r2begin,0), ssize2_t(size, 10));
+		_m_access.revert_copy(rc_point_t(r1begin,0), rc_point_t(r2begin,0), rc_size_t(size, 10));
 	}
 	void remove_row_with_top_down(int row)
 	{
@@ -83,7 +83,7 @@ struct box_board
 	void remove_row_with_top_down(int rbegin,int rend)
 	{
 		revert_copy_row(0,rend-rbegin,rbegin);
-		_m_access.set(rect_t(0,0,rend-rbegin,10),'.');
+		_m_access.set(rc_rect_t(0,0,rend-rbegin,10),'.');
 	}
 	void remove_row_with_top_down(row_intv_t const* row,int n)
 	{
@@ -91,13 +91,13 @@ struct box_board
 		for (int i=0;i<n;++i)
 			remove_row_with_top_down((*row).begin,(*row).end);
 	}
-	size_t get_each_row_full_list(rect_t const& rect,row_intv_t* out,int n)
+	size_t get_each_row_full_list(rc_rect_t const& rect,row_intv_t* out,int n)
 	{
 		bool is_last_full = false;
 		size_t count = 0, intv_count=0;
-		for (int r=0;r<rect.s.rc;++r)
+		for (int r=0;r<rect.s.rc();++r)
 		{
-			if (is_row_full(r+rect.p.r,rect.left(),rect.right()))
+			if (is_row_full(r+rect.p.r(),rect.left(),rect.right()))
 			{
 				assert(intv_count<n);
 				count ++;
@@ -105,7 +105,7 @@ struct box_board
 				if (!is_last_full)
 				{
 					intv_count ++;
-					row.begin = r+rect.p.r, count++;
+					row.begin = r+rect.p.r(), count++;
 					row.end = row.begin+1;
 				}
 				else
@@ -128,16 +128,16 @@ struct box_board
 	}
 	size_t get_each_row_full_list(int r1,int r2,row_intv_t* out,int n)
 	{
-		return get_each_row_full_list(rect_t(r1,0,r2-r1,_m_user_rect.s.cc),out,n);
+		return get_each_row_full_list(rc_rect_t(r1,0,r2-r1,_m_user_rect.s.cc()),out,n);
 	}
-	rect_t get_row_rect(int row)
+	rc_rect_t get_row_rect(int row)
 	{
-		return rect_t(row,0,1,_m_user_rect.s.cc);
+		return rc_rect_t(row,0,1,_m_user_rect.s.cc());
 	}
-	rect_t get_row_rect(int row_begin,int row_end)
+	rc_rect_t get_row_rect(int row_begin,int row_end)
 	{
 		assert(row_end>=row_begin);
-		return rect_t(row_begin,0,row_end-row_begin,10);
+		return rc_rect_t(row_begin,0,row_end-row_begin,10);
 	}
 };
 
@@ -278,22 +278,22 @@ struct tetris_core_data
 	}
 	boxes_t& boxes() {return _m_boxes;}
 	box_t const& box(ibox_t const& i) const { return _m_boxes.box(i); }
-	rect_t user_rect() const {return _m_board.user_rect();}
+	rc_rect_t user_rect() const {return _m_board.user_rect();}
 	template <typename t,typename bu1,typename bu2>
-	static void clear(matrix_tt<t,bu1>& md,point_t pd,matrix_tt<t,bu2> const& ms,point_t const& ps)
+	static void clear(matrix_tt<t,bu1>& md,rc_point_t pd,matrix_tt<t,bu2> const& ms,rc_point_t const& ps)
 	{
 		set(md,pd,tetris_define::back_char(),ms,ps);
 	}
 	template <typename m,typename t,typename bu2>
-	static void clear(matrix_access<m>& md,point_t pd,matrix_tt<t,bu2> const& ms,point_t const& ps)
+	static void clear(matrix_access_tt<m>& md,rc_point_t pd,matrix_tt<t,bu2> const& ms,rc_point_t const& ps)
 	{
 		set(md,pd,tetris_define::back_char(),ms,ps);
 	}
 	template <typename t,typename bu1,typename bu2>
-	static void set(matrix_tt<t,bu1>& md,point_t pd,char const& v,matrix_tt<t,bu2> const& ms,point_t const& ps)
+	static void set(matrix_tt<t,bu1>& md,rc_point_t pd,char const& v,matrix_tt<t,bu2> const& ms,rc_point_t const& ps)
 	{
-		point_t s = ps;
-		point_t d = pd;
+		rc_point_t s = ps;
+		rc_point_t d = pd;
 		for (;s.r<ms.rc();++s.r,++d.r)
 		{
 			s.c = ps.c;
@@ -304,10 +304,10 @@ struct tetris_core_data
 		}
 	}
 	template <typename m,typename t,typename bu2>
-	static void set(matrix_access<m>& md,point_t pd,char const& v,matrix_tt<t,bu2> const& ms,point_t const& ps)
+	static void set(matrix_access_tt<m>& md,rc_point_t pd,char const& v,matrix_tt<t,bu2> const& ms,rc_point_t const& ps)
 	{
-		point_t s = ps;
-		point_t d = pd;
+		rc_point_t s = ps;
+		rc_point_t d = pd;
 		for (;s.r<ms.rc();++s.r,++d.r)
 		{
 			s.c = ps.c;
@@ -318,11 +318,11 @@ struct tetris_core_data
 		}
 	}
 	template <typename m,typename t,typename bu2>
-	static void set(matrix_access<m>& md,point_t pd,matrix_tt<t,bu2> const& ms,point_t const& ps)
+	static void set(matrix_access_tt<m>& md,rc_point_t pd,matrix_tt<t,bu2> const& ms,rc_point_t const& ps)
 	{
-		typedef typename matrix_access<m>::value_type value_type;
-		point_t s = ps;
-		point_t d = pd;
+		typedef typename matrix_access_tt<m>::value_type value_type;
+		rc_point_t s = ps;
+		rc_point_t d = pd;
 		for (;s.r<ms.rc();++s.r,++d.r)
 		{
 			s.c = ps.c;
@@ -335,15 +335,15 @@ struct tetris_core_data
 			}
 		}
 	}
-	static bool is_enabled(box_t const& box,matrix_t const& matrix,point_t const& p)
+	static bool is_enabled(box_t const& box,matrix_t const& matrix,rc_point_t const& p)
 	{
 		bool ret = true;
-		point_t s = p;
-		point_t b;
-		for (;b.r<box.rc();++b.r,++s.r)
+		rc_point_t s = p;
+		rc_point_t b;
+		for (;b.r()<box.rc();++b.r(),++s.r())
 		{
-			b.c=0; s.c=p.c;
-			for (;b.c<box.cc();++b.c,++s.c)
+			b.c()=0; s.c()=p.c();
+			for (;b.c()<box.cc();++b.c(),++s.c())
 			{
 				char v = box.get(b);
 				if (tetris_define::is_value_null(v)) continue;
@@ -354,45 +354,45 @@ struct tetris_core_data
 		}
 		return ret;
 	}
-	bool is_down_enabled(box_t const& box,point_t const& p)
+	bool is_down_enabled(box_t const& box,rc_point_t const& p)
 	{
-		matrix_t m = _m_board.access().get(rect_t(p,box.rc()+1,box.cc()));
-		clear(m,point_t(0,0),box.matrix(),point_t(0,0));
-		return is_enabled(box,m,point_t(1,0));
+		matrix_t m = _m_board.access().get(rc_rect_t(p,box.rc()+1,box.cc()));
+		clear(m,rc_point_t(0,0),box.matrix(),rc_point_t(0,0));
+		return is_enabled(box,m,rc_point_t(1,0));
 	}
-	bool is_down_enabled(ibox_t const& i,point_t const& p)
+	bool is_down_enabled(ibox_t const& i,rc_point_t const& p)
 	{
 		box_t const& box = _m_boxes.box(i);
 		return is_down_enabled(box,p);
 	}
-	bool is_left_enabled(box_t const& box,point_t const& p)
+	bool is_left_enabled(box_t const& box,rc_point_t const& p)
 	{
-		matrix_t m = _m_board.access().get(rect_t(point_t(p.r,p.c-1),ssize2_t(box.rc(),box.cc()+1)));
-		clear(m,point_t(0,1),box.matrix(),point_t(0,0));
-		return is_enabled(box,m,point_t(0,0));
+		matrix_t m = _m_board.access().get(rc_rect_t(rc_point_t(p.r(),p.c()-1),rc_size_t(box.rc(),box.cc()+1)));
+		clear(m,rc_point_t(0,1),box.matrix(),rc_point_t(0,0));
+		return is_enabled(box,m,rc_point_t(0,0));
 	}
-	bool is_left_enabled(ibox_t const& i,point_t const& p)
+	bool is_left_enabled(ibox_t const& i,rc_point_t const& p)
 	{
 		box_t const& box = _m_boxes.box(i);
 		return is_left_enabled(box,p);
 	}
-	bool is_right_enabled(box_t const& box,point_t const& p)
+	bool is_right_enabled(box_t const& box,rc_point_t const& p)
 	{
-		matrix_t m = _m_board.access().get(rect_t(p,ssize2_t(box.rc(),box.cc()+1)));
-		clear(m,point_t(0,0),box.matrix(),point_t(0,0));
-		return is_enabled(box,m,point_t(0,1));
+		matrix_t m = _m_board.access().get(rc_rect_t(p,rc_size_t(box.rc(),box.cc()+1)));
+		clear(m,rc_point_t(0,0),box.matrix(),rc_point_t(0,0));
+		return is_enabled(box,m,rc_point_t(0,1));
 	}
-	bool is_right_enabled(ibox_t const& i,point_t const& p)
+	bool is_right_enabled(ibox_t const& i,rc_point_t const& p)
 	{
 		box_t const& box = _m_boxes.box(i);
 		return is_right_enabled(box,p);
 	}
 
-	static bool is_rotate_enabled(box_t const& box,access_t const& matrix,point_t const& p)
+	static bool is_rotate_enabled(box_t const& box,access_t const& matrix,rc_point_t const& p)
 	{
 		bool bret = true;
-		point_t const* check = box.rotate_check_point;
-		for (int i=0;check[i]!=point_t(-1,-1);++i)
+		rc_point_t const* check = box.rotate_check_point;
+		for (int i=0;check[i]!=rc_point_t(-1,-1);++i)
 		{
 			if (!tetris_define::is_value_null(matrix.get(p+check[i])))
 			{
@@ -402,49 +402,49 @@ struct tetris_core_data
 		}
 		return bret;
 	}
-	bool is_rotate_enabled(ibox_t const& i,point_t const& p)
+	bool is_rotate_enabled(ibox_t const& i,rc_point_t const& p)
 	{
 		box_t const& box = _m_boxes.box(i);
 		return is_rotate_enabled(box,_m_board.access(),p);
 	}
-	point_t move_rotate(ibox_t const& i,point_t const& p,ibox_t& in)
+	rc_point_t move_rotate(ibox_t const& i,rc_point_t const& p,ibox_t& in)
 	{
 		if (!is_rotate_enabled(i,p))
 			return p;
 		box_t const& box = _m_boxes.box(i);
 		in = boxes_t::get_next(i);
 		box_t const& box_next = _m_boxes.box(in);
-		point_t r=p;
-		point_t n=p+box.next;
+		rc_point_t r=p;
+		rc_point_t n=p+box.next;
 		return n;
 	}
-	point_t move_down(ibox_t const& i,point_t const& p)
+	rc_point_t move_down(ibox_t const& i,rc_point_t const& p)
 	{
 		box_t const& box = _m_boxes.box(i);
 		if (!is_down_enabled(box, p)) return p;
-		point_t r = p; r.r++;
+		rc_point_t r = p; r.r()++;
 		return r;
 	}
-	point_t move_left(ibox_t const& i,point_t const& p)
+	rc_point_t move_left(ibox_t const& i,rc_point_t const& p)
 	{
 		box_t const& box = _m_boxes.box(i);
 		if (!is_left_enabled(box, p))
 			return p;
-		point_t r = p; r.c--;
+		rc_point_t r = p; r.c()--;
 		return r;
 	}
-	point_t move_right(ibox_t const& i,point_t const& p)
+	rc_point_t move_right(ibox_t const& i,rc_point_t const& p)
 	{
 		box_t const& box = _m_boxes.box(i);
 		if (!is_right_enabled(box, p))
 			return p;
-		point_t r = p; r.c++;
+		rc_point_t r = p; r.c()++;
 		return r;
 	}
-	void set_by(ibox_t const& i,point_t const& p)
+	void set_by(ibox_t const& i,rc_point_t const& p)
 	{
 		box_t const& box = _m_boxes.box(i);
-		set(_m_board.access(), p, box.matrix(), point_t(0, 0));
+		set(_m_board.access(), p, box.matrix(), rc_point_t(0, 0));
 	}
 	void remove_rows(row_intv_t const* rows,size_t n)
 	{
@@ -452,10 +452,10 @@ struct tetris_core_data
 	}
 	void clear_board()
 	{
-		rect_t rect(point_t(0,0),_m_board.user_rect().s);
+		rc_rect_t rect(rc_point_t(0,0),_m_board.user_rect().s);
 		clear_board(rect);
 	}
-	void clear_board(rect_t const& rect)
+	void clear_board(rc_rect_t const& rect)
 	{
 		_m_board.access().fill(rect,tetris_define::back_char());
 	}
@@ -464,28 +464,28 @@ struct tetris_core_data
 struct box_trace_t
 {
 	ibox_t ibox;
-	rect_t rect;
-	//point_t pos;
+	rc_rect_t rect;
+	//rc_point_t pos;
 };
 struct tetris_drive
 {
 	typedef tetris_drive self;
 	tetris_core_data _m_tetris_core_data;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
 	ibox_t _m_index;
-	point_t _m_pos;
+	rc_point_t _m_pos;
 	bool _m_is_finished;
-	typedef delegate<void(rect_t const* board_invalid,size_t size)> data_changed_d;
+	typedef delegate<void(rc_rect_t const* board_invalid,size_t size)> data_changed_d;
 	typedef delegate<void(box_trace_t const& from,box_trace_t const& to)> trace_changed_d;
 	typedef delegate<void()> finished_d;
 	data_changed_d on_data_changed;
 	trace_changed_d on_trace_changed;
 	finished_d on_finished;
 	
-	rect_t const& user_rect() const
+	rc_rect_t const& user_rect() const
 	{
 		return _m_tetris_core_data.user_rect();
 	}
-	point_t const& area_origin() const
+	rc_point_t const& area_origin() const
 	{
 		return _m_tetris_core_data._m_board.o();
 	}
@@ -497,7 +497,7 @@ struct tetris_drive
 	{
 		return _m_tetris_core_data.box(_m_index);
 	}
-	point_t const& active_point() const
+	rc_point_t const& active_point() const
 	{
 		return _m_pos;
 	}
@@ -543,7 +543,7 @@ struct tetris_drive
 		size_t count = _m_tetris_core_data._m_board.get_each_row_full_list(from.rect.top(),from.rect.bottom(),row_full_list,__max_box_height);
 		assert(count<=__max_box_height);
 		_m_tetris_core_data.remove_rows(row_full_list,count);
-		rect_t rect_full_list[1+__max_box_height] = {from.rect};
+		rc_rect_t rect_full_list[1+__max_box_height] = {from.rect};
 		for (size_t i=0;i<count;++i)
 		{
 			row_intv_t const& intv = row_full_list[i];
@@ -594,8 +594,8 @@ struct tetris_drive
 	void set_ibox_current(ibox_t const& index)
 	{
 		_m_index = index;
-		ssize2_t size = active_box().size();
-		_m_pos.set(-size.rc,0);
+		rc_size_t size = active_box().size();
+		_m_pos.set(-size.rc(),0);
 	}
 };
 struct ibox_generator
