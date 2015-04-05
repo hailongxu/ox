@@ -193,7 +193,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_KEYDOWN:
 		{
-		sprintf(buff,"%d,%d",++i,(int)wParam);
+		int vkey = (int)wParam;
+		tetris_uig_input_event_source event_source;
+		event_source.on_keydown_from_system(vkey);
+		sprintf(buff,"%d,%d",++i,vkey);
 		HDC hdc = GetDC(hWnd);
 		DrawTextA(hdc,buff,-1,&text_rect,DT_LEFT);
 		ox::utl::win_dc_defer dcdefer(hWnd,hdc);
@@ -202,8 +205,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_PAINT:
 		hdc = BeginPaint(hWnd, &ps);
 		// TODO: Add any drawing code here...
-		//Ellipse(hdc,10,10,30,30);
-		//Rectangle(hdc,10,50,30,30);
+		{
+		win_gui wgui(hdc);
+		tetris_win_gui tgui(wgui);
+		tgui.fill_rect(rc_rect_t(0,0,2,4),tetris_define::back_char());
+		tgui.draw_point(rc_point_t(2,4),tetris_define::front_char());
+		}
 		EndPaint(hWnd, &ps);
 		break;
 	case WM_DESTROY:
