@@ -100,10 +100,10 @@ struct app
 		void set(rc_rect_t const& rect)
 		{
 			_m_rect=rect;
-			if (_m_rect.p.r<0)
+			if (_m_rect.p.r()<0)
 			{
-				_m_rect.s.rc += _m_rect.p.r;
-				_m_rect.p.r = 0;
+				_m_rect.s.rc() += _m_rect.p.r();
+				_m_rect.p.r() = 0;
 			}
 		}
 		char get_value(rc_point_t const& p)
@@ -194,16 +194,16 @@ struct app
 	void on_finished()
 	{
 		rc_rect_t user_rect = _m_drive.user_rect();
-		for (int r=0;r<user_rect.s.rc;++r)
+		for (int r=0;r<user_rect.s.rc();++r)
 		{
 			Sleep(50);
-			_m_ui_board.draw_board(rc_rect_t(r,0,1,user_rect.s.cc),tetris_define::front_char());
+			_m_ui_board.draw_board(rc_rect_t(r,0,1,user_rect.s.cc()),tetris_define::front_char());
 		}
 		Sleep(100);
-		for (int r=0;r<user_rect.s.rc;++r)
+		for (int r=0;r<user_rect.s.rc();++r)
 		{
 			Sleep(50);
-			_m_ui_board.draw_board(rc_rect_t(r,0,1,user_rect.s.cc),tetris_define::back_char());
+			_m_ui_board.draw_board(rc_rect_t(r,0,1,user_rect.s.cc()),tetris_define::back_char());
 		}
 		clear_preview();
 		clear_credit();
@@ -300,7 +300,7 @@ struct app
 	}
 	rc_size_t get_board_size()
 	{
-		return _m_drive._m_tetris_core_data._m_board.user_rect().rc().rect.s;
+		return _m_drive._m_tetris_core_data._m_board.user_rect().s;
 	}
 };
 

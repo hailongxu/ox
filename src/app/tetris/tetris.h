@@ -31,10 +31,7 @@ struct box_t : matrix2_t
 	{
 		memset(rotate_check_point,-1,sizeof(rotate_check_point));
 	}
-	//static value_type const __back_char = '.';
-	//static value_type const __front_char = '@';
-	//static value_type back_char() {return __back_char;}
-	//static value_type front_char() { return __front_char; }
+
 	void fill() {matrix_t::fill(tetris_define::__back_char);}
 	matrix_t const& matrix() const {return *this;}
 	rc_point_t next;
@@ -294,11 +291,11 @@ struct tetris_core_data
 	{
 		rc_point_t s = ps;
 		rc_point_t d = pd;
-		for (;s.r<ms.rc();++s.r,++d.r)
+		for (;s.r()<ms.rc();++s.r(),++d.r())
 		{
-			s.c = ps.c;
-			d.c = pd.c;
-			for (;s.c<ms.cc();++s.c,++d.c)
+			s.c() = ps.c();
+			d.c() = pd.c();
+			for (;s.c()<ms.cc();++s.c(),++d.c())
 				if (!tetris_define::is_value_null(ms.get(s)))
 					md.set(d,v);
 		}
@@ -323,11 +320,11 @@ struct tetris_core_data
 		typedef typename matrix_access_tt<m>::value_type value_type;
 		rc_point_t s = ps;
 		rc_point_t d = pd;
-		for (;s.r<ms.rc();++s.r,++d.r)
+		for (;s.r()<ms.rc();++s.r(),++d.r())
 		{
-			s.c = ps.c;
-			d.c = pd.c;
-			for (;s.c<ms.cc();++s.c,++d.c)
+			s.c() = ps.c();
+			d.c() = pd.c();
+			for (;s.c()<ms.cc();++s.c(),++d.c())
 			{
 				value_type v = ms.get(s);
 				if (tetris_define::is_value_null(v)) continue;

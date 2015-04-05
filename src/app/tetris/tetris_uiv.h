@@ -18,8 +18,8 @@ struct draw_view_tt
 	void draw(data_view_t const& data_view, rc_point_t const& p,cond_tn const& cond)
 	{
 		rc_size_t size = data_view.size();
-		for (int r = 0; r < size.rc; r++)
-			for (int c = 0; c < size.cc; c++)
+		for (int r = 0; r < size.rc(); r++)
+			for (int c = 0; c < size.cc(); c++)
 			{
 				char v = data_view.value(rc_point_t(r, c));
 				rc_point_t board_point = p+rc_point_t(r, c);
@@ -70,7 +70,7 @@ struct ui_board
 	}
 	void draw_box(data_view_t const& box,rc_point_t const& p)
 	{
-		_m_draw_view.draw(box,p,[](char v,rc_point_t const& p){return !tetris_define::is_value_null(v)&&p.r>=0;});
+		_m_draw_view.draw(box,p,[](char v,rc_point_t const& p){return !tetris_define::is_value_null(v)&&p.r()>=0;});
 	}
 	void draw_board(data_view_t const& box_board)
 	{

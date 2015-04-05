@@ -107,6 +107,7 @@ struct size_tt : size_access_tt<dim_count,t,coord>
 };
 
 typedef size_tt<2,int,rc_coord> rc_size_t;
+typedef size_tt<2,int,xy_coord> xy_size_t;
 
 
 
@@ -181,6 +182,7 @@ point_tt<t,cd> operator +(point_tt<t,cd> const& a, size_tt<2,t,cd> const& size)
 }
 
 typedef point_tt<int,rc_coord> rc_point_t;
+typedef point_tt<int,xy_coord> xy_point_t;
 
 template <typename t,typename coord_tn>
 struct rect_tt
@@ -193,6 +195,7 @@ struct rect_tt
 	self(point_type const& p): p(p) {}
 	self(size_type const& s): s(s) {}
 	self(point_type const& p,size_type const& s): p(p),s(s) {}
+	self(int v0,int v1,size_type const& s): p(v0,v1),s(s) {}
 	self(point_type const& p,int l0,int l1): p(p),s(l0,l1) {}
 	self(int v0,int v1,int l0,int l1): p(v0,v1),s(l0,l1) {}
 	
@@ -218,6 +221,7 @@ struct rect_tt
 };
 
 typedef rect_tt<int,rc_coord> rc_rect_t;
+typedef rect_tt<int,xy_coord> xy_rect_t;
 
 
 template <typename t>
@@ -355,19 +359,19 @@ matrix_tt<t,buffer> const* get_matrix(matrix_access_method_tt<t,buffer,hard_bind
 	return m;
 }
 template <typename t,typename buffer>
-matrix_tt<t,buffer>* get_matrix(matrix_access_method_tt<t,buffer,soft_bind_tag>* access)
+matrix_tt<t,buffer>* get_matrix(matrix_access_method_tt<t,buffer,soft_bind_tag>* assess_method)
 {
 	typedef matrix_tt<t,buffer> matrix_type;
 	typedef matrix_access_tt<matrix_type> matrix_access_t;
-	matrix_access_t* access = static_cast<matrix_type*>(access);
+	matrix_access_t* access = static_cast<matrix_access_t*>(assess_method);
 	return access->_m_matrix;
 }
 template <typename t,typename buffer>
-matrix_tt<t,buffer> const* get_matrix(matrix_access_method_tt<t,buffer,soft_bind_tag> const* access)
+matrix_tt<t,buffer> const* get_matrix(matrix_access_method_tt<t,buffer,soft_bind_tag> const* assess_method)
 {
 	typedef matrix_tt<t,buffer> matrix_type;
 	typedef matrix_access_tt<matrix_type> matrix_access_t;
-	matrix_access_t const* access = static_cast<matrix_type const*>(access);
+	matrix_access_t const* access = static_cast<matrix_access_t const*>(assess_method);
 	return access->_m_matrix;
 }
 template <typename t,typename buffer>
@@ -381,19 +385,22 @@ typename matrix_tt<t,buffer>::coord_conv_t get_coord(matrix_access_method_tt<t,b
 	return get_matrix(access)->coord_conv();
 }
 template <typename t,typename buffer>
-typename matrix_access_tt<t,buffer>::coord_conv_t& get_coord(matrix_access_method_tt<t,buffer,soft_bind_tag>* access)
+typename matrix_access_tt<matrix_tt<t,buffer>>::coord_conv_t get_coord(matrix_access_method_tt<t,buffer,soft_bind_tag>* access_method)
 {
+	typedef matrix_tt<t,buffer> matrix_type;
 	typedef matrix_access_tt<matrix_type> matrix_access_t;
-	matrix_access_t const* access = static_cast<matrix_access_t const*>(access);
+	matrix_access_t* access = static_cast<matrix_access_t*>(access_method);
 	return access->coord_conv();
 }
 template <typename t,typename buffer>
-typename matrix_access_tt<t,buffer>::coord_conv_t const& get_coord(matrix_access_method_tt<t,buffer,soft_bind_tag> const* access)
+typename matrix_access_tt<matrix_tt<t,buffer>>::coord_conv_t get_coord(matrix_access_method_tt<t,buffer,soft_bind_tag> const* access_method)
 {
+	typedef matrix_tt<t,buffer> matrix_type;
 	typedef matrix_access_tt<matrix_type> matrix_access_t;
-	matrix_access_t const* access = static_cast<matrix_access_t*>(access);
+	matrix_access_t const* access = static_cast<matrix_access_t const*>(access_method);
 	return access->coord_conv();
 }
+
 
 
 template <typename t,typename buffer,typename bind_tag>
@@ -491,11 +498,11 @@ private:
 		point_t p = r.p;
 		point_t q;
 		matrix_type m(r.s.rc(),r.s.cc());
-		for (;q.r<r.s.rc();++q.r(),++p.r())
+		for (;q.r()<r.s.rc();++q.r(),++p.r())
 		{
 			q.c()=0; p.c()=r.p.c();
 			for (;q.c()<r.s.cc();++q.c(),++p.c())
-				m.do_set(q,do_get(p));
+				m.set(q,do_get(p));
 		}
 		return m;
 	}
@@ -591,6 +598,7 @@ template <typename t,typename buffer>
 struct matrix_tt : matrix_access_method_tt<t,buffer,hard_bind_tag>
 {
 	friend matrix_access_method_tt<t,buffer,hard_bind_tag>;
+	friend matrix_access_method_tt<t,buffer,soft_bind_tag>;
 
 	typedef matrix_tt self;
 	typedef buffer buffer_type;
@@ -619,6 +627,8 @@ template <typename t,typename buffer>
 struct matrix_access_tt <matrix_tt<t,buffer>>
 	: matrix_access_method_tt<t,buffer,soft_bind_tag>
 {
+	friend matrix_access_method_tt<t,buffer,soft_bind_tag>;
+
 	typedef matrix_access_tt self;
 	typedef matrix_tt<t,buffer> matrix_t;
 	typedef t value_type;
