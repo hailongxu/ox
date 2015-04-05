@@ -637,7 +637,6 @@ struct matrix_access_tt <matrix_tt<t,buffer>>
 	typedef size_tt<2,int,rc_coord> ssize_t;
 	typedef coord_conv_translational<int,rc_coord> coord_conv_t;
 	matrix_t* _m_matrix;
-	point_t _m_origin;
 	coord_conv_t _m_coord_conv;
 	self(): _m_matrix(0) {}
 	self(matrix_t* matrix): _m_matrix(matrix) {}
@@ -645,8 +644,8 @@ struct matrix_access_tt <matrix_tt<t,buffer>>
 	self(matrix_t* matrix,point_t const& origin): _m_matrix(matrix),_m_origin(origin) {}
 	self(matrix_t& matrix,point_t const& origin): _m_matrix(&matrix),_m_origin(origin) {}
 	coord_conv_t coord_conv() const {return _m_coord_conv;}
-	void set(matrix_t* m,point_t const& origin) { _m_matrix=m;_m_origin=origin; }
-	void set(matrix_t& m,point_t const& origin) { _m_matrix=&m;_m_origin=origin; }
+	void set(matrix_t* m,point_t const& origin) { _m_matrix=m;_m_coord_conv._m_origin=origin; }
+	void set(matrix_t& m,point_t const& origin) { _m_matrix=&m;_m_coord_conv._m_origin=origin; }
 	using matrix_access_method_tt<t,buffer,soft_bind_tag>::set;
 };
 
