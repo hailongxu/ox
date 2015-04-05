@@ -198,7 +198,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		event_source.on_keydown_from_system(vkey);
 		sprintf(buff,"%d,%d",++i,vkey);
 		HDC hdc = GetDC(hWnd);
-		DrawTextA(hdc,buff,-1,&text_rect,DT_LEFT);
+		win_gui wgui(hdc);
+		tetris_win_gui tgui(wgui);
+		tgui.draw_text(rc_point_t(0,0),buff,strlen(buff));
+		
+		//DrawTextA(hdc,buff,-1,&text_rect,DT_LEFT);
 		ox::utl::win_dc_defer dcdefer(hWnd,hdc);
 		}
 		break;
@@ -241,3 +245,4 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 	return (INT_PTR)FALSE;
 }
+
