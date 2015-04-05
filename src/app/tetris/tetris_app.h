@@ -4,6 +4,7 @@
 #include <memory.h>
 #include <assert.h>
 #include "../../ox/nsab.h"
+#include "../../cxx/reference_tt.h"
 #include "math.h"
 #include "tetris_define.h"
 #include "tetris_event_define.h"
@@ -27,9 +28,10 @@ struct app
 {
 	typedef app self;
 	typedef tetris_ui tetris_ui;
-	typedef ui_board<tetris_ui> ui_board;
-	typedef ui_preview<tetris_ui> ui_preview;
-	typedef ui_information<tetris_ui> ui_information;
+	typedef ox::cxx::reference_tt<tetris_ui> tetris_ui_reference;
+	typedef ui_board<tetris_ui_reference> ui_board;
+	typedef ui_preview<tetris_ui_reference> ui_preview;
+	typedef ui_information<tetris_ui_reference> ui_information;
 
 	struct box_view_t
 	{
@@ -129,7 +131,7 @@ struct app
 	};
 
 	/// the outer element
-	tetris_ui* _m_tetris_ui;
+	tetris_ui_reference _m_tetris_ui;
 	tetris_event* _m_event_source;
 
 	ui_board _m_ui_board;
@@ -146,7 +148,7 @@ struct app
 	action_d on_started;
 
 	self(): _m_box_view_list(_m_drive), _m_board_part_view(_m_drive._m_tetris_core_data._m_board.access())
-		, _m_ui_board(*_m_tetris_ui), _m_ui_preview(*_m_tetris_ui), _m_ui_information(*_m_tetris_ui)
+		, _m_ui_board(_m_tetris_ui), _m_ui_preview(_m_tetris_ui), _m_ui_information(_m_tetris_ui)
 	{}
 
 	void init(tetris_ui* _tetris_ui,tetris_event* event_source)

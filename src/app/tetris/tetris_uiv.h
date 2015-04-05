@@ -8,12 +8,13 @@
 
 
 
+
 template <typename tetris_ui_t>
 struct draw_view_tt
 {
-	draw_view_tt(tetris_ui_t& console) : _m_console(console) {}
+	draw_view_tt(tetris_ui_t& tetris_ui) : _m_tetris_ui(tetris_ui) {}
 	rc_point_t _m_origin;
-	tetris_ui_t& _m_console;
+	tetris_ui_t& _m_tetris_ui;
 	template <typename cond_tn>
 	void draw(data_view_t const& data_view, rc_point_t const& p,cond_tn const& cond)
 	{
@@ -24,7 +25,7 @@ struct draw_view_tt
 				char v = data_view.value(rc_point_t(r, c));
 				rc_point_t board_point = p+rc_point_t(r, c);
 				if (!cond(v,board_point)) continue;
-				_m_console.draw_point(_m_origin+board_point, v);
+				_m_tetris_ui().draw_point(_m_origin+board_point, v);
 			}
 	}
 };
@@ -80,7 +81,7 @@ struct ui_board
 	{
 		rc_rect_t r = rect;
 		r.p = _m_origin+r.p;
-		_m_tetris_ui.fill_rect(r,v);
+		_m_tetris_ui().fill_rect(r,v);
 	}
 	void clear_box(data_view_t const& box,rc_point_t const& p)
 	{
@@ -97,7 +98,7 @@ struct ui_board
 	}
 	void clear_view(data_view_t const& data_view, rc_point_t const& p)
 	{
-		_m_console.fill_rect(rc_rect_t(_m_origin+p, data_view.size()), '.');
+		_m_tetris_ui().fill_rect(rc_rect_t(_m_origin+p, data_view.size()), '.');
 	}
 };
 
@@ -105,9 +106,9 @@ template <typename tetris_ui_t>
 struct ui_preview
 {
 	typedef draw_view_tt<tetris_ui_t> draw_view_t;
-	ui_preview(tetris_ui_t& console): _m_console(console), _m_draw_view(console)
+	ui_preview(tetris_ui_t& tetris_ui): _m_tetris_ui(tetris_ui), _m_draw_view(tetris_ui)
 	{}
-	tetris_ui_t& _m_console;
+	tetris_ui_t& _m_tetris_ui;
 	rc_rect_t _m_rect;
 	draw_view_t _m_draw_view;
 	void init()
@@ -122,16 +123,16 @@ struct ui_preview
 	}
 	void clear()
 	{
-		_m_console.fill_rect(_m_rect,tetris_define::back_char());
+		_m_tetris_ui().fill_rect(_m_rect,tetris_define::back_char());
 	}
 };
 
 template <typename tetris_ui_t>
 struct ui_information
 {
-	ui_information(tetris_ui_t& console): _m_console(console)
+	ui_information(tetris_ui_t& tetris_ui): _m_tetris_ui(tetris_ui)
 	{}
-	tetris_ui_t& _m_console;
+	tetris_ui_t& _m_tetris_ui;
 	rc_rect_t _m_rect;
 	void init()
 	{
@@ -142,7 +143,7 @@ struct ui_information
 	{
 		char str [16] ;
 		sprintf(str,"%d",credit);
-		_m_console.draw_text(_m_rect.p,str,strlen(str));
+		_m_tetris_ui().draw_text(_m_rect.p,str,strlen(str));
 	}
 };
 
