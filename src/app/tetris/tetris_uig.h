@@ -70,7 +70,6 @@ struct matrix_shape
 	xy_size_t _m_unit_size;
 	xy_size_t _m_unit_between_size;
 	xy_rect_t _m_margin_size;
-	
 };
 
 
@@ -95,13 +94,14 @@ struct tetris_win_gui
 	}
 	void draw_text(rc_point_t const& p,char const* str,size_t size)
 	{
-
+		xy_point_t pos = _m_matrix_shape.get_point(p);
+		_m_gui.draw_text(str,size,pos);
 	}
 	static color_t get_color(char v)
 	{
 		if (tetris_define::is_value_null(v))
-			return color_t{255,255,255};
-		return color_t{0,0,0};
+			return color_t::white();
+		return color_t::black();
 	}
 };
 

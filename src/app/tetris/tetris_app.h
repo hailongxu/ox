@@ -129,7 +129,7 @@ struct app
 	};
 
 	/// the outer element
-	tetris_ui* _m_console;
+	tetris_ui* _m_tetris_ui;
 	tetris_event* _m_event_source;
 
 	ui_board _m_ui_board;
@@ -146,12 +146,12 @@ struct app
 	action_d on_started;
 
 	self(): _m_box_view_list(_m_drive), _m_board_part_view(_m_drive._m_tetris_core_data._m_board.access())
-		, _m_ui_board(*_m_console), _m_ui_preview(*_m_console), _m_ui_information(*_m_console)
+		, _m_ui_board(*_m_tetris_ui), _m_ui_preview(*_m_tetris_ui), _m_ui_information(*_m_tetris_ui)
 	{}
 
 	void init(tetris_ui* _tetris_ui,tetris_event* event_source)
 	{
-		_m_console = _tetris_ui;
+		_m_tetris_ui = _tetris_ui;
 		_m_event_source = event_source;
 
 		_m_drive.on_init();

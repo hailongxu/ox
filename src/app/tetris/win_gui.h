@@ -2,6 +2,8 @@
 
 #include <windows.h>
 #include "math.h"
+#include "../../alg/bit_stat.h"
+#include <string.h>
 
 
 #pragma once
@@ -21,6 +23,8 @@ struct color_t
 	unsigned char& r() {return data[1];}
 	unsigned char& g() {return data[2];}
 	unsigned char& b() {return data[3];}
+	static color_t white() {return color_t(255,255,255);}
+	static color_t black() {return color_t(0,0,0);}
 	void set(unsigned char r,unsigned char g,unsigned char b)
 	{
 		this->r()=r,this->g()=g,this->b()=b;
@@ -31,9 +35,40 @@ struct color_t
 	}
 };
 
+enum struct text_align_enum
+{
+	__top = 1,
+	__bottom = 2,
+	__left = 4,
+	__right = 8,
+	__center = 16,
+};
+
+struct win_gui_helper
+{
+	static RECT to_rect(xy_rect_t const& rect)
+	{
+		return RECT{rect.left(),rect.top(),rect.right(),rect.bottom()};
+	}
+	static size_t to_align(text_align_enum align)
+	{
+		static size_t win_aligns[5] =
+		{
+			DT_TOP,
+			DT_BOTTOM,
+			DT_LEFT,
+			DT_RIGHT,
+			DT_CENTER,
+		};
+		int i = ox::alg::get_1index_of_2n((unsigned int)align);
+		return win_aligns[i];
+	}
+};
+
 struct win_gui
 {
 	typedef win_gui self;
+
 	self():_m_hdc(0) {}
 	self(HDC hdc) {init(hdc);}
 	void init(HDC hdc) {_m_hdc=hdc;}
@@ -55,5 +90,17 @@ struct win_gui
 		FillRect(_m_hdc,&rect,h);
 		SelectObject(_m_hdc,(HGDIOBJ)hold);
 		DeleteObject((HGDIOBJ)h);
+	}
+	void draw_text(char const* str,size_t str_len,xy_rect_t const& rect,text_align_enum align)
+	{
+		DrawTextA(_m_hdc,str,str_len,&win_gui_helper::to_rect(rect),win_gui_helper::to_align(align));
+	}
+	void draw_text(char const* str,size_t str_len,xy_point_t const& p)
+	{
+		TextOutA(_m_hdc,p.x(),p.y(),str,str_len);
+	}
+	void draw_text(char const* str,xy_point_t const& p)
+	{
+		draw_text(str,strlen(str),p);
 	}
 };

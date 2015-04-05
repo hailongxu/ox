@@ -614,7 +614,7 @@ struct matrix_tt : matrix_access_method_tt<t,buffer,hard_bind_tag>
 	{
 		resize(rc,cc);
 	}
-	coord_conv_t coord_conv() const {return coord_conv();}
+	coord_conv_t coord_conv() const {return coord_conv_t();}
 private:
 	buffer_type _m_buffer;
 	ssize_t _m_size;

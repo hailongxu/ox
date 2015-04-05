@@ -59,8 +59,8 @@ struct ui_board
 		}
 	};
 	typedef draw_view_tt<tetris_ui_t> draw_view_t;
-	ui_board(tetris_ui_t& console) : _m_console(console),_m_draw_view(_m_console) {}
-	tetris_ui_t& _m_console;
+	ui_board(tetris_ui_t& tetris_ui) : _m_tetris_ui(tetris_ui),_m_draw_view(_m_tetris_ui) {}
+	tetris_ui_t& _m_tetris_ui;
 	rc_point_t _m_origin;
 	draw_view_t _m_draw_view;
 	void init()
@@ -80,7 +80,7 @@ struct ui_board
 	{
 		rc_rect_t r = rect;
 		r.p = _m_origin+r.p;
-		_m_console.fill_rect(r,v);
+		_m_tetris_ui.fill_rect(r,v);
 	}
 	void clear_box(data_view_t const& box,rc_point_t const& p)
 	{
