@@ -4,9 +4,39 @@
 #include "stdafx.h"
 #include "tetrisg.h"
 
+
+
+#include "../../src/utl/destructor.h"
+#include "../../src/thread/win_queue_thread.h"
 #include "../../src/app/tetris/win_gui.h"
 #include "../../src/app/tetris/tetris_uig.h"
-//#include "../../src/app/tetris/tetris_event_source.h"
+#include "../../src/app/tetris/tetris_uig_event_source.h"
+#include "../../src/app/tetris/tetris_app.h"
+
+struct on_application_start
+{
+	on_application_start(tetris_uig_input_event_source& tetris_event)
+		: tetris_event(tetris_event)
+	{}
+	tetris_uig_input_event_source& tetris_event;
+	void operator()() {tetris_event.start();}
+};
+int entry(int argc, _TCHAR* argv[])
+{
+	win_gui gui;
+	tetris_win_gui tetris_gui(gui);
+	tetris_uig_input_event_source tetris_event;
+	app<tetris_win_gui,tetris_uig_input_event_source>  tetris_application;
+	tetris_application.init(&tetris_gui,&tetris_event);
+	tetris_application.on_started.assign(&on_application_start(tetris_event));
+	tetris_application.start();
+	ox::win_queue_thread th;
+	th.start_here();
+	getchar();
+	return 0;
+}
+
+
 
 win_gui gui;
 tetris_win_gui tetris_gui(gui);
@@ -139,6 +169,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	int wmId, wmEvent;
 	PAINTSTRUCT ps;
 	HDC hdc;
+	static int i = 0;
+	char buff[32];
+	RECT text_rect{10,10,50,50};
 
 	switch (message)
 	{
@@ -158,11 +191,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
 		break;
+	case WM_KEYDOWN:
+		{
+		sprintf(buff,"%d,%d",++i,(int)wParam);
+		HDC hdc = GetDC(hWnd);
+		DrawTextA(hdc,buff,-1,&text_rect,DT_LEFT);
+		ox::utl::win_dc_defer dcdefer(hWnd,hdc);
+		}
+		break;
 	case WM_PAINT:
 		hdc = BeginPaint(hWnd, &ps);
 		// TODO: Add any drawing code here...
-		Ellipse(hdc,10,10,30,30);
-		Rectangle(hdc,10,50,30,30);
+		//Ellipse(hdc,10,10,30,30);
+		//Rectangle(hdc,10,50,30,30);
 		EndPaint(hWnd, &ps);
 		break;
 	case WM_DESTROY:
