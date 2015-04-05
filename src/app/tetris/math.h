@@ -66,7 +66,7 @@ struct size_access_tt <dim_count,t,rc_coord>
 	value_type const& rc() const {return data().d1();}
 	template<int i> value_type& d() {return data().d<i>();}
 	template<int i> value_type const& d() const {return data().d<i>();}
-	void set(value_type const& x,value_type const& y) {data().set(x,y);}
+	void set(value_type const& r,value_type const& c) {data().set(c,r);}
 	value_type length() const {return rc()*cc();}
 	bool is_empty() const { return rc() == 0 && cc() == 0; }
 	data_type const& data() const {return static_cast<mother_type const*>(this)->_m_data;}
@@ -209,7 +209,7 @@ struct rect_tt
 	int right() const { return left()+width(); }
 	int top() const { return p.d<1>(); }
 	int bottom() const { return top()+height(); }
-	size_t width() const { return s.d<1>(); }
+	size_t width() const { return s.d<0>(); }
 	size_t height() const { return s.d<1>(); }
 	point_type left_top() const { return p; }
 	point_type left_bottom() const { return point_type(left(),bottom()); }
