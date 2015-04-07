@@ -15,7 +15,7 @@ namespace ox
 	namespace alg
 	{
 		template <typename uint_tn>
-		uint_tn get_reverse(uint_tn n)
+		static uint_tn get_reverse(uint_tn n)
 		{
 			enum { __integer_width = sizeof (uint_tn) };
 			___static_assert(__integer_width<=4);
@@ -35,7 +35,7 @@ namespace ox
 		}
 
 		template <typename uint_tn>
-		size_t get_1_count(uint_tn n)
+		static size_t get_1_count(uint_tn n)
 		{
 			enum { __integer_width = sizeof (uint_tn) };
 			___static_assert(__integer_width<=4);
@@ -57,7 +57,7 @@ namespace ox
 		}
 
 		template <typename uint_tn>
-		size_t get2_1_count(uint_tn n)
+		static size_t get2_1_count(uint_tn n)
 		{
 			enum { __integer_width = sizeof (uint_tn) };
 			___static_assert(__integer_width<=4);
@@ -75,6 +75,17 @@ namespace ox
 				n += n >> 16; // 0-32 in 8 bits
 
 			return n;
+		}
+
+		static bool is_2n(unsigned int n)
+		{
+			return (n& (n-1)) == 0;
+		}
+
+		static unsigned get_1index_of_2n(unsigned int n)
+		{
+			assert(is_2n(n) || n==0);
+			return get_1_count((unsigned int)(n-1));
 		}
 
 	} /// end of namespace alg

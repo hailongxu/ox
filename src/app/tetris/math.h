@@ -15,6 +15,13 @@ typedef ox::utl::intv_tt<int> row_intv_t;
 struct rc_coord;
 struct xy_coord;
 
+template <typename coord> struct hor_dindex;
+template <> struct hor_dindex<xy_coord> {static int const value = 0;};
+template <> struct hor_dindex<rc_coord> {static int const value = 1;};
+template <typename coord> struct ver_dindex;
+template <> struct ver_dindex<xy_coord> {static int const value = 1;};
+template <> struct ver_dindex<rc_coord> {static int const value = 0;};
+
 
 template <typename t>
 struct dim_data_tt
@@ -60,13 +67,13 @@ struct size_access_tt <dim_count,t,rc_coord>
 	typedef rc_coord coord_type;
 	typedef size_tt<dim_count,t,coord_type> mother_type;
 	
-	value_type& cc() {return data().d0();}
-	value_type& rc() {return data().d1();}
-	value_type const& cc() const {return data().d0();}
-	value_type const& rc() const {return data().d1();}
+	value_type& rc() {return data().d0();}
+	value_type& cc() {return data().d1();}
+	value_type const& rc() const {return data().d0();}
+	value_type const& cc() const {return data().d1();}
 	template<int i> value_type& d() {return data().d<i>();}
 	template<int i> value_type const& d() const {return data().d<i>();}
-	void set(value_type const& r,value_type const& c) {data().set(c,r);}
+	void set(value_type const& r,value_type const& c) {data().set(r,c);}
 	value_type length() const {return rc()*cc();}
 	bool is_empty() const { return rc() == 0 && cc() == 0; }
 	data_type const& data() const {return static_cast<mother_type const*>(this)->_m_data;}
@@ -205,12 +212,12 @@ struct rect_tt
 	void set(point_type const& p,size_t d0,size_t d1) {this->p=p;s.set(d0,d1);}
 	void set(int v0,int v1,int l0,int l1) {p.set(v0,v1),s.set(l0,l1);}
 
-	int left() const { return p.d<0>(); }
+	int left() const { return p.d<hor_dindex<coord_type>::value>(); }
 	int right() const { return left()+width(); }
-	int top() const { return p.d<1>(); }
+	int top() const { return p.d<ver_dindex<coord_type>::value>(); }
 	int bottom() const { return top()+height(); }
-	size_t width() const { return s.d<0>(); }
-	size_t height() const { return s.d<1>(); }
+	size_t width() const { return s.d<hor_dindex<coord_type>::value>(); }
+	size_t height() const { return s.d<ver_dindex<coord_type>::value>(); }
 	point_type left_top() const { return p; }
 	point_type left_bottom() const { return point_type(left(),bottom()); }
 	point_type right_top() const { return point_type(right(),top()); }
