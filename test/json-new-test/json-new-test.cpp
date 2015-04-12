@@ -59,6 +59,8 @@ aaaatype* bbbbs[] =
 //};
 
 
+
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	typedef wchar_t character;
@@ -95,13 +97,12 @@ int _tmain(int argc, _TCHAR* argv[])
 		character const* str = mystring;
 		json::json_document<character> doc;
 		json::json_value<character> const& jb = doc.parse(str);
-		JSONObject const& dd = jb.as_object();
+		wjson_object const& dd = jb.as_object();
 		int cccc;
 		json::get_num_value(dd,L"frameid",cccc);
-		JSONObject::const_iterator uu = dd.find(L"frameid");
+		wjson_object::const_iterator uu = dd.find(L"frameid");
 		std::wstring sss = uu->second->as_string();
-		
-
+	
 		DWORD e = GetTickCount();
 		time_sum += (e-s);
 		//std::basic_ostream<character> cout;

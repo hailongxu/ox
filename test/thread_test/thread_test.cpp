@@ -8,6 +8,10 @@
 #include "../../src/thread/win_queue_multi_thread.h"
 #include "../../src/thread/win_queue_pool_thread.h"
 #include <conio.h>
+#include "../../src/thread/win_ui_thread.h"
+
+
+
 
 
 typedef ox::win_queue_thread thread_t;
@@ -24,6 +28,13 @@ namespace event
 	{
 		//Sleep(500);
 		printf ("[%u] tttttttttt\n",GetCurrentThreadId());
+	}
+	void f3()
+	{
+		//Sleep(500);
+		char buf[64];
+		sprintf (buf,"[%u] tttttttttt\n",GetCurrentThreadId());
+		OutputDebugStringA(buf);
 	}
 	void on_idle(thread_t* t)
 	{
@@ -50,6 +61,28 @@ namespace event
 	}
 }
 
+namespace chthread_test
+{
+	ox::win_ui_thread ui;
+	ox::win_queue_thread ui_task;
+	static const int __messageid_task = WM_USER + 1;
+	HWND _m_message_wnd_handle;
+	void post_task()
+	{
+		while(getchar())
+		{
+			printf("post task\n");
+			ui.add(ox::task_single<int>::make(&event::f3));
+		}
+	}
+	void test()
+	{
+		ui.start();
+		ui_task.start();
+		ui_task.add(ox::task_single<int>::make(&post_task));
+		ui.stop();
+	}
+}
 
 namespace thread_test
 {
@@ -121,7 +154,6 @@ namespace pool_thread_test
 		pool.astop();
 		pool.wait_subs();
 		thread.stop();
-		//pool.unsafe_terminate();
 	}
 }
 
@@ -144,97 +176,6 @@ namespace thread_performace_test
 	}
 }
 
-#if 0
-#include "../../src/thread/scope_raii.h"
-namespace mutex_test
-{
-	win_mutex mutex("aa");
-	void f1()
-	{
-		scope_mutex sync(mutex);
-		::Sleep(1000);
-		static int i = 0;
-		printf ("t:%u  i%d\n",::GetCurrentThreadId(),++i);
-	}
-	void f2()
-	{
-		scope_mutex sync(mutex);
-		static int i = 0;
-		printf ("t:%u  i%d\n",::GetCurrentThreadId(),++i);
-	}
-	thread_t t1,t2;
-	void test()
-	{
-		t1.start();
-		t2.start();
-		while (1)
-		{
-			t1.add(ox::task_single<int>::make(f1));
-			t2.add(ox::task_single<int>::make(f2));
-		}
-	}
-}
-
-
-
-#include "../../src/cxx/delegate.h"
-namespace delegate_test
-{
-	void f() {}
-	void f2() {}
-	void test()
-	{
-		delegate<void(void)> a(f),b(f2);
-		bool c = a==b;
-	}
-}
-
-namespace string_pass_test
-{
-	struct inf
-	{
-		inf()
-		{
-			seq = next();
-			printf ("inf(%ld)\n",seq);
-		}
-		inf(inf const& o)
-		{
-			str = o.str;
-			seq = next();
-			printf ("inf copy(%ld)\n",seq);
-		}
-		~inf()
-		{
-			printf ("inf~~(%ld)\n",seq);
-		}
-		std::string str;
-		long seq;
-		static long next()
-		{
-			static long sseq=0;
-			InterlockedIncrement(&sseq);
-			return sseq;
-		}
-	};
-	void f(inf& i)
-	{
-		i.str = "234";
-	}
-	thread_t t1;
-	static void test()
-	{
-		t1.start();
-		while(1)
-		{
-			getchar();
-			inf i;
-			t1.add(ox::task_single<int>::make(f,i));
-		}
-	}
-}
-
-#endif
 
 
 #include "../../src/thread/win_multi_thread.h"
@@ -267,22 +208,25 @@ namespace multi_thread_test
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+
 	do {
-		//multi_thread_test::test();break;
+        chthread_test::test(); break;
+        //multi_thread_test::test();break;
 		//thread_test::test();break;
 		//win_queue_thread_test::test();break;
 		//pool_thread_test::test();break;
-		thread_performace_test::test();break;
+		//thread_performace_test::test();break;
 		//delegate_test::test();break;
 		//multi_queue_thread_test::test();break;
 		//mutex_test::test();break;
 		//string_pass_test::test();break;
 	} while(false);
 	//Sleep(-1);
-	//thread_t mt;
-	//mt.start_here();
+	printf ("wait ... \n");
+	thread_t mt;
+	mt.start_here();
 	printf ("get char and exit ... \n");
-	getchar();
+	//getchar();
 	return 0;
 }
 
