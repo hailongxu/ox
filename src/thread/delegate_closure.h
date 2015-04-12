@@ -13,6 +13,7 @@
 
 
 #include "../cxx/delegate.h"
+#include "../ox/tclasses.h"
 #include "task_decl.h"
 
 
@@ -21,21 +22,9 @@
 
 namespace ox
 {
-	template <size_t i>
-	struct itot
-	{
-		typedef size_t type;
-		static size_t const value = i;
-	};
 	struct dummy{};
 
-	template <typename t>
-	struct holder_same_tt
-	{
-		typedef t type;
-	};
-
-	template <typename function_tn,template<typename> class holder=holder_same_tt>
+	template <typename function_tn,template<typename> class holder=identity>
 	struct delegate_closure;
 
 	template <typename r,template<typename> class holder>

@@ -10,6 +10,7 @@
 
 #include "windows.h"
 #include "../cxx/delegate.h"
+#include <assert.h>
 
 
 #pragma once
@@ -192,8 +193,8 @@ struct scope_sync <win_mutex>
 	scope_sync(win_mutex& mutex,size_t timeout_mill_second=-1)
 		: _m_mutex(mutex)
 	{
-		DWORD ret = ::WaitForSingleObject(_m_mutex.handle(),timeout_mill_second);
-		bool isok = (ret==WAIT_OBJECT_0 || ret==WAIT_ABANDONED);
+		DWORD ret = ::WaitForSingleObject(_m_mutex.handle(),(DWORD)timeout_mill_second);
+		bool isok = (ret==WAIT_OBJECT_0 || ret==WAIT_ABANDONED || WAIT_TIMEOUT);
 		assert(isok);
 	}
 	~scope_sync()

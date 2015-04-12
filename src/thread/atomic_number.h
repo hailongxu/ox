@@ -69,9 +69,10 @@ struct atomic_number <long>
 	//{
 	//	return sub(subtrahend);
 	//}
+	/// return old value
 	long operator=(long value)
 	{
-		return assign(value);
+		return assign_and_return_old(value);
 	}
 	long operator&(long andend)
 	{
@@ -98,7 +99,7 @@ struct atomic_number <long>
 		//return InterlockedExchange(&_m_value,_m_value-subtrahend);
 		//return InterlockedCompareExchange(&_m_value,_m_value-subtrahend,_m_value);
 	}
-	long assign(long value)
+	long assign_and_return_old(long value)
 	{
 		return InterlockedExchange(&_m_value,value);
 		//return InterlockedCompareExchange(&_m_value,value,_m_value);

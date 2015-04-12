@@ -48,19 +48,21 @@ architecture to design the flow, the other is for the programmer to do at their 
 
 namespace ox
 {
+	struct win_ui_thread;
 	struct win_queue_thread : win_thread<unsigned()>
 	{
+		friend win_ui_thread;
+		typedef win_queue_thread self;
 		enum {__highid,__normalid,__controlid,__exit1};
 		enum control_enum {__clear};
-		typedef delegate<void(win_queue_thread*)> idle_d;
-		typedef delegate<void(win_queue_thread*)> busy_d;
-		typedef delegate<void(win_queue_thread*)> exit_d;
+		typedef delegate<void(self*)> idle_d;
+		typedef delegate<void(self*)> busy_d;
+		typedef delegate<void(self*)> exit_d;
 		typedef thread_task_t task_t;
 		typedef delegate<void(HANDLE)> event_arrived_d;
 		typedef win_thread<unsigned()> base;
 
 	private:
-		typedef win_queue_thread self;
 		typedef safe_double_queue_tt<task_t*> task_queue;
 		typedef task_queue control_queue;
 		typedef task_queue::object_ptr task_pptr;
@@ -81,7 +83,7 @@ namespace ox
 			if (!_m_is_destroyed_at_destruction) DebugBreak();
 			stop();
 		}
-		win_queue_thread()
+		self()
 		{
 			init(0,-1);
 		}
@@ -89,22 +91,23 @@ namespace ox
 		//{
 		//	init(your_name,-1);
 		//}
-		win_queue_thread(size_t your_id,char const* your_name)
+		self(size_t your_id,char const* your_name)
 		{
 			init(your_name,your_id);
 		}
-		win_queue_thread(win_queue_thread const&);
-		win_queue_thread& operator=(win_queue_thread const&);
+		self(self const&);
+		self& operator=(self const&);
 
-		void add(task_t* task)
+		int add(task_t* task)
 		{
-			if (!_m_normal_queue.is_add_enabled() || is_exiting()) return;
+			if (!_m_normal_queue.is_add_enabled() || is_exiting()) return -1;
 			assert (!is_exiting());
 			_m_normal_queue.add(task);
+			return 0;
 		}
-		void add2(task_t* task,size_t/*threadid, compitalbe with multi-thread*/)
+		int add2(task_t* task,size_t/*threadid, compatible with multi-thread*/)
 		{
-			add(task);
+			return add(task);
 		}
 
 		bool clear()
@@ -165,7 +168,7 @@ namespace ox
 			_m_hcontrol[__exit2] = _m_htaskadded[__exit1];
 			_m_hcontrol[__suspend] = CreateEvent(0,TRUE,TRUE,0);
 
-			base::on_run().assign(this,&self::run);
+			assert(!base::on_run().is_empty());
 			base::init_handleid();
 			_m_exit_enabled = 0;
 			_m_service_size = 0;
@@ -173,12 +176,12 @@ namespace ox
 			return base::start();
 		}
 
-		void stop_next()
+		bool stop_next()
 		{
-			if (_m_exit_enabled==1) return;
-			_m_exit_enabled = 1;
+			if (get_is_exiting_or_set()) return false;
 			BOOL b = SetEvent(_m_hcontrol[__exit2]);
 			assert(b);
+			return true;
 			//if (!b)
 			//{
 			//	DWORD err = GetLastError();
@@ -416,6 +419,7 @@ namespace ox
 			//_m_sudo_thread_handle=HANDLE(-1);
 			_m_threadid=-1;
 			_m_service_size = 0;
+			base::on_run().assign(this,&self::run);
 			base::on_exit().assign(this,&self::on_internal_exit);
 			base::init(your_name,your_id);
 		}
@@ -435,6 +439,10 @@ namespace ox
 			//h = handle;
 			//if (handle==INVALID_HANDLE_VALUE) return __not_started;
 			//return __allowed;
+		}
+		bool get_is_exiting_or_set()
+		{
+			return _m_exit_enabled.assign_and_return_old(1);
 		}
 
 	private:
