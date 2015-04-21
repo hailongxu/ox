@@ -824,14 +824,29 @@ struct add_con <void>
 template <typename type_tn> struct rmv_con
 {
 	typedef type_tn type;
+	template <typename to_tn>
+	struct to
+	{
+		typedef to_tn type;
+	};
 };
 template <typename type_tn> struct rmv_con <type_tn const>
 {
 	typedef type_tn type;
+	template <typename to_tn>
+	struct to
+	{
+		typedef typename rmv_con<to_tn>::type type;
+	};
 };
 template <typename type_tn> struct rmv_con <type_tn const&>
 {
 	typedef type_tn& type;
+	template <typename to_tn>
+	struct to
+	{
+		typedef typename rmv_con<to_tn>::type type;
+	};
 };
 
 
@@ -911,12 +926,22 @@ template <typename type_tn>
 struct rmv_ref
 {
 	typedef type_tn type;
+	template <typename to_tn>
+	struct to
+	{
+		typedef to_tn type;
+	};
 };
 
 template <typename type_tn>
 struct rmv_ref <type_tn&>
 {
 	typedef type_tn type;
+	template <typename to_tn>
+	struct to
+	{
+		typedef typename rmv_ref<to_tn>::type type;
+	};
 };
 
 
