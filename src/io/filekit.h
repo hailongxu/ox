@@ -49,7 +49,7 @@ namespace ox
 			if (filebytes) *filebytes = len;
 			if (len==0) return false;
 			assert(len%sizeof(character)==0);
-			long wlen = (sizeof(character)==1?len+1:len)/sizeof(character);
+			long wlen = (len+sizeof(character)-1)/sizeof(character);
 			buffer.resize(wlen);
 			size_t read = ffile.read((character*)buffer.data(),1,len);
 			assert (read==len);

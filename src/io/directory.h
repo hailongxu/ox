@@ -79,8 +79,10 @@ struct directory_same_trait
 
 	enum
 	{
-		level_bit=1,
-		depth_bit=2,
+		__action_null=0,
+		__action_level=1,
+		__action_depth=2,
+		__action_all=__action_level|__action_depth,
 	};
 
 protected:
@@ -109,15 +111,23 @@ struct directory_trait<char> : directory_same_trait
 		filesize_t filesize() const { return (((filesize_t)nFileSizeHigh)<<32)|((filesize_t)nFileSizeLow); }
 		filetime_t& file_writetime() {return ftLastWriteTime;}
 		filetime_t const& file_writetime() const {return ftLastWriteTime;}
+		bool is_dir() const {return attribute()&attr_directory?true:false;}
 		void init() {memset(this,0,sizeof(*this));}
 		size_t depth; /// from 0
 		character const* filedir;
 	};
 protected:
-	static handle_t findfirst(const character *filespec,finddata_t *fileinfo)
-	{ return FindFirstFileA(filespec,fileinfo); }
+	static handle_t findfirst(const character *filespec,finddata_t *fileinfo,bool is_only_dir=true)
+	{
+		FINDEX_INFO_LEVELS level = FindExInfoStandard;
+		FINDEX_SEARCH_OPS ops = is_only_dir?FindExSearchLimitToDirectories:FindExSearchNameMatch;
+		return FindFirstFileExA(filespec,level,fileinfo,ops,0,0);
+	}
 	static bool findnext(handle_t handle,finddata_t *fileinfo)
 	{ return FindNextFileA(handle,fileinfo)?true:false; }
+	static character const* dotstr() {return ".";}
+	static character const* ddotstr() {return "..";};
+	static character const* asterisk() {return "*";};
 };
 
 template <>
@@ -132,15 +142,23 @@ struct directory_trait<wchar_t> : directory_same_trait
 		character const* filename() const { return cFileName; }
 		filesize_t filesize() const { return (((unsigned __int64)nFileSizeHigh)<<32)|nFileSizeLow; }
 		filetime_t const& file_writetime() const {return ftLastWriteTime;}
+		bool is_dir() const {return attribute()&attr_directory?true:false;}
 		void init() {memset(this,0,sizeof(*this));}
 		size_t depth; /// from 0
 		character const* filedir;
 	};
 protected:
-	static handle_t findfirst(const character *filespec,finddata_t *fileinfo)
-	{ return FindFirstFileW(filespec,fileinfo); }
+	static handle_t findfirst(const character *filespec,finddata_t *fileinfo,bool is_only_dir=true)
+	{
+		FINDEX_INFO_LEVELS level = FindExInfoStandard;
+		FINDEX_SEARCH_OPS ops = is_only_dir?FindExSearchLimitToDirectories:FindExSearchNameMatch;
+		return FindFirstFileExW(filespec,level,fileinfo,ops,0,0);
+	}
 	static bool findnext(handle_t handle,finddata_t *fileinfo)
 	{ return FindNextFileW(handle,fileinfo)?true:false; }
+	static character const* dotstr() {return L".";}
+	static character const* ddotstr() {return L"..";};
+	static character const* asterisk() {return L"*";};
 };
 
 
@@ -161,14 +179,17 @@ public:
 
 	struct nodeinfo
 	{
-		std_string id;
+		std_string buffer;
+		character const* id() const {return buffer.c_str()+file_pos;};
+		character const* dir() const {return buffer.c_str();}
+		size_t file_pos;
 		attribute_t type;
 		filesize_t size;
 		filetime_t timewrite;
 	};
 	
 	typedef std::vector<nodeinfo> filelist_t;
-	typedef delegate<size_t(finddata_t const&, size_t)> processnode_func;
+	typedef delegate<size_t(finddata_t const&, size_t)> process_d;
 
 public:
 	static bool attribute(character const* path_start,finddata_t& fd)
@@ -188,97 +209,99 @@ public:
 		is_ignoring_ddot = _is_ignoring_ddot;
 	}
 	
-	size_t traverse(std_string const& path_start,filelist_t& files)
+	//size_t traverse(std_string const& path_start,filelist_t& files,size_t max_depth=1,bool is_full_name=false)
+	//{
+	//	return traverse(path_start.c_str(),files);
+	//}
+	//size_t traverse(character const* path_start,filelist_t& files,size_t max_depth=1,bool is_full_name=false)
+	//{
+	//	add_node_to_list_handle handle(files,-1,0);
+	//	processnode_func process(&handle);
+	//	return traverse(path_start,process);
+	//}
+
+	size_t traverse_file(std_string const& dir_start,character const* match,filelist_t& files,
+		size_t max_depth=1,bool is_full_name=false)
 	{
-		return traverse(path_start.c_str(),files);
+		const character* start = dir_start.c_str();
+		return traverse_file(start,match,files,max_depth,is_full_name);
 	}
-	size_t traverse(character const* path_start,filelist_t& files)
+	size_t traverse_file(const character* dir_start,character const* match,filelist_t& files,
+		size_t max_depth=1,bool is_full_name=false)
 	{
-		add_node_to_list_handle handle(files,-1,0);
-		processnode_func process(&handle);
-		return traverse(path_start,process);
+		return traverse(dir_start,match,files,max_depth,is_full_name,-1,attr_directory);
 	}
 
-	size_t traverse_file(std_string const& path_start,filelist_t& files)
+	size_t traverse_dir(std_string const& dir_start,character const* match,filelist_t& files)
 	{
-		return traverse_file(path_start.c_str(),files);
+		return traverse_dir(dir_start.c_str(),match,files);
 	}
-	size_t traverse_file(character const* path_start,filelist_t& files)
+	size_t traverse_dir(const character* dir_start,character const* match,filelist_t& files)
 	{
-		return traverse(path_start,files,-1,attr_directory);
-	}
-
-	size_t traverse_dir(std_string const& path_start,filelist_t& files)
-	{
-		return traverse_dir(path_start.c_str(),files);
-	}
-	size_t traverse_dir(character const* path_start,filelist_t& files)
-	{
-		return traverse(path_start,files,attr_directory,0);
+		return traverse(dir_start,match,files,attr_directory,0);
 	}
 
-	size_t traverse(std_string const& path_start,filelist_t& files,attribute_t const& caretypes,attribute_t const& ignoringtypes=0)
+	size_t traverse(std_string const& dir_start,character const* match,filelist_t& files,
+		size_t max_depth,bool is_full_path,
+		attribute_t const& caretypes,attribute_t const& ignoringtypes=0)
 	{
-		return traverse(path_start.c_str(),files,catetype,ignoringtypes);
+		return traverse(dir_start.c_str(),match,files,max_depth,is_full_path,caretypes,ignoringtypes);
 	}
-	size_t traverse(character const* path_start,filelist_t& files,attribute_t const& caretypes,attribute_t const& ignoringtypes=0)
+	size_t traverse(const character* dir_start,character const* match,filelist_t& files,
+		size_t max_depth,bool is_full_path,
+		attribute_t const& caretypes,attribute_t const& ignoringtypes=0)
 	{
-		add_node_to_list_handle handle(files,caretypes,ignoringtypes);
-		processnode_func process(&handle);
-		return traverse(path_start,process);
+		add_node_to_list_handle handle(files,caretypes,ignoringtypes,max_depth,is_full_path);
+		process_d process(&handle);
+		return traverse(dir_start,match,process);
 	}
 
-	size_t traverse(std_string const& path_start, processnode_func& process,size_t depth=1)
+	size_t traverse(std_string const& dir_start,character const* match,process_d& process,size_t depth=1)
 	{
-		return traverse(path_start.c_str(),process,depth);
+		return traverse(dir_start.c_str(),match,process,depth);
 	}
-	size_t traverse(const character* path_start, processnode_func& process,size_t depth=1)
+	size_t traverse(const character* dir_start,character const* match,process_d& process,size_t depth=1)
 	{
 		static ox::character::is_case_sensitive_c const casive = ox::character::__case_sensitive;
-		if (path_start==0 || 0==*path_start) return 0;
+		if (dir_start==0 || 0==*dir_start) return 0;
 		if (process.is_empty()) return 0;
 
 		size_t index = 0;
 		finddata_t fd;
 
 		fd.depth = depth;
-		fd.filedir = path_start;
+		fd.filedir = dir_start;
 
-		handle_t fr = findfirst(path_start,&fd);
+		if (match==0 || *match==0) match = asterisk();
+
+		std_string path = dir_start;
+		pathkit::add_rpath(path,match,'\\');
+
+		handle_t fr = findfirst(path.c_str(),&fd);
 		if (!isvalid(fr)) return 0;
 
-		character const dotstr[2] = {'.',0};
-		character const ddotstr[3] = {'.','.',0};
-		character const asterisk[2] = {'*',0};
 
+		bool bfinded = true;
+		/// ignore the "." ".."
 		do {
-			int rcmp = string_kit::strcmp<casive>(fd.filename(),dotstr);
+			int rcmp = string_kit::strcmp<casive>(fd.filename(),dotstr());
 			bool is_dot = 0==rcmp;
-			if (!is_dot || is_dot && !is_ignoring_dot)
-				if (!(level_bit & process(fd,index++)))
-					break;
-
-			if (!findnext(fr,&fd)) break;
-
-			int rcmp2 = string_kit::strcmp<casive>(fd.filename(),ddotstr);
+			if (!is_dot) break; /// if not . goto normal
+			if (!(bfinded=findnext(fr,&fd))) break;
+			int rcmp2 = string_kit::strcmp<casive>(fd.filename(),ddotstr());
 			bool is_ddot = 0==rcmp2;
-			if (!is_ddot || is_ddot && !is_ignoring_ddot)
-				if (!(level_bit & process(fd,index++)))
-					break;
+			if (!is_ddot) break; /// if not .. goto normal
+			bfinded=findnext(fr,&fd);
+		} while(0);
 
-			std_string subdir;
-			while (findnext(fr,&fd))
-			{
-				size_t ret = process(fd,++index);
-				if (!(ret&level_bit)) break;
-				if (!(fd.attribute()&attr_directory)) continue;
-				if (!(ret&depth_bit)) continue;
-				subdir.assign(path_start);
-				pathkit::remove_last(subdir);
-				pathkit::add_rpath(subdir,fd.filename(),'\\');
-				pathkit::add_rpath(subdir,asterisk,'\\');
-				traverse(subdir.c_str(),process,depth+1); /// ignore exception
-			}
+		for (;bfinded;bfinded=findnext(fr,&fd))
+		{
+			size_t ret = process(fd,++index);
+			if (!(ret&__action_level)) break; /// if the level bit not set, we will cancel the level traversing
+			if (!(fd.attribute()&attr_directory)) continue;
+			if (!(ret&__action_depth)) continue; /// if the depth bit not set, we do not traverse the subdir
+			pathkit::make_path(path,dir_start,fd.filename(),'\\');
+			traverse(path.c_str(),match,process,depth+1); /// ignore exception
 		}
 		while(false);
 
@@ -293,27 +316,46 @@ public:
 protected:
 	struct add_node_to_list_handle
 	{
-		add_node_to_list_handle(filelist_t& _files,attribute_t const& caretypes=-1,attribute_t const& ignoringtypes=0)
+		add_node_to_list_handle(
+			filelist_t& _files,attribute_t const& caretypes=-1,attribute_t const& ignoringtypes=0,
+			size_t max_depth=1,bool is_full_path=false)
 			: files(_files)
 			, attribute_care(caretypes)
 			, attribute_ignoring(ignoringtypes)
+			, is_full_path(is_full_path)
+			, max_depth(max_depth)
 		{}
 		size_t operator()(finddata_t const& fd,size_t index)
 		{
+			if (fd.depth>max_depth) return __action_null;
 			if (!(fd.attribute()&attribute_care))
-				return level_bit;
+				return __action_level|__action_depth;
 			if (fd.attribute()&attribute_ignoring)
-				return level_bit;
+				return __action_level|__action_depth;
 			files.push_back(nodeinfo());
-			files.back().id = fd.filename();
 			files.back().size = fd.filesize();
 			files.back().type = fd.attribute();
 			files.back().timewrite = fd.file_writetime();
-			return level_bit;
+			if (!is_full_path)
+			{
+				files.back().buffer = fd.filename();
+				files.back().file_pos = 0;
+			}
+			else
+			{
+				files.back().buffer = fd.filedir;
+				pathkit::remove_last(files.back().buffer);
+				files.back().buffer.append(1,'\0');
+				files.back().file_pos = files.back().buffer.size();
+				files.back().buffer.append(fd.filename());
+			}
+			return __action_level|__action_depth;
 		}
 		filelist_t& files;
 		attribute_t const& attribute_care;
 		attribute_t const& attribute_ignoring;
+		bool const& is_full_path;
+		size_t const& max_depth;
 	};
 };
 
