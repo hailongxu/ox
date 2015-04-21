@@ -2,12 +2,12 @@
 //
 
 #include "stdafx.h"
+#include <conio.h>
 
 #include "../../src/thread/task_feedback.h"
 #include "../../src/thread/win_queue_thread.h"
 #include "../../src/thread/win_queue_multi_thread.h"
 #include "../../src/thread/win_queue_pool_thread.h"
-#include <conio.h>
 #include "../../src/thread/win_ui_thread.h"
 
 
@@ -21,19 +21,20 @@ namespace event
 {
 	void f2(int i)
 	{
-		Sleep(5);
-		printf ("[%u %d] ooooooo\n",GetCurrentThreadId(),i);
+		//Sleep(5);
+		printf ("[%u %d] f2 f2 f2 f2 f2 f2 \n",GetCurrentThreadId(),i);
 	}
 	void f1()
 	{
 		//Sleep(500);
-		printf ("[%u] tttttttttt\n",GetCurrentThreadId());
+		printf ("[%u] f1 f1 f1 f1 f1 \n",GetCurrentThreadId());
 	}
 	void f3()
 	{
 		//Sleep(500);
+		static int i = 0;
 		char buf[64];
-		sprintf (buf,"[%u] tttttttttt\n",GetCurrentThreadId());
+		sprintf (buf,"[%u,%d] tttttttttt\n",GetCurrentThreadId(),++i);
 		OutputDebugStringA(buf);
 	}
 	void on_idle(thread_t* t)
@@ -57,30 +58,36 @@ namespace event
 	}
 	void recall(ox::win_queue_thread* th)
 	{
-		th->add(ox::task_single<int>::make(&event::f1));
+		th->add(ox::task_single<void>::make(&event::f1));
 	}
 }
 
-namespace chthread_test
+namespace uithread_test
 {
 	ox::win_ui_thread ui;
 	ox::win_queue_thread ui_task;
-	static const int __messageid_task = WM_USER + 1;
-	HWND _m_message_wnd_handle;
+	bool timer_event()
+	{
+		static int i = 0;
+		printf("timer #%i event is coming\n",++i);
+		return i<5;
+	}
 	void post_task()
 	{
-		while(getchar())
+		while(getch())
 		{
 			printf("post task\n");
-			ui.add(ox::task_single<int>::make(&event::f3));
+			ui.add(ox::task_single<void>::make(&event::f3));
 		}
 	}
 	void test()
 	{
 		ui.start();
+		ui.add_timer(ox::timer_task_helper::make(timer_event),2*1000);
 		ui_task.start();
-		ui_task.add(ox::task_single<int>::make(&post_task));
-		ui.stop();
+		ui_task.add(ox::task_single<void>::make(&post_task));
+		::MessageBoxA(0,0,0,0);
+		//ui.stop();
 	}
 }
 
@@ -103,7 +110,7 @@ namespace win_queue_thread_test
 	ox::win_queue_thread thread;
 	void test()
 	{
-		thread.add(ox::task_single<int>::make(&event::recall,&thread));
+		thread.add(ox::task_single<void>::make(&event::recall,&thread));
 		thread.start();
 		Sleep(10);
 		thread.stop();
@@ -123,8 +130,8 @@ namespace multi_queue_thread_test
 		m.on_busy().assign(&event::on_busy);
 		thread_t* t = m.create_thread();
 		thread_t* t2 = m.create_thread();
-		t->add(ox::task_single<int>::make(&event::f1));
-		t2->add(ox::task_single<int>::make(&event::f1));
+		t->add(ox::task_single<void>::make(&event::f1));
+		t2->add(ox::task_single<void>::make(&event::f1));
 		m.stop();
 		printf("sub stoped \n");
 		control.stop();
@@ -147,7 +154,7 @@ namespace pool_thread_test
 		{
 			//::_sleep(10);
 			printf ("%d++++++++\n",i);
-			pool.add(ox::task_single<int>::make(&event::f2,i));
+			pool.add(ox::task_single<void>::make(&event::f2,i));
 		}
 		int i = 9;
 		Sleep(3000);
@@ -160,19 +167,23 @@ namespace pool_thread_test
 #include "../../src/thread/timer.h"
 namespace thread_performace_test
 {
+	//ox::win_high_timer<ox::win_waitable_timer_engine> high;
 	ox::win_queue_thread thread;
 	void f() {}
 	void test()
 	{
 		thread.start();
-		ox::time_elapsed counter;
-		counter.begin();
-		for (int i=0;i<600*1000;i++)
+		//ox::time_elapsed counter;
+		//counter.begin();
+		for (int i=0;i<5/*600*1000*/;i++)
 		{
-			thread.add(ox::task_single<int>::make(f));
+			thread.add(ox::task_single<void>::make(f));
+			//thread.add(ox::thread_task_helper::make(event::f2,0));
+			//thread.add(ox::thread_task_helper::make(event::f2,0));
+			//thread.add_high(ox::thread_task_helper::make(event::f1));
 		}
-		counter.end();
-		printf ("%lf seconds\n",counter.double_elapsed_seconds());
+		//counter.end();
+		//printf ("%lf seconds\n",counter.double_elapsed_seconds());
 	}
 }
 
@@ -203,23 +214,87 @@ namespace multi_thread_test
 	}
 }
 
+#include "../../src/thread/win_queue_thread_with_timer.h"
+namespace thread_timer_test
+{
+	ox::win_queue_thread_with_timer thread;
+	bool on_timer()
+	{
+		printf("on timer\n");
+		return true;
+	}
+	void test()
+	{
+		thread.start();
+		thread.add_timer_second(ox::timer_task_helper::make(on_timer),4);
+	}
+}
+
+
+#include "../../src/thread/win_queue_pool_thread.h"
+namespace thread_pool_test
+{
+	ox::win_queue_pool_thread pool;
+	ox::win_queue_thread control;
+	bool on_timer()
+	{
+		printf("on timer\n");
+		return true;
+	}
+	void high_task()
+	{
+		Sleep(100);
+		printf("high task\n");
+	}
+	void normal_task()
+	{
+		Sleep(10);
+		printf("normal task\n");
+	}
+	bool is_normal_allowed(size_t i,size_t all)
+	{
+		printf("%d,%d\n",i,all);
+		return i>1;
+	}
+	void test()
+	{
+		control.start();
+		pool.bind(&control);
+		pool.set_max_min(3,3);
+		pool.on_can_normal_task_run().assign(is_normal_allowed);
+		for (int i=0;i<10;i++)
+		{
+			pool.add(ox::thread_task_helper::make(normal_task));
+			pool.add(ox::thread_task_helper::make(normal_task));
+			pool.add(ox::thread_task_helper::make(normal_task));
+			pool.add(ox::thread_task_helper::make(normal_task));
+			pool.add(ox::thread_task_helper::make(normal_task));
+			pool.add(ox::thread_task_helper::make(normal_task));
+			pool.add(ox::thread_task_helper::make(normal_task));
+			pool.add(ox::thread_task_helper::make(normal_task));
+			pool.add_high(ox::thread_task_helper::make(high_task));
+		}
+		Sleep(5000);
+		pool.stop();
+		control.stop();
+	}
+}
+
 
 //#include <vld.h>
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-
 	do {
-        chthread_test::test(); break;
-        //multi_thread_test::test();break;
-		//thread_test::test();break;
-		//win_queue_thread_test::test();break;
-		//pool_thread_test::test();break;
-		//thread_performace_test::test();break;
-		//delegate_test::test();break;
-		//multi_queue_thread_test::test();break;
-		//mutex_test::test();break;
-		//string_pass_test::test();break;
+		thread_pool_test::test();break;
+		thread_performace_test::test();break;
+		uithread_test::test(); break;
+		thread_timer_test::test(); break;
+        multi_thread_test::test();break;
+		thread_test::test();break;
+		win_queue_thread_test::test();break;
+		pool_thread_test::test();break;
+		multi_queue_thread_test::test();break;
 	} while(false);
 	//Sleep(-1);
 	printf ("wait ... \n");
