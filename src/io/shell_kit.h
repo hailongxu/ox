@@ -82,7 +82,7 @@ public:
 	typedef typename shell_kit_trait<character_tn>::file_attr_t file_attr_t;
 	typedef typename shell_kit_trait<character_tn>::character character;
 	typedef typename shell_kit_trait<character_tn>::ucharacter ucharacter;
-	typedef ox::string::string_simple_kit<character_tn> strkit;
+	typedef ox::str::string_simple_kit<character_tn> strkit;
 	typedef typename strkit::std_string std_string;
 	typedef ox::utl::localpath_kit<character_tn> pathkit;
 
@@ -92,7 +92,7 @@ public:
 	//template <typename string_tn>
 	//static bool has(string_tn filename)
 	//{
-	//	character const* id = ox::string::c_string<string_tn>::get(filename);
+	//	character const* id = ox::str::c_string<string_tn>::get(filename);
 	//	file_attr_t att;
 	//	return 0==attr(id,att);
 	//}
@@ -100,7 +100,7 @@ public:
 	//template <typename string_tn>
 	//static bool has_dir(string_tn filename)
 	//{
-	//	character const* id = ox::string::c_string<string_tn>::get(filename);
+	//	character const* id = ox::str::c_string<string_tn>::get(filename);
 	//	file_attr_t att;
 	//	if (0!=attr(id,att)) return false;
 	//	return att.st_mode&_S_IFDIR ? true:false;
@@ -191,7 +191,7 @@ public:
 	//template <typename string_tn>
 	//static bool has_file(string_tn filename)
 	//{
-	//	character const* id = ox::string::c_string<string_tn>::get(filename);
+	//	character const* id = ox::str::c_string<string_tn>::get(filename);
 	//	file_attr_t att;
 	//	if (0!=attr(id,att)) return false;
 	//	return att.st_mode&_S_IFDIR ? false:true;
@@ -337,7 +337,7 @@ public:
 	}
 	static int rmkdir(const character * dir)
 	{
-		using namespace ox::string;
+		using namespace ox::str;
 		typedef string_simple_kit<character>::std_string std_string;
 
 		int ret = -1;

@@ -84,7 +84,7 @@ namespace ox
 			typedef character_tn character;
 			static ox::character::is_case_sensitive_c const casive = ox::character::__case_sensitive;
 			typedef ox::utl::localpath_kit<character> pathkit;
-			typedef ox::string::string_simple_kit<character> strkit;
+			typedef ox::str::string_simple_kit<character> strkit;
 			typedef typename strkit::std_string std_string;
 			typedef ox::io::directory_kit<character> dirkit;
 			typedef delegate<bool(character const*,character const*)> line_handle;
@@ -122,7 +122,7 @@ namespace ox
 		struct fileline_match
 		{
 			typedef character_tn character;
-			typedef ox::string::string_simple_kit<character> strkit;
+			typedef ox::str::string_simple_kit<character> strkit;
 			typedef ox::io::foreach_fileline<character> eachline_t;
 			typedef typename eachline_t::line_handle line_handle;
 			typedef typename eachline_t::std_string std_string;
@@ -177,7 +177,7 @@ namespace ox
 		struct cross_compare
 		{
 			typedef character_tn character;
-			typedef ox::string::string_simple_kit<character> strkit;
+			typedef ox::str::string_simple_kit<character> strkit;
 			typedef typename strkit::std_string std_string;
 			typedef std::set<std_string> ext_set;
 

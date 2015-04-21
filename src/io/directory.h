@@ -152,7 +152,7 @@ public:
 	typedef typename directory_trait::finddata_t finddata_t;
 	typedef typename ox::character::character_trait<character_tn>::character character;
 	typedef typename ox::character::static_value<character> static_value_t;
-	typedef ox::string::string_simple_kit<character> string_kit;
+	typedef ox::str::string_simple_kit<character> string_kit;
 	typedef ox::utl::localpath_kit<character> pathkit;
 	typedef typename string_kit::std_string std_string;
 	typedef typename directory_trait::attribute_t attribute_t;
