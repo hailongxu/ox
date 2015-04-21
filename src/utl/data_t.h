@@ -10,6 +10,7 @@ namespace ox
 		template <typename character>
 		struct data_tt
 		{
+			typedef character value_type;
 			character* begin;
 			size_t size;
 			data_tt()
@@ -63,6 +64,7 @@ namespace ox
 		template <typename character>
 		struct cdata_tt
 		{
+			typedef character value_type;
 			character const* begin;
 			size_t size;
 			cdata_tt()

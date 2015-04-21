@@ -19,6 +19,7 @@
 #include <algorithm>
 
 #include "../pkg/string_simple_kit.h"
+#include "data_t.h"
 
 
 #pragma once
@@ -596,12 +597,12 @@ struct localpath_kit
 			line = getline(&lineend);
 			if (!line) break;
 			if (lineend!=line) ++counted;
-		} while(counted<index);
+		} while(counted<=index);
 
 		if (_counted) *_counted = counted;
 		if (itemend) *itemend = lineend;
 		if (next) *next = getline.current;
-		return getline.current;
+		return line;
 	}
 	static size_t count(character const* begin,character const* end)
 	{
@@ -900,26 +901,29 @@ struct uri_kit
 		if (str && ppend) *ppend = str;
 		return str?path_begin:0;
 	}
-	/// return port begin
-	static character const* get_host_and_port(character const* host_begin/*,character const** hostname_end=0*/)
+	/// return end offset
+	static size_t get_host_and_port(character const* host_begin,size_t* host_end_offset,size_t* port_offset=0)
 	{
-		return get_host_and_port(host_begin,strkit::end(host_begin)/*,hostname_end*/);
+		return get_host_and_port(host_begin,strkit::end(host_begin),host_end_offset,port_offset);
 	}
-	/// return port begin
-	static character const* get_host_and_port(character const* host_begin,character const* host_end/*,character const** hostname_end=0*/)
+	/// return end offset
+	static size_t get_host_and_port(cdata_tt<character> const& buf,size_t* host_end_offset,size_t* port_offset=0)
 	{
-		assert(host_end>=host_begin);
-
-		character const* _hostname_end = host_end;
-		character const* port_begin = host_end;
+		size_t host_end_off=buf.size,port_off=host_end_off,end_off=host_end_off;
 		do {
-			if(!host_begin || !*host_begin)
-				break;
-			character const* p = strkit::strch<true>(host_begin,host_end,':',&port_begin);
-			if (p) /*_hostname_end=port_begin,*/++port_begin;
+			if(buf.is_empty()) break;
+			character const* p = strkit::strch<true>(buf.begin,buf.size,':');
+			if (p)
+			{
+				host_end_off = p-buf.begin, port_off = host_end_off+1;
+				character const* p2 = strkit::str2ch<false>(buf.begin+port_off,buf.end(),'0',10);
+				if (p2==0) p2 = buf.end();
+				end_off = p2-buf.begin;
+			}
 		} while(0);
-		//if (hostname_end) *hostname_end = _hostname_end;
-		return port_begin;
+		if (host_end_offset) *host_end_offset = host_end_off;
+		if (port_offset) *port_offset = port_off;
+		return end_off;
 	}
 	/// return host begin
 	static character const* get_host_and_path(

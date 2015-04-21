@@ -21,6 +21,7 @@ namespace utl
 	struct c_free;
 	struct cpp_delete;
 	struct win_close_handle;
+	struct win_release_dc;
 	template <typename t,typename f=void>
 	struct destructor;
 
@@ -42,6 +43,16 @@ namespace utl
 		HANDLE _m_handle;
 	};
 
+	template <>
+	struct destructor<HDC,win_release_dc>
+	{
+		typedef destructor self;
+		self(HWND hwnd,HDC h): _m_hwnd(hwnd),_m_hdc(h) {}
+		~destructor() {::ReleaseDC(_m_hwnd,_m_hdc);}
+		HWND _m_hwnd;
+		HDC _m_hdc;
+	};
+
 	template <typename t>
 	struct cxx_obj_defer
 	{
@@ -56,6 +67,14 @@ namespace utl
 		typedef win_handle_defer self;
 		typedef destructor<HANDLE,win_close_handle> defer_t;
 		self(HANDLE h): _m_destructor(h) {}
+		defer_t _m_destructor;
+	};
+	
+	struct win_dc_defer
+	{
+		typedef win_dc_defer self;
+		typedef destructor<HDC,win_release_dc> defer_t;
+		self(HWND hwnd,HDC h): _m_destructor(hwnd,h) {}
 		defer_t _m_destructor;
 	};
 
