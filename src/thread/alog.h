@@ -34,7 +34,7 @@ namespace ox
 			std::string str1,str2;
 			if (str) str1.assign(str);
 			if (ln) str2.assign(ln);
-			_m_thread.add(ox::task_single<int>::make(this,&alog_t::do_log,str1,str2));
+			_m_thread.add(ox::thread_task_helper::make(this,&alog_t::do_log,str1,str2));
 		}
 		void do_log(std::string const& str,std::string const& ln)
 		{

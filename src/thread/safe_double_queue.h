@@ -103,7 +103,7 @@ namespace ox
 		{
 			return _m_is_add_enabled.value()!=0;
 		}
-		void add(object_t object)
+		void add(object_t const& object)
 		{
 			if (!_m_is_add_enabled)
 				return;

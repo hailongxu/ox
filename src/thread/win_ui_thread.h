@@ -14,6 +14,7 @@
 #include "win_thread.h"
 #include "atomic_number.h"
 #include "safe_double_queue.h"
+#include "timer.h"
 
 
 
@@ -24,7 +25,7 @@
 
 /*
 1. on_shedule_gap()
-2. transfer queue, that is, promote the efficiency of swaping queue, when there is
+2. transfer queue, that is, promote the efficiency of swapping queue, when there is
 thousands of thread being prepare to add message to the wait or next queue
 3. is-idle(), show that the thread must be at idle, but not-idle is not accurate //absolutely
 4. condition queue
@@ -50,12 +51,48 @@ namespace ox
 		typedef delegate<void(self*)> busy_d;
 		typedef delegate<void(self*)> exit_d;
 		typedef thread_task_t task_t;
+		typedef timer_task_t timer_task_t;
 		typedef thread_t::wait_enum wait_enum;
-		static const int __messageid_task = WM_USER + 1;
-		typedef safe_double_queue_tt<task_t*> task_queue;
+        struct ui_task_t
+        {
+            task_t* task;
+			bool is_timer;
+            size_t after_milli;
+        };
+		typedef safe_double_queue_tt<ui_task_t> task_queue;
 		typedef task_queue control_queue;
 		typedef task_queue::object_ptr task_pptr;
+        static const int __messageid_task = WM_USER + 1;
 
+	private:
+		typedef win_timer_list timer_list_t;
+		struct timer_engine_t
+		{
+			timer_engine_t()
+				: _m_hwnd(0), _m_timerid(0)
+			{}
+			void init(HWND hwnd,UINT_PTR timerid)
+			{
+				_m_hwnd = hwnd;
+				_m_timerid = timerid;
+			}
+			void set_after_milli(size_t milli_seconds)
+			{
+				assert(_m_hwnd!=0);
+				assert(_m_timerid!=0);
+				::SetTimer(_m_hwnd,_m_timerid,milli_seconds,0);
+			}
+			void kill()
+			{
+				::KillTimer(_m_hwnd,_m_timerid);
+			}
+			void uninit()
+			{
+				kill();
+			}
+			HWND _m_hwnd;
+			UINT_PTR _m_timerid;
+		};
 	public:
 		~win_ui_thread() {}
 		self(self const&);
@@ -64,7 +101,6 @@ namespace ox
 		{
 			thread_t::on_exit().assign(this,&self::on_internal_exit);
 			thread_t::on_run().assign(this,&self::run);
-			//init_window();
 			_m_is_quit_set = false;
 		}
 		self(size_t your_id,char const* your_name)
@@ -72,7 +108,6 @@ namespace ox
 		{
 			thread_t::on_exit().assign(this,&self::on_internal_exit);
 			thread_t::on_run().assign(this,&self::run);
-			//init_window();
 			_m_is_quit_set = false;
 		}
 		bool is_exiting() const
@@ -82,16 +117,30 @@ namespace ox
 
 		int add(task_t* task)
 		{
-			printf("add\n");
 			if (!_m_normal_queue.is_add_enabled() || is_exiting()) return -1;
 			assert (!is_exiting());
-			_m_normal_queue.add(task);
+			ui_task_t ui_task;
+			ui_task.is_timer = false;
+			ui_task.task = task;
+			_m_normal_queue.add(ui_task);
 			schedule_task();
 			return 0;
 		}
 		int add2(task_t* task,size_t/*threadid, compatible with multi-thread*/)
 		{
 			return add(task);
+		}
+		size_t add_timer(timer_task_t* timer_task,LONGLONG period_milli_seconds)
+		{
+			if (!_m_normal_queue.is_add_enabled() || is_exiting()) return -1;
+			assert (!is_exiting());
+			ui_task_t ui_task;
+			ui_task.is_timer = true;
+			ui_task.task = (task_t*)timer_task;
+			ui_task.after_milli = period_milli_seconds;
+			_m_normal_queue.add(ui_task);
+			schedule_task();
+			return 0;
 		}
 
 		bool clear()
@@ -106,7 +155,10 @@ namespace ox
 			OutputDebugStringA("stop_next\n");
 			if (!_m_normal_queue.is_add_enabled()) return false;
 			if (get_is_exiting_or_set()) return false;
-			_m_normal_queue.add(task_single<int>::make(this,&self::do_set_quit_flag));
+			ui_task_t ui_task;
+			ui_task.task = task_single<void>::make(this,&self::do_set_quit_flag);
+			ui_task.is_timer = false;
+			_m_normal_queue.add(ui_task);
 			schedule_task();
 			OutputDebugStringA("stop_next return\n");
 		}
@@ -124,38 +176,10 @@ namespace ox
 	private: /// the message process's main procedure
 		unsigned run()
 		{
-			// IF this was just a simple PeekMessage() loop (servicing all possible work
-			// queues), then Windows would try to achieve the following order according
-			// to MSDN documentation about PeekMessage with no filter):
-			//    * Sent messages
-			//    * Posted messages
-			//    * Sent messages (again)
-			//    * WM_PAINT messages
-			//    * WM_TIMER messages
-			//
-			// Summary: none of the above classes is starved, and sent messages has twice
-			// the chance of being processed (i.e., reduced service time).
-			init_window();
+			init_window(); /// should init in its thread
 			
-			//for(MSG msg;;)
-			//{ 
-			//	GetMessage(&msg,0,0,0);
-			//	TranslateMessage(&msg); 
-			//	DispatchMessage(&msg); 
-			//}
-			//return 0;
-
 			for (int has_more_work=0;;) 
 			{
-				// If we do any work, we may create more messages etc., and more work may
-				// possibly be waiting in another task group.  When we (for example)
-				// process_next_message(), there is a good chance there are still more
-				// messages waiting.  On the other hand, when any of these methods return
-				// having done no work, then it is pretty unlikely that calling them again
-				// quickly will find any work to do.  Finally, if they all say they had no
-				// work, then it is a good time to consider sleeping (waiting) for more
-				// work.
-
 				OutputDebugStringA("0\n");
 
 				has_more_work = process_next_message();
@@ -169,20 +193,15 @@ namespace ox
 				}
 				OutputDebugStringA("2\n");
 
-				//{
-				//	is_more_work_plausible |=
-				//		m_pState->m_pDelegate->DoDelayedWork(&m_DelayedWorkTime);
-				//}
+				has_more_work |= pop_one_timer_task_and_run();
+				if (has_more_work && _m_timer_list.is_empty())
+					_m_timer_engine.kill();
 
-				// If we did not process any delayed work, then we can assume that our
-				// existing WM_TIMER if any will fire when delayed work should run.  We
-				// don't want to disturb that timer if it is already in flight.  However,
-				// if we did do all remaining delayed work, then lets kill the WM_TIMER.
-				//if (is_more_work_plausible && m_DelayedWorkTime.IsNull())
-				//	KillTimer(m_hMessageWnd, reinterpret_cast<UINT_PTR>(this));
-
-				//if (m_pState->m_bShouldQuit)
-				//	break;
+				if (_m_is_quit_set)
+				{
+					OutputDebugStringA("_m_is_quit_set 2\n");
+					break;
+				}
 
 				if (has_more_work) continue;
 				OutputDebugStringA("3\n");
@@ -200,10 +219,6 @@ namespace ox
 		}
 		int process_next_message()
 		{
-			// If there are sent messages in the queue then PeekMessage internally
-			// dispatches the message and returns false. We return true in this
-			// case to ensure that the message loop peeks again instead of calling
-			// MsgWaitForMultipleObjectsEx again.
 			/// ??? is peek message handled all the sent message?????
 			OutputDebugStringA("process_next_message\n");
 			MSG msg;
@@ -243,29 +258,10 @@ namespace ox
 		}
 		bool ignore_task_message_and_process_next() 
 		{
-			// When we encounter a kMsgHaveWork message, this method is called to peek
-			// and process a replacement message, such as a WM_PAINT or WM_TIMER.  The
-			// goal is to make the kMsgHaveWork as non-intrusive as possible, even though
-			// a continuous stream of such messages are posted.  This method carefully
-			// peeks a message while there is no chance for a kMsgHaveWork to be pending,
-			// then resets the have_work_ flag (allowing a replacement kMsgHaveWork to
-			// possibly be posted), and finally dispatches that peeked replacement.  Note
-			// that the re-post of kMsgHaveWork may be asynchronous to this thread!!
-
 			MSG msg;
 			bool has_message = (0 != PeekMessage(&msg,0,0,0,PM_REMOVE));
-
-			// Since we discarded a kMsgHaveWork message, we must update the flag.
-			_m_has_task_slice = 0;
-
-			// We don't need a special time slice if we didn't have_message to process.
-			if (!has_message)
-				return FALSE;
-
-			// Guarantee we'll get another time slice in the case where we go into native
-			// windows code.   This schedule_task() may hurt performance a tiny bit when
-			// tasks appear very infrequently, but when the event queue is busy, the
-			// kMsgHaveWork events get (percentage wise) rarer and rarer.
+			task_lose_time_slice();
+			if (!has_message) return false;
 			schedule_task();
 
 			return process_any_message(msg);
@@ -286,16 +282,6 @@ namespace ox
 			OutputDebugStringA("MsgWaitForMultipleObjectsEx 2\n");
 			if (WAIT_OBJECT_0 == dwResult) 
 			{
-				// A WM_* message is available.
-				// If a parent child relationship exists between windows across threads
-				// then their thread inputs are implicitly attached.
-				// This causes the MsgWaitForMultipleObjectsEx API to return indicating
-				// that messages are ready for processing (specifically mouse messages
-				// intended for the child window. Occurs if the child window has capture)
-				// The subsequent PeekMessages call fails to return any messages thus
-				// causing us to enter a tight loop at times.
-				// The WaitMessage call below is a workaround to give the child window
-				// sometime to process its input messages.
 				MSG msg = {0};
 				DWORD dwQueueStatus = GetQueueStatus(QS_MOUSE);
 				if (HIWORD(dwQueueStatus) & QS_MOUSE &&
@@ -310,14 +296,24 @@ namespace ox
 		void schedule_task() 
 		{
 			OutputDebugStringA("schedule_task\n");
-			_m_has_task_slice = 1;
+			if (is_task_got_time_slice()) return;
+			task_get_time_slice();
 			// Make sure the MessagePump does some work for us.
 			post_task_message();
+		}
+		void schedule_timer_task()
+		{
+			OutputDebugStringA("schedule_timer_task\n");
+			LONGLONG relative_100nano = 0;
+			_m_timer_list.calculate_next_timer(&relative_100nano);
+			_m_timer_engine.set_after_milli(-relative_100nano/10/1000);
+			//printf ("time %d milli seconds",-relative_100nano/10/1000);
 		}
 		int pop_one_task_and_run()
 		{
 			OutputDebugStringA("pop_one_task_and_run enter\n");
 			int has_task = 0;
+			while(1)
 			{
 				task_pptr runing = _m_normal_queue.get();
 				if (runing.is_empty())
@@ -330,11 +326,19 @@ namespace ox
 					//if (!on_busy().is_empty()) thread_t::_m_on_busy(this);
 					//is_busying = true;
 					_m_normal_queue.runing->pop();
-					_m_is_busy = 1;
-					runing()->run();
-					_m_is_busy = 0;
+					//_m_is_busy = 1;
+					ui_task_t& ui_task = runing();
+					if (ui_task.is_timer)
+					{
+						add_to_timer_list(ui_task);
+						continue;
+					}
+					ui_task.task->run();
+					ui_task.task->destroy();
+					//_m_is_busy = 0;
 					has_task = 1;
 				}
+				break;
 			}
 			OutputDebugStringA("pop_one_task_and_run return\n");
 			return has_task;
@@ -351,55 +355,29 @@ namespace ox
 			case __messageid_task:
 				OutputDebugStringA("message_wnd_proc  ssssssss\n");
 				//if (get_is_disable_pump()) return 0;
-				reinterpret_cast<self*>(wparam)->HandleWorkMessage();
+				reinterpret_cast<self*>(wparam)->handle_task_message();
 				break;
 			case WM_TIMER:
-				//reinterpret_cast<self*>(wparam)->HandleTimerMessage();
+				reinterpret_cast<self*>(wparam)->handle_timer_message();
 				break;
 			}
 
 			return DefWindowProc(hwnd, message, wparam, lparam);
 		}
-		void HandleWorkMessage()
+		void handle_task_message()
 		{
 			OutputDebugStringA("HandleWorkMessage\n");
-			// If we are being called outside of the context of Run, then don't try to do
-			// any work.  This could correspond to a MessageBox call or something of that
-			// sort.
-			//if (!m_pState)
-			//{
-			//	// Since we handled a kMsgHaveWork message, we must still update this flag.
-			//	InterlockedExchange(&m_nHaveWork, 0);
-			//	return;
-			//}
-			_m_has_task_slice = 0;
-
-			// Let whatever would have run had we not been putting messages in the queue
-			// run now.  This is an attempt to make our dummy message not starve other
-			// messages that may be in the Windows message queue.
+			task_lose_time_slice();
 			ignore_task_message_and_process_next();
-
-			// Now give the delegate a chance to do some work.  He'll let us know if he
-			// needs to do more work.
 			if (pop_one_task_and_run())
 				schedule_task();
 		}
-		void HandleTimerMessage()
+		void handle_timer_message()
 		{
-			KillTimer(_m_message_wnd_handle, reinterpret_cast<UINT_PTR>(this));
-
-			// If we are being called outside of the context of Run, then don't do
-			// anything.  This could correspond to a MessageBox call or something of
-			// that sort.
-			//if (!m_pState)
-			//	return;
-
-			//m_pState->m_pDelegate->DoDelayedWork(&m_DelayedWorkTime);
-			//if (!m_DelayedWorkTime.IsNull()) 
-			//{
-			//	// A bit gratuitous to set m_DelayedWorkTime again, but oh well.
-			//	ScheduleDelayedWork(m_DelayedWorkTime);
-			//}
+			//printf("pop_one_timer_task_and_run 222222222222\n");
+			_m_timer_engine.kill();
+			pop_one_timer_task_and_run();
+			schedule_timer_task();
 		}
 		bool is_quit_message(MSG const& msg) const
 		{
@@ -439,9 +417,12 @@ namespace ox
 		{
 			register_class(wnd_class_name(),message_wnd_proc);
 			_m_message_wnd_handle =	create_message_window(wnd_class_name());
+			_m_timer_engine.init(_m_message_wnd_handle,(UINT_PTR)this);
 		}
 		void lize_window()
 		{
+			_m_timer_engine.kill();
+			_m_timer_engine.uninit();
 			DestroyWindow(_m_message_wnd_handle);
 			UnregisterClassA(wnd_class_name(), GetModuleHandle(0));
 		}
@@ -493,21 +474,37 @@ namespace ox
 			_m_normal_queue.uninit();
 			_m_exit_enabled=1;
 		}
+        static char const* wnd_class_name()
+        {
+            static char const* static_wnd_class_name = "win_ui_thread_message_window";
+            return static_wnd_class_name;
+        }
+		void add_to_timer_list(ui_task_t const& task)
+		{
+			_m_timer_list.add_timer((timer_task_t*)task.task,task.after_milli*1000,(size_t)(this),0);
+			schedule_timer_task();
+		}
+		int pop_one_timer_task_and_run()
+		{
+			if (_m_timer_list.is_empty()) return 0;
+			if (!_m_timer_list.is_first_coming()) return 0;
+			_m_timer_list.run_first_and_remove();
+			schedule_timer_task();
+			return 1;
+		}
+		bool is_task_got_time_slice() const {return _m_has_task_slice.value();}
+		void task_get_time_slice() {_m_has_task_slice = 1;}
+		void task_lose_time_slice() {_m_has_task_slice = 0;}
 
-	private:public:
+	private:
 		bool _m_is_quit_set;
 		atomic_long _m_exit_enabled;
-		atomic_long _m_is_busy;
 		task_queue _m_normal_queue;
 		exit_d _m_on_exit;
 		HWND _m_message_wnd_handle;
 		atomic_long _m_has_task_slice;
-		static char const* wnd_class_name()
-		{
-			static char const* static_wnd_class_name = "Browser_MessagePumpWindow";
-			return static_wnd_class_name;
-		}
-
-	}; /// end of win ui thread
+		timer_engine_t _m_timer_engine;
+		timer_list_t _m_timer_list;
+	}; /// end of win queue thread
 
 } ///end of namespace ox

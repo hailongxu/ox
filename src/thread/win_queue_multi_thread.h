@@ -38,7 +38,7 @@ namespace ox
 
 		typedef base::thread_t thread_t;
 		typedef thread_t::task_t task_t;
-		typedef ox::task_single<int> tasker_t;
+		typedef ox::task_single<void> tasker_t;
 		typedef base::added_d added_d;
 		typedef thread_t::idle_d idle_d;
 		typedef thread_t::busy_d busy_d;
@@ -108,6 +108,13 @@ namespace ox
 				task->run();
 			else
 				_m_thread->add(task);
+		}
+		void async_add_high(task_t* task)
+		{
+			if (_m_thread==0 || ::GetCurrentThreadId()==_m_thread->threadid())
+				task->run();
+			else
+				_m_thread->add_high(task);
 		}
 
 		void add_task(task_t* task,size_t threadid)

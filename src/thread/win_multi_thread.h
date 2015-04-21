@@ -42,7 +42,7 @@ namespace ox
 		typedef typename thread_t::function_t function_t;
 		typedef std::vector<thread_t*> thread_vector;
 		typedef std::vector<HANDLE> handle_vector;
-		typedef ox::task_single<int> tasker_t;
+		typedef ox::thread_task_helper tasker_t;
 		typedef delegate<void(thread_t*)> added_d;
 		typedef delegate<bool(thread_t*)> action_d;
 		typedef delegate<void(size_t)> size_d;

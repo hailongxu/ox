@@ -32,6 +32,7 @@ namespace ox
 		typedef win_queue_thread thread_t;
 		typedef win_queue_multi_threads multi_thread_t;
 		typedef delegate<void(thread_t*)> started_d;
+		typedef delegate<bool(size_t idle_count,size_t all_count)> can_normal_task_run_d;
 		typedef multi_thread_t::exiting_d exiting_d;
 		typedef multi_thread_t::exited_d exited_d;
 		typedef unsafe_single_queue_tt<thread_task_t*> queue_t;
@@ -41,7 +42,7 @@ namespace ox
 
 		static size_t const __thread_count_max_default = -1;
 		static size_t const __thread_count_min_defualt = 1;
-		
+
 		self(size_t thread_max=__thread_count_max_default,
 			size_t thread_min=__thread_count_min_defualt)
 		{
@@ -74,7 +75,11 @@ namespace ox
 
 		void add(thread_task_t* task)
 		{
-			_m_multi_thread.async_add(tasker_t::make(this,&self::do_add,task));
+			_m_multi_thread.async_add(tasker_t::make(this,&self::do_add,task,false));
+		}
+		void add_high(thread_task_t* task)
+		{
+			_m_multi_thread.async_add_high(tasker_t::make(this,&self::do_add,task,true));
 		}
 
 		void set_max_min(size_t thread_max_size=__thread_count_max_default,
@@ -110,6 +115,8 @@ namespace ox
 		started_d const& on_started() const {return _m_on_started;}
 		exiting_d const& on_exiting() const {return _m_multi_thread.on_exiting();}
 		exited_d const& on_exited() const {return _m_multi_thread.on_exited();}
+		can_normal_task_run_d& on_can_normal_task_run() {return _m_on_can_normal_task_run;}
+		can_normal_task_run_d const& on_can_normal_task_run() const {return _m_on_can_normal_task_run;}
 		
 #if 0
 		void unsafe_terminate()
@@ -122,15 +129,15 @@ namespace ox
 		}
 #endif
 	private:
-		void do_add(thread_task_t* task)
+		void do_add(thread_task_t* task,bool is_high)
 		{
 			size_t tid = deque_idle();
-			if (tid!=0)
+			if (tid!=0 && (is_high || can_normal_task_run()))
 			{
 				_m_multi_thread.add_task(task,tid);
 				return;
 			}
-			_m_queue.add(task);
+			add_to_queue(task,is_high);
 			if (_m_multi_thread.unsafe_size()>=_m_thread_max_count)
 				return;
 			thread_t* th = _m_multi_thread.create_thread(-1,0,false);
@@ -148,8 +155,10 @@ namespace ox
 		{
 			size_t threadid = thread->threadid();
 			typedef queue_t::object_ptr object_ptr;
-			object_ptr ptr = _m_queue.get();
-			if (!ptr.is_empty())
+
+			bool is_high = false;
+			object_ptr ptr = get_from_queue(is_high);
+			if (!ptr.is_empty() && (is_high || can_normal_task_run()))
 			{
 				thread->add(*ptr);
 				return;
@@ -265,11 +274,33 @@ namespace ox
 			_m_on_started(static_cast<thread_t*>(thread));
 		}
 
+		void add_to_queue(thread_task_t* task,bool is_high)
+		{
+			is_high?_m_queue_high.add(task):_m_queue.add(task);
+		}
+		queue_t::object_ptr get_from_queue(bool& is_high)
+		{
+			is_high = true;
+			queue_t::object_ptr ptr = _m_queue_high.get();
+			if (ptr.is_empty()) ptr = _m_queue.get(),is_high=false;
+			return ptr;
+		}
+		bool can_normal_task_run() const
+		{
+			if (_m_on_can_normal_task_run.is_empty()) return true;
+			size_t idle_count = _m_idle.size()+1;
+			size_t all_count = _m_multi_thread.unsafe_size();
+			return _m_on_can_normal_task_run(idle_count,all_count);
+		}
+
+
 		started_d _m_on_started;
+		can_normal_task_run_d _m_on_can_normal_task_run;
 		size_t _m_thread_min_count;
 		size_t _m_thread_max_count;
 		multi_thread_t _m_multi_thread;
 		queue_t _m_queue;
+		queue_t _m_queue_high;
 		numlist_t _m_idle;
 	};
 

@@ -33,5 +33,6 @@ namespace ox
 	};
 
 	typedef task_tt<void> thread_task_t;
+	typedef task_tt<bool> timer_task_t;
 
 }

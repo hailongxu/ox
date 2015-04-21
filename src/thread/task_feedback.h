@@ -45,10 +45,10 @@ namespace ox
 		typedef t type;
 	};
 
-	template <typename bind_tn=int>
-	struct task_single : task_tt<void>
+	template <typename r,typename bind_tn=int>
+	struct task_single : task_tt<r>
 	{
-		typedef void r;
+		typedef r r_type;
 		typedef task_tt<r> task_t;
 		typedef object_run_tt<r> object_run_t;
 		typedef bind_tn bind_t;
@@ -238,10 +238,10 @@ namespace ox
 			return obj;
 		}
 
-		virtual void run()
+		virtual r_type run()
 		{
-			_m_object_run->run();
-			destroy();
+			return _m_object_run->run();
+			//destroy();
 		}
 		virtual void destroy()
 		{
@@ -258,6 +258,9 @@ namespace ox
 	private:
 		object_run_t* _m_object_run;
 	};
+
+	typedef task_single<void,int> thread_task_helper;
+	typedef task_single<bool,int> timer_task_helper;
 
 
 	template <typename bind_tn,typename poster>

@@ -109,10 +109,21 @@ namespace ox
 		{
 			return add(task);
 		}
+		int add_high(task_t* task)
+		{
+			if (!_m_high_queue.is_add_enabled() || is_exiting()) return -1;
+			assert (!is_exiting());
+			_m_high_queue.add(task);
+			return 0;
+		}
+		int add2_high(task_t* task,size_t/*threadid, compatible with multi-thread*/)
+		{
+			return add_high(task);
+		}
 
 		bool clear()
 		{
-			typedef task_single<bool> stask;
+			typedef task_single<void> stask;
 			add(stask::make(this,&self::do_clear_runing));
 			_m_normal_queue.clear_outer();
 			_m_high_queue.clear_outer();
@@ -240,7 +251,7 @@ namespace ox
 
 		void register_event_service(HANDLE hevent,event_arrived_d event_arrived)
 		{
-			add(task_single<int>::make(this,&self::do_register_event_service,hevent,event_arrived));
+			add(task_single<void>::make(this,&self::do_register_event_service,hevent,event_arrived));
 		}
 
 		exit_d& on_exit() {return _m_on_exit;}
@@ -298,6 +309,7 @@ namespace ox
 					_m_is_busy = 1;
 					_m_control_queue.runing->pop();
 					runing()->run();
+					runing()->destroy();
 					_m_is_busy = 0;
 					goto label_control_processing;
 				}
@@ -319,6 +331,7 @@ namespace ox
 					_m_is_busy = 1;
 					_m_high_queue.runing->pop();
 					runing()->run();
+					runing()->destroy();
 					_m_is_busy = 0;
 					goto label_control_processing;
 				}
@@ -340,6 +353,7 @@ namespace ox
 					_m_normal_queue.runing->pop();
 					_m_is_busy = 1;
 					runing()->run();
+					runing()->destroy();
 					_m_is_busy = 0;
 					goto label_control_processing;
 				}
