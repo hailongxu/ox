@@ -54,7 +54,7 @@ namespace ox
 		struct stop_handle
 		{
 			stop_handle():handle(0){}
-			void* handle;
+			void* handle; /// event handle
 			void close() {handle?CloseHandle(handle),handle=0:0;}
 		};
 
@@ -209,23 +209,6 @@ namespace ox
 			if (!_m_is_sub_exiting) assert (false);
 			/// wait handles
 			scope_auto_event::wait(_m_stop_handle.handle,timeout_ms);
-			assert (_m_thread_vector.empty());
-			/// get thread handles
-			win_auto_event get_handle_event;
-			handle_vector thread_handles;
-			if (_m_thread==0 || _m_thread->is_exiting() || ::GetCurrentThreadId()==_m_thread->threadid())
-				do_get_sub_handles(get_handle_event.handle(),&thread_handles);
-			else
-				_m_thread->add(tasker_t::make(this,&self::do_get_sub_handles,get_handle_event.handle(),&thread_handles));
-			scope_auto_event::wait(get_handle_event.handle());
-			/// wait threads
-			if (!thread_handles.empty())
-			{
-				::WaitForMultipleObjects(thread_handles.size(),&thread_handles.front(),TRUE,timeout_ms);
-				for (handle_vector::iterator i=_m_handle_vector_for_stop.begin();i!=_m_handle_vector_for_stop.end();++i)
-					CloseHandle(*i);
-			}
-			_m_handle_vector_for_stop.clear();
 			_m_stop_handle.close();
 		}
 
@@ -367,7 +350,8 @@ namespace ox
 
 		void unsafe_do_stop()
 		{
-			_m_is_sub_exiting = _m_thread_vector.size();
+			long old_count = _m_is_sub_exiting.add_and_return_old(_m_thread_vector.size());
+			assert (old_count==1);
 			if (_m_thread_vector.empty())
 			{
 				do_on_exited();
@@ -422,32 +406,42 @@ namespace ox
 
 		void do_on_thread_exiting(thread_t* thread)
 		{
-			_m_on_exiting(thread,_m_thread_vector.size());
-			typedef thread_vector::iterator I;
-			I i = do_find_thread_vect(thread->threadid(),0);
-			if (i!=_m_thread_vector.end())
-			{
-				if (!_m_on_stopped.is_empty())
-					_m_handle_vector_for_stop.push_back(thread->create_thread_handle());
-				delete *i;
-				_m_thread_vector.erase(i);
-			}
-			if (!_m_thread_vector.empty()) return;
-
-			//if (_m_thread==0 || ::GetCurrentThreadId()==_m_thread->threadid())
-				do_on_exited();
-			//else
-			//	_m_thread->add(tasker_t::make(this,&self::do_on_exited));
+			long thread_count = _m_is_sub_exiting--;
+			assert (thread_count>1 && thread_count<=1+_m_thread_vector.size());
+			_m_on_exiting(thread,thread_count-1);
+			if (thread_count<=1+1) do_on_exited();
 		}
 
+		/// run in control thread
 		void do_on_exited()
 		{
+			assert(_m_is_sub_exiting==1);
+
+			handle_vector handles;
+			for (thread_vector::iterator i=_m_thread_vector.begin();i!=_m_thread_vector.end();++i)
+			{
+				thread_t& th = **i;
+				HANDLE h = th.create_thread_handle();
+				if (h!=0) handles.push_back(h);
+			}
+			if (!handles.empty())
+				::WaitForMultipleObjects(handles.size(),&handles.front(),TRUE,-1/*timeout_ms*/);
+			/// the thread all closed
+			for (handle_vector::iterator i=handles.begin();i!=handles.end();++i)
+				CloseHandle(*i);
+
 			_m_is_sub_exiting = 0;
 			if (!_m_on_stopped.is_empty())
 				_m_on_stopped();
-			assert(_m_thread_vector.empty());
 			if (!_m_on_exited.is_empty())
 				_m_on_exited();
+			/// delete all thread objects
+			for (thread_vector::iterator i=_m_thread_vector.begin();i!=_m_thread_vector.end();++i)
+			{
+				thread_t* th = *i;
+				delete th;
+			}
+			_m_thread_vector.clear();
 		}
 		bool internal_astop(on_stopped_d const& event_stopped,HANDLE param)
 		{
@@ -595,7 +589,6 @@ namespace ox
 		size_t _m_your_id;
 		char _m_your_name[32];
 		thread_vector _m_thread_vector;
-		handle_vector _m_handle_vector_for_stop;
 	};
 
 } ///end of namespace ox
