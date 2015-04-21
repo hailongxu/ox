@@ -39,12 +39,12 @@ struct localpath_kit
 	typedef typename strkit::stringz stringz;
 	typedef typename strkit::stringi stringi;
 
-	localpath_kit(){path.refp_begin()=0;}
-	localpath_kit(const character * path,bool is_parse=true)
-	{
-		this->path.refp_begin()=const_cast<character *>(path);
-		if (is_parse) parse(path);
-	}
+	//localpath_kit(){path.refp_begin()=0;}
+	//localpath_kit(const character * path,bool is_parse=true)
+	//{
+	//	this->path.refp_begin()=const_cast<character *>(path);
+	//	if (is_parse) parse(path);
+	//}
 
 	static void add_pre(std::vector<std_string>& paths,character const* pre,character slash=strkit::backslash_character)
 	{
@@ -102,6 +102,30 @@ struct localpath_kit
 			return true;
 		}
 		return false;
+	}
+
+	template <ox::character::is_case_sensitive_c sensitive>
+	static bool is_ext_equal_to(character const* path,character const* ext)
+	{
+		character const* ext2 = 0;
+		if (!get_ext(path,ext2)) return ext==0||*ext==0;
+		return 0==strkit::strcmp<sensitive>(ext,ext2+1);
+	}
+	static bool is_ext_equal_to_uncase(character const* path,character const* ext)
+	{
+		return is_ext_equal_to<ox::character::__case_insensitive>(path,ext);
+	}
+
+	template <ox::character::is_case_sensitive_c sensitive>
+	static bool is_ext_equal_to(std_string const& path,character const* ext)
+	{
+		character const* ext2 = 0;
+		if (!get_ext(path,ext2)) return ext==0||*ext==0;
+		return strkit::strcmp<sensitive>(ext,ext2);
+	}
+	static bool is_ext_equal_to_uncase(std_string const& path,character const* ext)
+	{
+		return is_ext_equal_to<ox::character::__case_insensitive>(path,ext);
 	}
 
 	static bool replace_ext(wchar_t* path,wchar_t const* ext)
@@ -282,6 +306,38 @@ struct localpath_kit
 		bool b1 = strkit::is_in_chset<true>(c,chars); (void)(b1);
 		b2 ? remove_slash(path) : add_slash(path,slash);
 		path += rpath;
+		return path;
+	}
+	static std::string& make_path(std_string& path,
+		character const* rpath1,character const*rpath2,
+		character const& slash)
+	{
+		path.assign(rpath1);
+		add_rpath(path,rpath2,slash);
+		return path;
+	}
+	static std::string make_path(
+		character const* rpath1,character const*rpath2,
+		character const& slash)
+	{
+		std_string path = rpath1;
+		make_path(path,rpath1,rpath2,slash);
+		return path;
+	}
+	static std::string& make_path(std_string& path,
+		character const* rpath1,character const*rpath2,character const*rpath3,
+		character const& slash)
+	{
+		make_path(path,rpath1,rpath2,slash);
+		add_rpath(path,rpath3,slash);
+		return path;
+	}
+	static std::string make_path(
+		character const* rpath1,character const*rpath2,character const*rpath3,
+		character const& slash)
+	{
+		std_string path = rpath1;
+		make_path(path,rpath1,rpath2,rpath3,slash);
 		return path;
 	}
 
@@ -619,164 +675,164 @@ struct localpath_kit
 		return count(path.c_str(),path.c_str()+path.length());
 	}
 
-	/// 合并成一个path，现在没有判断各个路径是否合法
-	/// 只是智能的把他们拼接出来
-	/// 对扩展名进行了特殊处理，就是后面一定有一个点号
-	static std_string make(
-		const character * dir,
-		const character * file)
-	{
-		return make(0,dir,file,0);
-	}
-	static std_string make(
-		const character * drive,
-		const character * dir,
-		const character * file_name,
-		const character * file_ext=0)
-	{
-		std_string path;
-		return make(path,drive,dir,file_name,file_ext);
-	}
-	static std_string & make(
-		std_string & path,
-		const character * drive,
-		const character * dir,
-		const character * file_name,
-		const character * file_ext=0)
-	{
-		struct make_kit
-		{
-			static std_string & append_dir(std_string & path, const character * dir_be_apppended)
-			{
-				if (path.empty())
-					path.append(dir_be_apppended);
-				else if (dir_be_apppended && dir_be_apppended[0]!=strkit::null_character)
-				{
-					if (strkit::backslash_character==path[path.length()-1] ||
-						strkit::slash_character==path[path.length()-1])
-					{
-						if( dir_be_apppended[0]==strkit::backslash_character||
-							dir_be_apppended[0]==strkit::slash_character)
-							path.append(dir_be_apppended+1);
-						else
-							path.append(dir_be_apppended);
-					}
-					else
-					{
-						if( dir_be_apppended[0]==strkit::backslash_character||
-							dir_be_apppended[0]==strkit::slash_character)
-							path.append(dir_be_apppended);
-						else
-							path.append(1,strkit::slash_character),path.append(dir_be_apppended);
-					}
-				}
-				return path;
-			}
-		};
-		if (drive) path.append(drive);
-		make_kit::append_dir(path,dir);
-		make_kit::append_dir(path,file_name);
-		if (file_ext)
-		{
-			if(file_ext[0]!=strkit::dot_character)
-				path.append(1,strkit::dot_character);
-			path.append(file_ext);
-		}
-		return path;
-	}
-	void parse(const character * path)
-	{
-		stringz pod_path = {const_cast<character *>(path)};
-		pod_parse(pod_path);
-	}
-	void pod_parse(stringz local_path)
-	{
-		static const character pretext[] = 
-		{
-			strkit::space_character,
-			strkit::tab_character,
-			strkit::carriagereturn_character,
-			strkit::linefeed_character,
-			strkit::null_character
-		};
-		static const character path_seps[] = 
-		{
-			strkit::slash_character,
-			strkit::backslash_character,
-			strkit::null_character
-		};
-		// char * invalid_path_char = "\\/:*?\"<>|";
-		path.refp_begin() = (character*)strkit::find_first_in<false>(local_path.refp_begin(),pretext);
-		drive.refp_begin() = drive.end_=path.begin();
-		dir.refp_begin() = (character*)strkit::find_first_in<true>(path.refp_begin(),path_seps);
-
-		if (*dir.begin() && !dir.isempty()&&*(dir.begin()-1)==strkit::colon_character)
-			drive.end_=dir.begin();
-		else
-			dir.refp_begin() = path.begin();
-
-		for (character *curr=dir.begin(),* prev=curr; true;)
-		{
-			if (strkit::is_in_chset<true>(*curr,path_seps))
-				curr++;
-			curr = (character*)strkit::find_first_in<true>(curr,path_seps);
-			if (*curr!=0) prev=curr;
-			if (*curr==0)
-			{
-				if (strkit::is_in_chset<true>(*prev,path_seps))
-					prev++;
-				dir.end_=file_name.refp_begin()=prev;
-				break;
-			}
-		}
-		if (*file_name.begin()!=0)
-		{
-			for (character *curr=file_name.begin(),* prev=curr; true;)
-			{
-				character* pend;
-				curr = strkit::strch<true>(
-					curr+1,strkit::dot_character,(character const**)&pend);
-
-				if (curr)
-				{
-					prev=curr;
-				}
-				else if (prev==file_name.begin())
-				{
-					file_ext.refp_begin() = pend;
-					file_name.end_ = pend;
-					break;
-				}
-				else
-				{ 
-					file_ext.refp_begin() = prev;
-					file_name.end_ = prev;
-					break;
-				}
-			}
-		}
-	}
-public:
-	std_string const getv_path() {return std_string(refc_path().begin());}
-	std_string const getv_drive() { return std_string(refc_drive().begin(),refc_drive().end());}
-	std_string const getv_dir() { return std_string(refc_dir().begin(),refc_dir().end());}
-	std_string const getv_ddir() { return std_string(getc_ddir().begin(),getc_ddir().end());}
-	std_string const getv_file_name() { return std_string(refc_file_name().begin(),refc_file_name().end());}
-	std_string const getv_file_ext() { return std_string(refc_file_ext().begin());}
-	std_string const getv_file() { return std_string(getc_file().begin()); }
-	stringz const & refc_path()const {return path;}
-	stringi const getc_ddir()const { stringi ddir={refc_drive().begin(),refc_dir().end()}; return ddir;}
-	stringi const & refc_drive()const { return drive; }
-	stringi const & refc_dir()const { return dir; }
-	stringz const getc_file()const { stringz file={file_name.begin()}; return file; }
-	stringi const & refc_file_name()const { return file_name; }
-	stringz const & refc_file_ext()const { return file_ext; }
-private:
-	stringz path;
-	stringi drive;
-	stringi dir;
-	stringi file_name;
-	stringz file_ext;
+//	/// 合并成一个path，现在没有判断各个路径是否合法
+//	/// 只是智能的把他们拼接出来
+//	/// 对扩展名进行了特殊处理，就是后面一定有一个点号
+//	static std_string make(
+//		const character * dir,
+//		const character * file)
+//	{
+//		return make(0,dir,file,0);
+//	}
+//	static std_string make(
+//		const character * drive,
+//		const character * dir,
+//		const character * file_name,
+//		const character * file_ext=0)
+//	{
+//		std_string path;
+//		return make(path,drive,dir,file_name,file_ext);
+//	}
+//	static std_string & make(
+//		std_string & path,
+//		const character * drive,
+//		const character * dir,
+//		const character * file_name,
+//		const character * file_ext=0)
+//	{
+//		struct make_kit
+//		{
+//			static std_string & append_dir(std_string & path, const character * dir_be_apppended)
+//			{
+//				if (path.empty())
+//					path.append(dir_be_apppended);
+//				else if (dir_be_apppended && dir_be_apppended[0]!=strkit::null_character)
+//				{
+//					if (strkit::backslash_character==path[path.length()-1] ||
+//						strkit::slash_character==path[path.length()-1])
+//					{
+//						if( dir_be_apppended[0]==strkit::backslash_character||
+//							dir_be_apppended[0]==strkit::slash_character)
+//							path.append(dir_be_apppended+1);
+//						else
+//							path.append(dir_be_apppended);
+//					}
+//					else
+//					{
+//						if( dir_be_apppended[0]==strkit::backslash_character||
+//							dir_be_apppended[0]==strkit::slash_character)
+//							path.append(dir_be_apppended);
+//						else
+//							path.append(1,strkit::slash_character),path.append(dir_be_apppended);
+//					}
+//				}
+//				return path;
+//			}
+//		};
+//		if (drive) path.append(drive);
+//		make_kit::append_dir(path,dir);
+//		make_kit::append_dir(path,file_name);
+//		if (file_ext)
+//		{
+//			if(file_ext[0]!=strkit::dot_character)
+//				path.append(1,strkit::dot_character);
+//			path.append(file_ext);
+//		}
+//		return path;
+//	}
+//	void parse(const character * path)
+//	{
+//		stringz pod_path = {const_cast<character *>(path)};
+//		pod_parse(pod_path);
+//	}
+//	void pod_parse(stringz local_path)
+//	{
+//		static const character pretext[] = 
+//		{
+//			strkit::space_character,
+//			strkit::tab_character,
+//			strkit::carriagereturn_character,
+//			strkit::linefeed_character,
+//			strkit::null_character
+//		};
+//		static const character path_seps[] = 
+//		{
+//			strkit::slash_character,
+//			strkit::backslash_character,
+//			strkit::null_character
+//		};
+//		// char * invalid_path_char = "\\/:*?\"<>|";
+//		path.refp_begin()=strkit::find_first_in<false>(local_path.refp_begin(),pretext);
+//		drive.refp_begin()=drive.end_=path.begin();
+//		dir.refp_begin() = strkit::find_first_in<true>(path.refp_begin(),path_seps);
+//
+//		if (*dir.begin() && !dir.isempty()&&*(dir.begin()-1)==strkit::colon_character)
+//			drive.end_=dir.begin();
+//		else
+//			dir.refp_begin() = path.begin();
+//
+//		for (character *curr=dir.begin(),* prev=curr; true;)
+//		{
+//			if (strkit::is_in_chset<true>(*curr,path_seps))
+//				curr++;
+//			curr = strkit::find_first_in<true>(curr,path_seps);
+//			if (*curr!=0) prev=curr;
+//			if (*curr==0)
+//			{
+//				if (strkit::is_in_chset<true>(*prev,path_seps))
+//					prev++;
+//				dir.end_=file_name.refp_begin()=prev;
+//				break;
+//			}
+//		}
+//		if (*file_name.begin()!=0)
+//		{
+//			for (character *curr=file_name.begin(),* prev=curr; true;)
+//			{
+//				character* pend;
+//				curr = strkit::strch<true>(
+//					curr+1,strkit::dot_character,(character const**)&pend);
+//
+//				if (curr)
+//				{
+//					prev=curr;
+//				}
+//				else if (prev==file_name.begin())
+//				{
+//					file_ext.refp_begin() = pend;
+//					file_name.end_ = pend;
+//					break;
+//				}
+//				else
+//				{ 
+//					file_ext.refp_begin() = prev;
+//					file_name.end_ = prev;
+//					break;
+//				}
+//			}
+//		}
+//	}
+//public:
+//	std_string const getv_path() {return std_string(refc_path().begin());}
+//	std_string const getv_drive() { return std_string(refc_drive().begin(),refc_drive().end());}
+//	std_string const getv_dir() { return std_string(refc_dir().begin(),refc_dir().end());}
+//	std_string const getv_ddir() { return std_string(getc_ddir().begin(),getc_ddir().end());}
+//	std_string const getv_file_name() { return std_string(refc_file_name().begin(),refc_file_name().end());}
+//	std_string const getv_file_ext() { return std_string(refc_file_ext().begin());}
+//	std_string const getv_file() { return std_string(getc_file().begin()); }
+//	stringz const & refc_path()const {return path;}
+//	stringi const getc_ddir()const { stringi ddir={refc_drive().begin(),refc_dir().end()}; return ddir;}
+//	stringi const & refc_drive()const { return drive; }
+//	stringi const & refc_dir()const { return dir; }
+//	stringz const getc_file()const { stringz file={file_name.begin()}; return file; }
+//	stringi const & refc_file_name()const { return file_name; }
+//	stringz const & refc_file_ext()const { return file_ext; }
+//private:
+//	stringz path;
+//	stringi drive;
+//	stringi dir;
+//	stringi file_name;
+//	stringz file_ext;
 };
 
 template <typename character_tn>

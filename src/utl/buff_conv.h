@@ -45,7 +45,7 @@ namespace utl
 		template <char first>
 		static void single_to_char(char c,wchar_t out[2])
 		{
-			char c0 = hex_high_to_char<first>(c);
+			out[0] = hex_high_to_char<first>(c);
 			out[1] = hex_low_to_char<first>(c);
 		}
 		static unsigned char char_to_single(char const src[2])

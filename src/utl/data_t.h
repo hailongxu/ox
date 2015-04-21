@@ -122,5 +122,7 @@ namespace ox
 		}; /// end of name data_t
 		typedef cdata_tt<char> cdata_t;
 		typedef data_tt<char> data_t;
+		typedef cdata_tt<wchar_t> wcdata_t;
+		typedef data_tt<wchar_t> wdata_t;
 	}
 }
