@@ -11,7 +11,7 @@
 
 namespace ox
 {
-namespace string
+namespace str
 {
 
 	template <typename string_tn> struct get_string_chartype_tt;

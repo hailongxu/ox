@@ -14,7 +14,7 @@
 
 namespace ox
 {
-namespace string
+namespace str
 {
 
 	template <> struct get_string_chartype_tt<astringi> { typedef char character; };
