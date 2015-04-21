@@ -10,6 +10,11 @@ namespace json
 	static inline bool isnan(double x) { return x != x; }
 	static inline bool isinf(double x) { return !isnan(x) && isnan(x - x); }
 
+	template <typename ch,typename m>
+	static char const& string_back(std::basic_string<ch,m> const& str) {return *(--str.end());}
+	template <typename ch,typename m>
+	static void string_pop_back(std::basic_string<ch,m>& str) {str.erase(--str.end());}
+
 	template<typename> struct json_value;
 	template<typename> struct json_null;
 	template<typename> struct json_bool;
@@ -176,7 +181,15 @@ namespace json
 		struct stringify_true {bool operator()(json_value const* jvalue){return true;}};
 		template<typename condition_tn> static bool stringify(json_value const* node,condition_tn& condition,std_string& stradded);
 		static void stringify_string(strptr_t const& str,std_string& stradded);
-		static void stringify_string(string_type const& str,std_string& stradded);
+		static void stringify_string(string_type const& str,std_string& stradded)
+		{
+			string_type::ptr_const_iterator i = str.ptr_begin();
+			string_type::ptr_const_iterator end = str.ptr_end();
+			for (;i!=end;++i)
+			{
+				stringify_string(*i,stradded);
+			}
+		}
 		static void stringify(json_value const* node,std_string& stradded)
 		{
 			stringify_true always_true;
@@ -721,25 +734,46 @@ namespace json
 };
 
 
-typedef json::json_value<wchar_t> JSONValue;
-typedef json::json_null<wchar_t> JSONNull;
-typedef json::json_bool<wchar_t> JSONBool;
-typedef json::json_number<wchar_t> JSONNumber;
-typedef json::json_string<wchar_t> JSONString;
-typedef json::json_array<wchar_t> JSONArray;
-typedef json::json_object<wchar_t> JSONObject;
-typedef json::json_document<wchar_t> JSONDocument;
-typedef JSONValue::stringify_interface StringifyInterface;
 
-typedef json::json_value<char> JSONValueA;
-typedef json::json_null<char> JSONNullA;
-typedef json::json_bool<char> JSONBoolA;
-typedef json::json_number<char> JSONNumberA;
-typedef json::json_string<char> JSONStringA;
-typedef json::json_array<char> JSONArrayA;
-typedef json::json_object<char> JSONObjectA;
-typedef json::json_document<char> JSONDocumentA;
-typedef JSONValueA::stringify_interface StringifyInterfaceA;
+typedef json::json_value<wchar_t> wjson_value;
+typedef json::json_null<wchar_t> wjson_null;
+typedef json::json_bool<wchar_t> wjson_bool;
+typedef json::json_number<wchar_t> wjson_number;
+typedef json::json_string<wchar_t> wjson_string;
+typedef json::json_array<wchar_t> wjson_array;
+typedef json::json_object<wchar_t> wjson_object;
+typedef json::json_document<wchar_t> wjson_document;
+typedef wjson_value::stringify_interface wjson_stringify_interface;
+
+typedef json::json_value<char> ajson_value;
+typedef json::json_null<char> ajson_null;
+typedef json::json_bool<char> ajson_bool;
+typedef json::json_number<char> ajson_number;
+typedef json::json_string<char> ajson_string;
+typedef json::json_array<char> ajson_array;
+typedef json::json_object<char> ajson_object;
+typedef json::json_document<char> ajson_document;
+typedef ajson_value::stringify_interface ajson_stringify_interface;
+
+//typedef json::json_value<wchar_t> JSONValue;
+//typedef json::json_null<wchar_t> JSONNull;
+//typedef json::json_bool<wchar_t> JSONBool;
+//typedef json::json_number<wchar_t> JSONNumber;
+//typedef json::json_string<wchar_t> JSONString;
+//typedef json::json_array<wchar_t> JSONArray;
+//typedef json::json_object<wchar_t> JSONObject;
+//typedef json::json_document<wchar_t> JSONDocument;
+//typedef JSONValue::stringify_interface StringifyInterface;
+//
+//typedef json::json_value<char> JSONValueA;
+//typedef json::json_null<char> JSONNullA;
+//typedef json::json_bool<char> JSONBoolA;
+//typedef json::json_number<char> JSONNumberA;
+//typedef json::json_string<char> JSONStringA;
+//typedef json::json_array<char> JSONArrayA;
+//typedef json::json_object<char> JSONObjectA;
+//typedef json::json_document<char> JSONDocumentA;
+//typedef JSONValueA::stringify_interface StringifyInterfaceA;
 
 
 template <typename character>
@@ -1104,7 +1138,8 @@ inline bool json::stringify_helper<character>::stringify(
 				if (++iter != array_value.end())
 					stradded += ',';
 			}
-			if (stradded.back()==',') stradded.pop_back();
+			//if (stradded.back()==',') stradded.pop_back();
+			if (string_back(stradded)==',') string_pop_back(stradded);
 			stradded += ']';
 			break;
 		}
@@ -1200,18 +1235,18 @@ inline void json::stringify_helper<character>::stringify_string(
 	
 	stradded += '\"';
 }
-/// this usage is not supported int vs 2005: typename json::complex_types<character>::string_type
-/// string.back() is not added int vs 2005 either
-template <typename character>
-inline void json::stringify_helper<character>::stringify_string(typename json::complex_types<character>::string_type const& str,std::basic_string<character>& stradded)
-{
-	string_type::ptr_const_iterator i = str.ptr_begin();
-	string_type::ptr_const_iterator end = str.ptr_end();
-	for (;i!=end;++i)
-	{
-		stringify_string(*i,stradded);
-	}
-}
+///// this usage is not supported int vs 2005: typename json::complex_types<character>::string_type
+///// string.back() is not added int vs 2005 either
+//template <typename character>
+//inline void json::stringify_helper<character>::stringify_string(typename json::complex_types<character>::string_type const& str,std::basic_string<character>& stradded)
+//{
+//	string_type::ptr_const_iterator i = str.ptr_begin();
+//	string_type::ptr_const_iterator end = str.ptr_end();
+//	for (;i!=end;++i)
+//	{
+//		stringify_string(*i,stradded);
+//	}
+//}
 
 template <typename character>
 inline bool json::skip_whitespace(const character *&data)
@@ -1376,7 +1411,7 @@ inline bool json::json_document<character>::extrace_string(character const*& dat
 						// Do it first to move off the 'u' and leave us on the 
 						// final hex digit as we move on by one later on
 						++(data);
-						if(*data == NULL){return false;}
+						if(*data == 0){return false;}
 						next_char <<= 4;
 						
 						// Parse the hex digit
