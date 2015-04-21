@@ -838,6 +838,26 @@ public:
 			return 0;
 		return const_cast<character*>(buffer_begin);
 	}
+	template <bool is_same_tc>
+	static character * str2ch(
+		const character * buffer_begin,
+		const character * buffer_end,
+		const character ch_begin,
+		const size_t ch_count,
+		const character ** ppend=0)
+	{
+		assert(buffer_begin&&buffer_end&&buffer_begin<=buffer_end);
+		size_t const chb = ch_begin;
+		size_t const che = ch_begin+ch_count;
+		for (;
+			buffer_begin<buffer_end && 
+			lg::not<!is_same_tc>(*buffer_begin<chb && *buffer_begin>=che);
+			++buffer_begin);
+		if (ppend) *ppend = buffer_begin;
+		if (buffer_begin>=buffer_end)
+			return 0;
+		return const_cast<character*>(buffer_begin);
+	}
 	////// begin
 	template <
 		bool is_same_tc,
@@ -1076,6 +1096,7 @@ public:
 		const character * pattern_pre_begin, const character * pattern_pre_end,
 		const character * pattern_post_begin, const character * pattern_post_end,
 		const character ** key_end=0,
+		const character ** pp_match_begin=0,
 		const character ** pp_match_end=0
 	)
 	{
@@ -1087,12 +1108,15 @@ public:
 		if (key_end) *key_end = 0;
 		matched_begin = strstr<case_sensitive_tc>(begin,end,pattern_pre_begin,pattern_pre_end,&matched_end);
 		if (!matched_begin) return 0;
-		if (pp_match_end) *pp_match_end = matched_end;
+		if (pp_match_begin) *pp_match_begin = matched_begin;
 		begin = matched_end;
 		key_begin = begin;
 		matched_begin = strstr<case_sensitive_tc>(begin,end,pattern_post_begin,pattern_post_end,&matched_end);
 		if (matched_begin)
+		{
 			if (key_end) *key_end = matched_begin;
+			if (pp_match_end) *pp_match_end = matched_end;
+		}
 		return key_begin;
 	}
 

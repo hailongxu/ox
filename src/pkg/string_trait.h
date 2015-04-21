@@ -144,6 +144,11 @@ struct string_traits<char> : public string_traits_of_length<char>
 	{
 		return ::_vscprintf(format,argptr);
 	}
+    static int sscanf(character *buffer, const character *format, va_list argptr)
+    {
+        assert(false);
+        //_tinput_l();
+    }
 };
 
 template <>
