@@ -431,7 +431,7 @@ namespace ox
 			_m_exit_enabled=0;
 			_m_is_busy=0;
 			//_m_sudo_thread_handle=HANDLE(-1);
-			_m_threadid=-1;
+			//_m_threadid=-1;
 			_m_service_size = 0;
 			base::on_run().assign(this,&self::run);
 			base::on_exit().assign(this,&self::on_internal_exit);

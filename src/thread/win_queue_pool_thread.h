@@ -147,6 +147,7 @@ namespace ox
 		}
 		void on_thread_idle(thread_t* thread)
 		{
+			assert (thread->threadid()!=-1);
 			if (_m_multi_thread.thread()==0 || ::GetCurrentThreadId()==_m_multi_thread.thread()->threadid())
 				do_on_thread_idle(thread);
 			_m_multi_thread.thread()->add(tasker_t::make(this,&self::do_on_thread_idle,thread));

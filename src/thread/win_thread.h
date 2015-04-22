@@ -58,6 +58,11 @@ namespace ox
 			__th_about_to_exit,
 			__th_exited,
 		};
+		struct thread_start_param
+		{
+			HANDLE _m_event_handle;
+			self* const _m_this;
+		};
 
 	public:
 		~win_thread()
@@ -149,7 +154,8 @@ namespace ox
 		{
 			if (is_started())
 				return true;
-			_m_threadid = begin_thread();
+			begin_thread();
+			assert (_m_threadid!=-1);
 			return is_started();
 		}
 		template <typename p1>
@@ -158,7 +164,8 @@ namespace ox
 			if (is_started())
 				return;
 			_m_function.assign_param<0>(_p1);
-			_m_threadid = begin_thread();
+			begin_thread();
+			assert (_m_threadid!=-1);
 			return is_started();
 		}
 		bool start_here()
@@ -244,15 +251,11 @@ namespace ox
 			return _m_function();
 		}
 
-		struct thread_start_param
-		{
-			HANDLE _m_event_handle;
-			self* const _m_this;
-		};
 		static unsigned __stdcall thread_proc(void* param)
 		{
 			thread_start_param* start_param = (thread_start_param*)param;
 			self* me = start_param->_m_this;
+			me->_m_threadid = GetCurrentThreadId();
 			me->_m_phrase = __th_running;
 			//me->_m_sudo_thread_handle = GetCurrentThread();
 			win_manual_event::set_signaled(start_param->_m_event_handle);
