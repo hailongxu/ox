@@ -47,7 +47,7 @@ namespace event
 	}
 	void on_exited()
 	{
-		printf ("exit all");
+		printf ("exit all\n");
 	}
 	int run()
 	{
@@ -139,30 +139,6 @@ namespace multi_queue_thread_test
 	}
 }
 
-typedef ox::win_queue_pool_thread pth;
-pth pool;
-namespace pool_thread_test
-{
-	ox::win_queue_thread thread;
-	void test()
-	{
-		thread.start();
-		pool.bind(&thread);
-		pool.set_max_min(2,1);
-		pool.on_exited().add(event::on_exited);
-		for (int i=0;i<10;++i)
-		{
-			//::_sleep(10);
-			printf ("%d++++++++\n",i);
-			pool.add(ox::task_single<void>::make(&event::f2,i));
-		}
-		int i = 9;
-		Sleep(3000);
-		pool.astop();
-		pool.wait_subs();
-		thread.stop();
-	}
-}
 
 #include "../../src/thread/timer.h"
 namespace thread_performace_test
@@ -243,7 +219,7 @@ namespace thread_pool_test
 	}
 	void high_task()
 	{
-		Sleep(100);
+		Sleep(20);
 		printf("high task\n");
 	}
 	void normal_task()
@@ -261,6 +237,7 @@ namespace thread_pool_test
 		control.start();
 		pool.bind(&control);
 		pool.set_max_min(3,3);
+		pool.on_exited().add(event::on_exited);
 		pool.on_can_normal_task_run().assign(is_normal_allowed);
 		for (int i=0;i<10;i++)
 		{
@@ -272,9 +249,11 @@ namespace thread_pool_test
 			pool.add(ox::thread_task_helper::make(normal_task));
 			pool.add(ox::thread_task_helper::make(normal_task));
 			pool.add(ox::thread_task_helper::make(normal_task));
-			pool.add_high(ox::thread_task_helper::make(high_task));
+			pool.add(ox::thread_task_helper::make(high_task));
 		}
-		Sleep(5000);
+		Sleep(1500);
+		//pool.astop();
+		//pool.wait_subs();
 		pool.stop();
 		control.stop();
 	}
@@ -293,7 +272,6 @@ int _tmain(int argc, _TCHAR* argv[])
         multi_thread_test::test();break;
 		thread_test::test();break;
 		win_queue_thread_test::test();break;
-		pool_thread_test::test();break;
 		multi_queue_thread_test::test();break;
 	} while(false);
 	//Sleep(-1);
