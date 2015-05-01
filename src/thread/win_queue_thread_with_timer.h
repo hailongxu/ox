@@ -11,14 +11,14 @@
 
 
 
+#include "../ox/nsab.h"
 #include "win_queue_thread.h"
 #include "timer.h"
 
 #pragma once
 
 
-namespace ox
-{
+___namespace2_begin(ox,mos)
 
 	struct win_queue_thread_with_timer : win_queue_thread
 	{
@@ -148,4 +148,4 @@ namespace ox
 		timer_list_t _m_timer_list;
 	};
 
-} /// end of namespace ox
+___namespace2_end()

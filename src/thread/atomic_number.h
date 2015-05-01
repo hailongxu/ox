@@ -24,9 +24,11 @@
 #pragma once
 
 
+___namespace2_begin(ox,mos)
 
 /// _InterlockedCompareExchange : any cpu
 /// interlockedadd : just x86
+
 
 template <typename number_tn>
 struct atomic_number;
@@ -165,3 +167,5 @@ struct atomic_number <__int64>
 private:
 	__int64 _m_value;
 };
+
+___namespace2_end()

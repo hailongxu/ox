@@ -9,12 +9,15 @@
  */
 
 #include "windows.h"
-#include "../cxx/delegate.h"
 #include <assert.h>
+#include "../ox/nsab.h"
+#include "../cxx/delegate.h"
 
 
 #pragma once
 
+
+___namespace2_begin(ox,mos)
 
 struct critical_section
 {
@@ -272,11 +275,18 @@ struct scope_raii
 	type_tn& _m_obj;
 };
 
+___namespace2_end()
+
+
+
 #include "task_decl.h"
+
+___namespace2_begin(ox,mos)
+
 template <typename t>
 struct scope_task
 {
-	typedef ox::thread_task_t task_t;
+	typedef ox::mos::thread_task_t task_t;
 	scope_task(task_t* task=0)
 		: _m_task(task)
 	{}
@@ -287,8 +297,14 @@ struct scope_task
 	task_t* _m_task;
 };
 
+___namespace2_end()
+
+
 
 #include "atomic_number.h"
+
+___namespace2_begin(ox,mos)
+
 template <typename number_tn>
 struct scope_raii<atomic_number<number_tn>>
 {
@@ -311,3 +327,6 @@ struct scope_raii<atomic_number<number_tn>>
 };
 
 typedef scope_raii<atomic_number<long>> scope_atomic_long;
+
+
+___namespace2_end()
