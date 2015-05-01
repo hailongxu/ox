@@ -28,14 +28,15 @@ struct matrix_shape
 	{
 		int rh = single_row_height();
 		int cw = single_col_width();
-		int y = _m_orgin.y()+_m_margin_size.top();
 		int top = rect.top();
 		int bottom = rect.bottom();
 		int left = rect.left();
 		int right = rect.right();
+		int y = _m_orgin.y()+_m_margin_size.top()+top*single_row_height();
+		int x0 = _m_orgin.x()+_m_margin_size.left()+left*single_col_width();
 		for (int r=top;r<bottom;++r,y+=rh)
 		{
-			int x = _m_orgin.x()+_m_margin_size.left();
+			int x = x0;
 			for (int c=rect.left();c<rect.right();++c,x+=cw)
 			{
 				xy_rect_t r(x,y,_m_unit_size);
