@@ -220,8 +220,10 @@ struct tetris_core_data
 			box_t& box1 = _m_boxes.box(ibox_t{i,1});
 			box1 = get_transposed(box0);
 			box1.next.set(1,0);
-			box1.rotate_check_point[0].set(0,0);
-			box1.rotate_check_point[1].set(0,1);
+			box1.rotate_check_point[0].set(0,2);
+			box1.rotate_check_point[1].set(1,2);
+			box1.rotate_check_point[2].set(2,1);
+			box1.rotate_check_point[3].set(2,2);
 			box_t& box2 = _m_boxes.box(ibox_t{i,2});
 			box2 = get_transposed(box1);
 			box2.next.set(-1,0);
@@ -232,8 +234,10 @@ struct tetris_core_data
 			box_t& box3 = _m_boxes.box(ibox_t{i,3});
 			box3 = get_transposed(box2);
 			box3.next.set(1,0);
-			box3.rotate_check_point[0].set(0,0);
-			box3.rotate_check_point[1].set(0,1);
+			box1.rotate_check_point[0].set(0,2);
+			box1.rotate_check_point[1].set(1,2);
+			box1.rotate_check_point[2].set(2,1);
+			box1.rotate_check_point[3].set(2,2);
 		}
 		/// # 1
 		{
