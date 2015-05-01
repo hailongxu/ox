@@ -26,7 +26,7 @@ int entry(int argc, _TCHAR* argv[])
 	win_gui gui;
 	tetris_win_gui tetris_gui(gui);
 	tetris_uig_input_event_source tetris_event;
-	app<tetris_win_gui,tetris_uig_input_event_source>  tetris_application;
+	app<tetris_win_gui,tetris_uig_input_event_source> tetris_application;
 	tetris_application.init(&tetris_gui,&tetris_event);
 	tetris_application.on_started.assign(&on_application_start(tetris_event));
 	tetris_application.start();
@@ -40,6 +40,9 @@ int entry(int argc, _TCHAR* argv[])
 
 win_gui gui;
 tetris_win_gui tetris_gui(gui);
+tetris_uig_input_event_source tetris_event;
+app<tetris_win_gui,tetris_uig_input_event_source> tetris_application;
+
 //ui_board<tetris_win_gui> a(tetris_gui);
 //ui_preview<tetris_win_gui> b(tetris_gui);
 //ui_information<tetris_win_gui> c(tetris_gui);
@@ -65,6 +68,9 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+
+	tetris_application.init(&tetris_gui,&tetris_event);
+	tetris_application.on_started.assign(&on_application_start(tetris_event));
 
  	// TODO: Place code here.
 	MSG msg;
@@ -151,6 +157,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
 
+	
+
    return TRUE;
 }
 
@@ -193,27 +201,37 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_KEYDOWN:
 		{
-		int vkey = (int)wParam;
-		tetris_uig_input_event_source event_source;
-		event_source.on_keydown_from_system(vkey);
-		sprintf(buff,"%d,%d",++i,vkey);
 		HDC hdc = GetDC(hWnd);
-		win_gui wgui(hdc);
-		tetris_win_gui tgui(wgui);
-		tgui.draw_text(rc_point_t(0,0),buff,strlen(buff));
-		
-		//DrawTextA(hdc,buff,-1,&text_rect,DT_LEFT);
-		ox::utl::win_dc_defer dcdefer(hWnd,hdc);
+		gui._m_hdc = hdc;
+		int vkey = (int)wParam;
+		//tetris_uig_input_event_source event_source;
+		//event_source.on_keydown_from_system(vkey);
+		//sprintf(buff,"%d,%d",++i,vkey);
+		//HDC hdc = GetDC(hWnd);
+		//win_gui wgui(hdc);
+		//tetris_win_gui tgui(wgui);
+		//tgui.draw_text(rc_point_t(0,0),buff,strlen(buff));
+		//
+		////DrawTextA(hdc,buff,-1,&text_rect,DT_LEFT);
+		//ox::utl::win_dc_defer dcdefer(hWnd,hdc);
+		tetris_event.on_keydown_from_system(vkey);
 		}
 		break;
 	case WM_PAINT:
 		hdc = BeginPaint(hWnd, &ps);
 		// TODO: Add any drawing code here...
 		{
-		win_gui wgui(hdc);
-		tetris_win_gui tgui(wgui);
-		tgui.fill_rect(rc_rect_t(0,0,2,4),tetris_define::back_char());
-		tgui.draw_point(rc_point_t(2,4),tetris_define::front_char());
+			//gui._m_hdc = hdc;
+			//tetris_application.draw_board();
+		//win_gui wgui(hdc);
+			gui._m_hdc = hdc;
+			tetris_application.start();
+			//tetris_gui.fill_rect(rc_rect_t(0,0,2,4),tetris_define::back_char());
+			//tetris_gui.draw_point(rc_point_t(2,4),tetris_define::front_char());
+			//tetris_application._m_ui_preview.clear();
+		//tetris_win_gui tgui(wgui);
+		//tgui.fill_rect(rc_rect_t(0,0,2,4),tetris_define::back_char());
+		//tgui.draw_point(rc_point_t(2,4),tetris_define::front_char());
 		}
 		EndPaint(hWnd, &ps);
 		break;
