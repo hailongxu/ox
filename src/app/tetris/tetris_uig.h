@@ -17,7 +17,7 @@ ___namespace3_begin(ox,app,tetris)
 struct tetris_win_gui
 {
 	typedef tetris_win_gui self;
-	typedef ox::gui::win_gui win_gui;
+	typedef win_gui win_gui;
 	typedef ox::gui::matrix_shape matrix_shape;
 
 	win_gui& _m_gui;

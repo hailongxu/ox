@@ -13,6 +13,7 @@
 #include "../../src/app/tetris/tetris_uig_event_source.h"
 #include "../../src/app/tetris/tetris_app.h"
 #include "../../src/ui/wingui_window.h"
+#include "../../src/ui/win_gui_element.h"
 
 
 
@@ -29,7 +30,7 @@ struct on_application_start
 };
 int entry(int argc, _TCHAR* argv[])
 {
-	ox::gui::win_gui gui;
+	ox::app::tetris::win_gui gui;
 	tetris_win_gui tetris_gui(gui);
 	tetris_uig_input_event_source tetris_event;
 	ox::app::tetris::app<tetris_win_gui,tetris_uig_input_event_source> tetris_application;
@@ -43,7 +44,7 @@ int entry(int argc, _TCHAR* argv[])
 }
 
 
-ox::gui::win_gui gui;
+ox::app::tetris::win_gui gui;
 tetris_win_gui tetris_gui(gui);
 tetris_uig_input_event_source tetris_event;
 ox::app::tetris::app<tetris_win_gui,tetris_uig_input_event_source> tetris_application;
@@ -66,9 +67,12 @@ BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 
+ox::gui::win_label _g_label;
 
 void on_paint(HWND hwnd,HDC hdc)
 {
+	gui._m_hdc = hdc;
+	_g_label.draw(gui,ox::mam::xy_rect_t(10,10,20,20));
 }
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,

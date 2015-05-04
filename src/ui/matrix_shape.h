@@ -15,13 +15,13 @@ struct matrix_shape
 	typedef ox::mam::rc_rect_t rc_rect_t;
 	typedef ox::mam::xy_size_t xy_size_t;
 
-	self(win_gui& wgui) : _m_gui(wgui)
+	self(win_gui_draw& wgui) : _m_gui(wgui)
 	{
 		_m_unit_size.set(20,20);
 		_m_unit_between_size.set(2,2);
 	}
 
-	win_gui& _m_gui;
+	win_gui_draw& _m_gui;
 	xy_point_t left_top(xy_point_t const& p)
 	{
 		xy_point_t r;

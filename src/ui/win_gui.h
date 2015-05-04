@@ -3,8 +3,8 @@
 #include <windows.h>
 #include <string.h>
 #include "../ox/nsab.h"
-#include "../mam/math.h"
 #include "../alg/bit_stat.h"
+#include "gui_define.h"
 
 
 #pragma once
@@ -12,8 +12,6 @@
 
 ___namespace2_begin(ox,gui)
 
-typedef ox::mam::xy_rect_t xy_rect_t;
-typedef ox::mam::xy_point_t xy_point_t;
 
 struct color_t
 {
@@ -71,15 +69,15 @@ struct win_gui_helper
 	}
 };
 
-struct win_gui
+struct win_gui_draw
 {
-	typedef win_gui self;
+	typedef win_gui_draw self;
 
 	self():_m_hdc(0) {}
 	self(HDC hdc) {init(hdc);}
 	void init(HDC hdc) {_m_hdc=hdc;}
 	HDC _m_hdc;
-	void draw_rectangle(xy_rect_t const& rect)
+	void draw_rectangle(xy_rect_t const& rect) const
 	{
 		Rectangle(_m_hdc,rect.left(),rect.top(),rect.right(),rect.bottom());
 	}
@@ -101,15 +99,17 @@ struct win_gui
 	{
 		DrawTextA(_m_hdc,str,str_len,&win_gui_helper::to_rect(rect),win_gui_helper::to_align(align));
 	}
-	void draw_text(char const* str,size_t str_len,xy_point_t const& p)
+	void draw_text(char const* str,size_t str_len,xy_point_t const& p) const
 	{
 		TextOutA(_m_hdc,p.x(),p.y(),str,str_len);
 	}
-	void draw_text(char const* str,xy_point_t const& p)
+	void draw_text(char const* str,xy_point_t const& p) const
 	{
 		draw_text(str,strlen(str),p);
 	}
 };
+
+typedef win_gui_draw drawer_t;
 
 
 ___namespace2_end()
