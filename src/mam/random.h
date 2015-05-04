@@ -1,8 +1,13 @@
 
-
 #include <time.h>
+#include "../ox/nsab.h"
+
 
 #pragma once
+
+
+___namespace2_begin(ox,mam)
+
 
 struct random
 {
@@ -15,3 +20,6 @@ struct random
 		return rand();
 	}
 };
+
+
+___namespace2_end()
