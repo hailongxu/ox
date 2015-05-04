@@ -1,6 +1,14 @@
 
+#include "../../ox/nsab.h"
+
+
 
 #pragma once
+
+
+
+___namespace3_begin(ox,app,tetris)
+
 
 
 struct tetris_define
@@ -13,3 +21,5 @@ struct tetris_define
 	static bool is_value_null(char v) {return v==__back_char;}
 };
 
+
+___namespace3_end()

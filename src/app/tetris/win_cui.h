@@ -13,6 +13,7 @@
 struct win_console
 {
 	typedef win_console self;
+
 	HANDLE _m_hout;
 	HANDLE _m_hin;
 	~win_console()

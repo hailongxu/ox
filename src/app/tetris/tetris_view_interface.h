@@ -2,6 +2,7 @@
 
 
 #include "../../src/cxx/delegate.h"
+#include "math.h"
 
 #pragma once
 

@@ -1,4 +1,5 @@
 
+#include "../../ox/nsab.h"
 
 #include "math.h"
 #include "win_cui.h"
@@ -7,6 +8,9 @@
 
 #pragma once
 
+
+
+___namespace3_begin(ox,app,tetris)
 
 
 struct tetris_win_cui
@@ -27,3 +31,6 @@ struct tetris_win_cui
 		_m_console.draw_text(p,str,size);
 	}
 };
+
+
+___namespace3_end()

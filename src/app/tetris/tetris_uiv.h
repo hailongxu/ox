@@ -1,5 +1,6 @@
 
 #include <string.h>
+#include "math.h"
 #include "tetris_define.h"
 #include "win_cui.h"
 
@@ -7,6 +8,8 @@
 #pragma once
 
 
+
+___namespace3_begin(ox,app,tetris)
 
 
 template <typename tetris_ui_t>
@@ -165,3 +168,6 @@ struct ui_information
 //
 //	}
 //};
+
+
+___namespace3_end()

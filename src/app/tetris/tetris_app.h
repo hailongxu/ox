@@ -20,7 +20,7 @@
 
 
 
-//___namespace3_begin(ox,app,tetris_zone)
+___namespace3_begin(ox,app,tetris)
 
 
 template <typename tetris_ui,typename tetris_event>
@@ -307,6 +307,4 @@ struct app
 };
 
 
-
-
-//___namespace3_end()
+___namespace3_end()

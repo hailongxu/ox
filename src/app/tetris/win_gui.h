@@ -1,9 +1,9 @@
 
 
 #include <windows.h>
+#include <string.h>
 #include "math.h"
 #include "../../alg/bit_stat.h"
-#include <string.h>
 
 
 #pragma once

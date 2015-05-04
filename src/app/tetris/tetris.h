@@ -6,7 +6,6 @@
 #include <vector>
 #include "../../ox/nsab.h"
 #include "math.h"
-#include "random.h"
 #include "tetris_define.h"
 
 
@@ -16,13 +15,15 @@
 
 
 
-//___namespace3_begin(ox,app,tetris_zone)
+___namespace3_begin(ox,app,tetris)
 
 
 struct box_t : matrix2_t
 {
 	typedef char value_type;
 	typedef matrix2_t matrix_t;
+
+
 	box_t()
 	{
 		memset(rotate_check_point,-1,sizeof(rotate_check_point));
@@ -620,6 +621,4 @@ struct ibox_generator
 };
 
 
-
-
-//___namespace3_end()
+___namespace3_end()

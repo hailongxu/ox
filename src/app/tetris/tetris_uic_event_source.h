@@ -1,18 +1,22 @@
 
 
 #include <stdio.h>
-#include "../../src/cxx/delegate.h"
-#include "../../src/thread/win_thread.h"
+#include "../../ox/nsab.h"
+#include "../../cxx/delegate.h"
+#include "../../mos/win_thread.h"
 
 
 #pragma once
+
+
+___namespace3_begin(ox,app,tetris)
 
 
 struct tetris_uic_input_event_source
 {
 	typedef tetris_uic_input_event_source self;
 	typedef delegate<void()> action_d;
-	typedef ox::win_thread<unsigned()> thread_t;
+	typedef ox::mos::win_thread<unsigned()> thread_t;
 	
 	action_d on_start_game;
 	action_d on_moved_left;
@@ -64,3 +68,6 @@ struct tetris_uic_input_event_source
 		return 0;
 	}
 };
+
+
+___namespace3_end()

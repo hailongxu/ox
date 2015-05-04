@@ -1,10 +1,14 @@
 
 
 #include <stdio.h>
+#include "../../ox/nsab.h"
 #include "tetris_event_define.h"
 
 
 #pragma once
+
+
+___namespace3_begin(ox,app,tetris)
 
 
 struct tetris_uig_input_event_source
@@ -48,3 +52,6 @@ struct tetris_uig_input_event_source
 		//ungetch('q');
 	}
 };
+
+
+___namespace3_end()

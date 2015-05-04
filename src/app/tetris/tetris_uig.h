@@ -1,3 +1,4 @@
+#include "../../ox/nsab.h"
 
 #include "math.h"
 #include "win_gui.h"
@@ -6,6 +7,9 @@
 
 
 #pragma once
+
+
+___namespace3_begin(ox,app,tetris)
 
 
 struct matrix_shape
@@ -60,7 +64,7 @@ struct matrix_shape
 	}
 	xy_point_t get_point(rc_point_t const& p) const
 	{
-		xy_piont_t xy;
+		xy_point_t xy;
 		xy.x() = _m_orgin.x()+_m_margin_size.left()+p.c()*single_col_width();
 		xy.y() = _m_orgin.y()+_m_margin_size.top()+p.r()*single_row_height();
 		return xy;
@@ -77,6 +81,7 @@ struct matrix_shape
 struct tetris_win_gui
 {
 	typedef tetris_win_gui self;
+
 	win_gui& _m_gui;
 	matrix_shape _m_matrix_shape;
 	self(win_gui& gui): _m_gui(gui), _m_matrix_shape(_m_gui)
@@ -106,3 +111,5 @@ struct tetris_win_gui
 	}
 };
 
+
+___namespace3_end()
