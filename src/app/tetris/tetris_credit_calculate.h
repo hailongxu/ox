@@ -1,10 +1,14 @@
 
 
+#include "../../ox/nsab.h"
 #include "math.h"
 
 
 
 #pragma once
+
+
+___namespace3_begin(ox,app,tetris)
 
 
 struct tetris_credit_calculate
@@ -33,3 +37,6 @@ struct tetris_credit_calculate
 		return count;
 	}
 };
+
+
+___namespace3_end()

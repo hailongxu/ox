@@ -1,10 +1,16 @@
 
 
 
+#include "../../ox/nsab.h"
 #include "../../src/cxx/delegate.h"
 #include "math.h"
 
 #pragma once
+
+
+
+___namespace3_begin(ox,app,tetris)
+
 
 struct data_view_t
 {
@@ -13,3 +19,6 @@ struct data_view_t
 	get_value_d value;
 	get_size_d size;
 };
+
+
+___namespace3_end()

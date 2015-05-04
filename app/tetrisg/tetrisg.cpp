@@ -29,7 +29,7 @@ struct on_application_start
 };
 int entry(int argc, _TCHAR* argv[])
 {
-	win_gui gui;
+	ox::gui::win_gui gui;
 	tetris_win_gui tetris_gui(gui);
 	tetris_uig_input_event_source tetris_event;
 	ox::app::tetris::app<tetris_win_gui,tetris_uig_input_event_source> tetris_application;
@@ -43,7 +43,7 @@ int entry(int argc, _TCHAR* argv[])
 }
 
 
-win_gui gui;
+ox::gui::win_gui gui;
 tetris_win_gui tetris_gui(gui);
 tetris_uig_input_event_source tetris_event;
 ox::app::tetris::app<tetris_win_gui,tetris_uig_input_event_source> tetris_application;
