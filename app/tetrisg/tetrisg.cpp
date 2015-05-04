@@ -7,11 +7,17 @@
 
 
 #include "../../src/utl/destructor.h"
-#include "../../src/thread/win_queue_thread.h"
+#include "../../src/mos/win_queue_thread.h"
 #include "../../src/app/tetris/win_gui.h"
 #include "../../src/app/tetris/tetris_uig.h"
 #include "../../src/app/tetris/tetris_uig_event_source.h"
 #include "../../src/app/tetris/tetris_app.h"
+#include "../../src/ui/wingui_window.h"
+
+
+
+using ox::app::tetris::tetris_uig_input_event_source;
+using ox::app::tetris::tetris_win_gui;
 
 struct on_application_start
 {
@@ -26,22 +32,21 @@ int entry(int argc, _TCHAR* argv[])
 	win_gui gui;
 	tetris_win_gui tetris_gui(gui);
 	tetris_uig_input_event_source tetris_event;
-	app<tetris_win_gui,tetris_uig_input_event_source> tetris_application;
+	ox::app::tetris::app<tetris_win_gui,tetris_uig_input_event_source> tetris_application;
 	tetris_application.init(&tetris_gui,&tetris_event);
 	tetris_application.on_started.assign(&on_application_start(tetris_event));
 	tetris_application.start();
-	ox::win_queue_thread th;
+	ox::mos::win_queue_thread th;
 	th.start_here();
 	getchar();
 	return 0;
 }
 
 
-
 win_gui gui;
 tetris_win_gui tetris_gui(gui);
 tetris_uig_input_event_source tetris_event;
-app<tetris_win_gui,tetris_uig_input_event_source> tetris_application;
+ox::app::tetris::app<tetris_win_gui,tetris_uig_input_event_source> tetris_application;
 
 //ui_board<tetris_win_gui> a(tetris_gui);
 //ui_preview<tetris_win_gui> b(tetris_gui);
@@ -61,6 +66,10 @@ BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 
+
+void on_paint(HWND hwnd,HDC hdc)
+{
+}
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPTSTR    lpCmdLine,
@@ -71,6 +80,18 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 	tetris_application.init(&tetris_gui,&tetris_event);
 	tetris_application.on_started.assign(&on_application_start(tetris_event));
+
+
+	ox::gui::window_class main_class(hInstance);
+	main_class.create();
+	ox::gui::window main_window(&main_class);
+	main_window.on_paint.assign(on_paint);
+	main_window.create_show_update("abcdef");
+	ox::gui::message_loop loop(hInstance);
+	loop.run(0);
+
+	return 0;
+
 
  	// TODO: Place code here.
 	MSG msg;
