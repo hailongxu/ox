@@ -247,7 +247,13 @@ struct win_multi_threads
 		}
 		return false;
 	}
-
+	void move_to_exit_queue(thread_t* thread)
+	{
+		if (_m_thread==0 || ::GetCurrentThreadId()==_m_thread->threadid())
+			do_move_to_exit_queue(thread);
+		else
+			_m_thread->add(tasker_t::make(this,&self::do_move_to_exit_queue,thread));
+	}
 
 	exiting_d& on_exiting() {return _m_on_exiting;}
 	exited_d& on_exited() {return _m_on_exited;}
@@ -334,20 +340,44 @@ private:
 		unsafe_do_find_thread(threadid,task);
 	}
 
+	struct find_action_t
+	{
+		find_action_t() : _m_task(0) {}
+		find_action_t(task_t* task) : _m_task(task) {}
+		template <typename t>
+		void operator()(t)
+		{
+			if (_m_task)
+				_m_task->run();
+		}
+		task_t* _m_task;
+	};
+	void do_move_to_exit_queue(thread_t* thread)
+	{
+		typedef typename thread_vector::iterator I;
+		I i = do_find_thread_vect_tt(_m_exited_vector,thread->threadid(),find_action_t());
+		if (i==_m_exited_vector.end()) _m_exited_vector.push_back(thread);
+		i = do_find_thread_vect_tt(_m_thread_vector,thread->threadid(),find_action_t());
+		if (i!=_m_thread_vector.end()) _m_thread_vector.erase(i);
+	}
 	typename thread_vector::iterator do_find_thread_vect(size_t threadid,task_t* task)
 	{
+		return do_find_thread_vect_tt(_m_thread_vector,threadid,find_action_t(task));
+	}
+	template <typename action_tn>
+	typename thread_vector::iterator do_find_thread_vect_tt(thread_vector& vec,size_t threadid,action_tn action)
+	{
 		typedef thread_vector::iterator I;
-		for (I i=_m_thread_vector.begin();i!=_m_thread_vector.end();++i)
+		for (I i=vec.begin();i!=vec.end();++i)
 		{
 			thread_t& th = **i;
 			if (th.threadid()==threadid)
 			{
-				if (task)
-					task->run();
+				action(i);
 				return i;
 			}
 		}
-		return _m_thread_vector.end();
+		return vec.end();
 	}
 
 	void unsafe_do_stop()
@@ -396,6 +426,16 @@ private:
 	}
 
 	/// run in sub-thread
+	void on_thread_final_to_exit(thread_t* thread)
+	{
+		if (_m_thread==0 || ::GetCurrentThreadId()==_m_thread->threadid()
+			|| _m_thread->is_exiting()) /// this condition must be is exiting by terminate
+			/// or we set a flag that indicate the exit is done by terminate
+			do_on_thread_final_exiting(thread->threadid());
+		else
+			_m_thread->add(tasker_t::make(this,&self::do_on_thread_final_exiting,thread->threadid()));
+	}
+	/// run in sub-thread
 	void on_thread_start_to_exit(thread_t* th)
 	{
 		if (_m_thread==0 || ::GetCurrentThreadId()==_m_thread->threadid()
@@ -408,19 +448,25 @@ private:
 
 	void do_on_thread_exiting(thread_t* thread)
 	{
-		long thread_count = _m_is_sub_exiting--;
-		assert (thread_count>1 && thread_count<=1+_m_thread_vector.size());
-		_m_on_exiting(thread,thread_count-1);
-		if (thread_count<=1+1) do_on_exited();
+		do_move_to_exit_queue(thread);
+		_m_on_exiting(thread,_m_thread_vector.size()+1);
+		if (_m_thread_vector.empty()) do_on_exited();
+	}
+	void do_on_thread_final_exiting(size_t threadid)
+	{
+		typename thread_vector::iterator i = do_find_thread_vect_tt(_m_exited_vector,threadid,find_action_t());
+		if (_m_exited_vector.end()==i) return;
+		thread_t* th = *i;
+		delete th;
+		_m_exited_vector.erase(i);
 	}
 
 	/// run in control thread
 	void do_on_exited()
 	{
-		assert(_m_is_sub_exiting==1);
-
+		assert(_m_thread_vector.empty());
 		handle_vector handles;
-		for (thread_vector::iterator i=_m_thread_vector.begin();i!=_m_thread_vector.end();++i)
+		for (thread_vector::iterator i=_m_exited_vector.begin();i!=_m_exited_vector.end();++i)
 		{
 			thread_t& th = **i;
 			HANDLE h = th.create_thread_handle();
@@ -438,12 +484,12 @@ private:
 		if (!_m_on_exited.is_empty())
 			_m_on_exited();
 		/// delete all thread objects
-		for (thread_vector::iterator i=_m_thread_vector.begin();i!=_m_thread_vector.end();++i)
+		for (thread_vector::iterator i=_m_exited_vector.begin();i!=_m_exited_vector.end();++i)
 		{
 			thread_t* th = *i;
 			delete th;
 		}
-		_m_thread_vector.clear();
+		_m_exited_vector.clear();
 	}
 	bool internal_astop(on_stopped_d const& event_stopped,HANDLE param)
 	{
@@ -560,7 +606,9 @@ protected:
 			internal_sort_threads();
 			//thread->on_exit_before().assign(this,&self::on_thread_exit_before);
 			thread_t::exit_d exit_event(this,&self::on_thread_start_to_exit);
+			thread_t::final_d final_event(this,&self::on_thread_final_to_exit);
 			if (thread->on_exit()!=exit_event) thread->on_exit() = exit_event; // this action is not very safe
+			thread->on_final() = final_event;
 			if (!on_added.is_empty())
 				on_added(thread);
 		}
@@ -591,6 +639,7 @@ private:
 	size_t _m_your_id;
 	char _m_your_name[32];
 	thread_vector _m_thread_vector;
+	thread_vector _m_exited_vector;
 };
 
 

@@ -174,6 +174,7 @@ private:
 			//_m_multi_thread.unsafe_terminate_tid(threadid);
 			erase_idle(threadid);
 			thread->stop_next();
+			_m_multi_thread.move_to_exit_queue(thread);
 			return;
 		}
 		enque_idle(threadid);

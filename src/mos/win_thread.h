@@ -37,6 +37,7 @@ struct win_thread
 	typedef typename function_closure::delegate_t function_t;
 	typedef delegate<void(self*)> stop_d;
 	typedef delegate<void(self*)> exit_d;
+	typedef delegate<void(self*)> final_d;
 	typedef delegate<void(self*)> started_d;
 	enum wait_enum
 	{
@@ -232,6 +233,8 @@ public:
 	stop_d const& to_stop() const {return _m_stop;}
 	exit_d& on_exit() {return _m_on_exit;}
 	exit_d const& on_exit() const {return _m_on_exit;}
+	final_d& on_final() {return _m_on_final;}
+	final_d const& on_final() const {return _m_on_final;}
 
 	function_closure& on_run()
 	{
@@ -276,11 +279,20 @@ protected:
 #ifdef _DEBUG
 		{
 			char buff [128];
-			sprintf (buff,"thread:[%s,%u] id:[%u] NORMALLY exited with:[%u]\n",me->_m_your_name,me->_m_your_id,me->_m_threadid,exitcode);
+			sprintf (buff,"thread:[%s,%u] id:[%u] NORMALLY triggered exit event with:[%u]\n",me->_m_your_name,me->_m_your_id,me->_m_threadid,exitcode);
 			OutputDebugStringA(buff);
 		}
 #endif
 		me->_m_phrase = __th_about_to_exit;
+		if (!me->_m_on_final.is_empty())
+			me->_m_on_final(me);
+#ifdef _DEBUG
+		{
+			char buff [128];
+			sprintf (buff,"thread:[%s,%u] id:[%u] NORMALLY[final] exited with:[%u]\n",me->_m_your_name,me->_m_your_id,me->_m_threadid,exitcode);
+			OutputDebugStringA(buff);
+		}
+#endif
 		return exitcode;
 	}
 
@@ -351,6 +363,7 @@ protected:
 	//atomic_long _m_exit_enabled;
 	stop_d _m_stop;
 	exit_d _m_on_exit;
+	final_d _m_on_final;
 	started_d _m_on_started;
 };
 

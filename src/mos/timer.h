@@ -545,17 +545,21 @@ namespace timer
 			pos.taskindex = item->tasklist.size()-1;
 			return pos;
 		}
+		bool clear_task(task_position const& tp,task_ptr taskptr)
+		{
+			return clear_task(tp.timerid,tp.taskindex,taskptr);
+		}
 		bool clear_task(size_t timerid,size_t subindex,task_ptr taskptr)
 		{
 			timerid_item* item = get_timer_item(timerid);
 			if (item==0) return false;
 			task_ptr ptask = get_task(item,subindex);
-			if (ptask.is_empty()) return false;
+			if (ptask.is_empty()) return true;
 			item->count_of_recved++;
 			if (!taskptr.is_empty()) taskptr()=*ptask;
 			ptask().~task_t();
 			memset(ptask.pointer(),0,sizeof(task_t));
-			if (!item->is_all_recved()) return false;
+			//if (!item->is_all_recved()) return false;
 			try_erase_begin();
 			return true;
 		}
