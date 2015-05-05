@@ -13,6 +13,7 @@
 #include <list>
 #include <set>
 #include <map>
+#include "../ox/nsab.h"
 #include "vecbuff.h"
 #include "data_helper.h"
 #include "data_t.h"
@@ -22,10 +23,9 @@
 #pragma once
 
 
-namespace ox
-{
-namespace utl
-{
+
+___namespace2_begin(ox,utl)
+
 
 /// serialization
 template <typename t>
@@ -59,6 +59,25 @@ template<typename t>
 struct serialize_each
 {};
 
+template <>
+struct serialize_each<cdata_t>
+{
+	typedef serialize_each self;
+	typedef char value_type;
+	void add(std::string& out,cdata_t const& v)
+	{
+		vecbuff_helper help(out,0);
+		help.add(v);
+		return ;
+	}
+	void sub(cdata_t data,cdata_t& v)
+	{
+		assert(v.size>=data.size);
+		size_t minsize = data.size;
+		if (v.size<minsize) minsize = v.size;
+		::memmove((char*)v.begin,data.begin,minsize);
+	}
+};
 template <>
 struct serialize_each<char>
 {
@@ -440,5 +459,70 @@ static void deserialize(cdata_t all,t1& v1,t2& v2)
 	deserialize(data,v2);
 }
 
-} /// end
-}
+struct serializer
+{
+	serializer(std::string& buff)
+		:_m_buff(buff),_m_help(buff,0)
+	{
+		_m_help.init();
+	}
+	template <typename t>
+	void add(t const& v)
+	{
+		serialize_inside::serialize_each<t>().add(_m_buff,v);
+	}
+	template <typename t1,typename t2>
+	void add(t1 const& v1,t2 const& v2)
+	{
+		serialize_inside::serialize_each<t1>().add(_m_buff,v1);
+		serialize_inside::serialize_each<t2>().add(_m_buff,v2);
+	}
+	template <typename t1,typename t2,typename t3>
+	void add(t1 const& v1,t2 const& v2,t3 const& v3)
+	{
+		serialize_inside::serialize_each<t1>().add(_m_buff,v1);
+		serialize_inside::serialize_each<t2>().add(_m_buff,v2);
+		serialize_inside::serialize_each<t3>().add(_m_buff,v3);
+	}
+	serialize_inside::vecbuff_helper _m_help;
+	std::string& _m_buff;
+};
+
+struct deserializer
+{
+	deserializer(std::string& buff)
+		:_m_data_index(0)
+	{
+		_m_vecbuf = serialize_inside::vecbuff_t::as_vecbuff(ox::utl::to_data(buff));
+	}
+	deserializer(ox::utl::cdata_t buff)
+		:_m_data_index(0)
+	{
+		_m_vecbuf = serialize_inside::vecbuff_t::as_vecbuff(buff);
+	}
+
+	template <typename t>
+	void get(t& v)
+	{
+		serialize_inside::vecbuff_t& vecbuf = *_m_vecbuf;
+		cdata_t data = vecbuf.data_item(_m_data_index++);
+		serialize_inside::serialize_each<t>().sub(data,v);
+	}
+	template <typename t1,typename t2>
+	void get(t1 const& v1,t2 const& v2)
+	{
+		get<t1>(v1);
+		get<t2>(v2);
+	}
+	template <typename t1,typename t2,typename t3>
+	void get(t1 const& v1,t2 const& v2,t3 const& v3)
+	{
+		get<t1,t2>(v1,v2);
+		get<t3>(v3);
+	}
+	serialize_inside::vecbuff_t* _m_vecbuf;
+	size_t _m_data_index;
+};
+
+
+___namespace2_end()

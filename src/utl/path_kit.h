@@ -18,6 +18,7 @@
 #include <map>
 #include <algorithm>
 
+#include "../ox/nsab.h"
 #include "../pkg/string_simple_kit.h"
 #include "data_t.h"
 
@@ -25,10 +26,9 @@
 #pragma once
 
 
-namespace ox
-{
-namespace utl
-{
+
+___namespace2_begin(ox,utl)
+
 
 template<typename character_tn>
 struct localpath_kit
@@ -642,7 +642,9 @@ struct localpath_kit
 			return 0;
 		}
 
-		character const* seps [] = {L"/",L"\\"};
+		character const str_slash[] = {'/',0};
+		character const str_backslash[] = {'\\',0};
+		character const* seps [] = {str_slash,str_backslash};
 		size_t counted = 0;
 		get_line getline(begin,end);
 		getline.find.set_seps(seps);
@@ -1112,8 +1114,9 @@ struct uri_kit
 	}
 };
 
-} // end of utl
-} // end of ox
+
+___namespace2_end()
+
 
 
 class ox_path_format_kit
