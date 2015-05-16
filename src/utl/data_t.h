@@ -124,5 +124,15 @@ namespace ox
 		typedef data_tt<char> data_t;
 		typedef cdata_tt<wchar_t> wcdata_t;
 		typedef data_tt<wchar_t> wdata_t;
+
+		template <typename kt,typename vt>
+		struct kv_tt
+		{
+			typedef cdata_tt<kt> key_t;
+			typedef cdata_tt<vt> value_t;
+			key_t key;
+			value_t value;
+		};
+		typedef kv_tt<char,char> kvch_t;
 	}
 }

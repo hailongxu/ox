@@ -149,6 +149,11 @@ struct localpath_kit
 		return true;
 	}
 
+	static void replace_last(std_string& path,character const* last_new)
+	{
+		remove_last(path);
+		add_rpath(path,last_new,'/');
+	}
 	static bool replace_ext(std_string& path, character const* ext)
 	{
 		character const* pext = 0;

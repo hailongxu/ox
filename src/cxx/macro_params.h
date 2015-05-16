@@ -94,9 +94,13 @@
 
 
 #define DEF_TYPENAMES(n) MACRO_ACTIVE1_##n(typename p)
+#define DEF_TYPENAMES2(p,n) MACRO_ACTIVE1_##n(typename p)
 #define DEF_TYPES(n) MACRO_ACTIVE1_##n(p)
+#define DEF_TYPES2(p,n) MACRO_ACTIVE1_##n(p)
 #define DEF_OBJS(n) MACRO_ACTIVE1_##n(_p)
+#define DEF_OBJS2(p,n) MACRO_ACTIVE1_##n(_##p)
 #define DEF_ARGS(n) MACRO_ACTIVE2_##n(p,_p)
+#define DEF_ARGS2(p,n) MACRO_ACTIVE2_##n(p,_##p)
 #define DEF_MEMBS_DEF(n) MACRO_ACTIVE2C_##n(p,_m_p)
 #define DEF_MEMBS(n) MACRO_ACTIVE1_##n(_m_p)
 #define DEF_MEMBS_INIT(n) MACRO_ACTIVE2INIT_##n(_m_p,_p)

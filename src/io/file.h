@@ -201,8 +201,8 @@ namespace ox
 				return the count of items
 				return =0 : the end of the file, or some error accour
 			*/
-			size_t read (char* buffer, size_t size, size_t count) {return stdfile_same_trait_t::fread((void*)buffer,size,count,pfile);}
-			size_t write (char* buffer, size_t size, size_t count) {return stdfile_same_trait_t::fwrite((void*)buffer,size,count,pfile);}
+			size_t read (char const* buffer, size_t size, size_t count) {return stdfile_same_trait_t::fread((void*)buffer,size,count,pfile);}
+			size_t write (char const* buffer, size_t size, size_t count) {return stdfile_same_trait_t::fwrite((void*)buffer,size,count,pfile);}
 			int flush () { return stdfile_same_trait_t::fflush(pfile); }
 			int seek (helper::seek_mode_c origin, long offset) {return stdfile_same_trait_t::fseek(offset,origin,pfile);}
 			long tell()	{return stdfile_same_trait_t::ftell(pfile);}
