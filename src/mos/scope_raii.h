@@ -101,6 +101,7 @@ private:
 template <bool bmanual>
 struct win_event
 {
+	typedef HANDLE handle_t;
 	static HANDLE create(bool init_signed=false,char const* name=0)
 	{
 		return CreateEventA(0,bmanual?TRUE:FALSE,init_signed?TRUE:FALSE,name);
@@ -122,6 +123,14 @@ struct win_event
 		bool b = ResetEvent(handle)==TRUE?true:false;
 		size_t err = b?0:GetLastError();
 		assert(!handle||b);
+	}
+	static bool is_handle_valid(HANDLE handle)
+	{
+		return handle != 0;
+	}
+	static HANDLE invalid_handle()
+	{
+		return HANDLE(0);
 	}
 
 	win_event(bool init_signed=false,char const* name=0)

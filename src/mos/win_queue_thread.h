@@ -319,8 +319,8 @@ private:
 				is_busying = true;
 				_m_is_busy = 1;
 				_m_control_queue.runing->pop();
-				runing()->run();
-				runing()->destroy();
+				runing.value()->run();
+				runing.value()->destroy();
 				_m_is_busy = 0;
 				goto label_control_processing;
 			}
@@ -341,8 +341,8 @@ private:
 				is_busying = true;
 				_m_is_busy = 1;
 				_m_high_queue.runing->pop();
-				runing()->run();
-				runing()->destroy();
+				runing.value()->run();
+				runing.value()->destroy();
 				_m_is_busy = 0;
 				goto label_control_processing;
 			}
@@ -363,8 +363,8 @@ private:
 				is_busying = true;
 				_m_normal_queue.runing->pop();
 				_m_is_busy = 1;
-				runing()->run();
-				runing()->destroy();
+				runing.value()->run();
+				runing.value()->destroy();
 				_m_is_busy = 0;
 				goto label_control_processing;
 			}

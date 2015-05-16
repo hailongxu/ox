@@ -213,7 +213,7 @@ public:
 	}
 	void assign(delegate<r(p1)> const& d,dummy,p1 _p1)
 	{
-		_m_delegate = o._m_delegate;
+		_m_delegate = d;
 		_m_p1 = _p1;
 	}
 

@@ -268,7 +268,7 @@ private:
 			object_ptr objptr = _m_queue.get();
 			if (objptr.is_empty())
 				break;
-			objptr()->destroy();
+			objptr.value()->destroy();
 		}
 	}
 

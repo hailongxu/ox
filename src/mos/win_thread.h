@@ -165,7 +165,7 @@ public:
 	bool start(p1 _p1)
 	{
 		if (is_started())
-			return;
+			return true;
 		_m_function.assign_param<0>(_p1);
 		begin_thread();
 		assert (_m_threadid!=-1);

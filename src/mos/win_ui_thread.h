@@ -329,7 +329,7 @@ private:
 				//is_busying = true;
 				_m_normal_queue.runing->pop();
 				//_m_is_busy = 1;
-				ui_task_t& ui_task = runing();
+				ui_task_t& ui_task = runing.value();
 				if (ui_task.is_timer)
 				{
 					add_to_timer_list(ui_task);

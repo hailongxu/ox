@@ -1,6 +1,7 @@
 
 #include <Windows.h>
 #include <set>
+#include <vector>
 #include "../ox/nsab.h"
 #include "../cxx/delegate.h"
 #include "atomic_number.h"
@@ -27,86 +28,102 @@ struct win_high_time_freq
 static LONGLONG const __win_high_time_freq = win_high_time_freq::freq();
 struct win_high_time : win_high_time_freq
 {
-	static LARGE_INTEGER current_ticks()
+	static LONGLONG current_ticks()
 	{
-		LARGE_INTEGER curr;
-		QueryPerformanceCounter(&curr);
-		return curr;
+		LARGE_INTEGER curr_ticks;
+		QueryPerformanceCounter(&curr_ticks);
+		return curr_ticks.QuadPart;
 	}
-	static void current_ticks(LARGE_INTEGER& curr)
+	static void current_ticks(LARGE_INTEGER& curr_ticks)
 	{
-		QueryPerformanceCounter(&curr);
+		QueryPerformanceCounter(&curr_ticks);
 	}
-	static LONGLONG currrent_as_100nano_second()
+	static LONGLONG current_as_100nano_second()
 	{
-		LARGE_INTEGER curr;
-		current_ticks(curr);
-		return curr.QuadPart*10000/__win_high_time_freq*1000;
+		LARGE_INTEGER curr_ticks;
+		current_ticks(curr_ticks);
+		return curr_ticks.QuadPart*10000/__win_high_time_freq*1000;
 	}
-	static LONGLONG currrent_as_micro_second()
+	static LONGLONG current_as_micro_second()
 	{
-		LARGE_INTEGER curr;
-		current_ticks(curr);
-		return curr.QuadPart*1000/__win_high_time_freq*10001;
+		LARGE_INTEGER curr_ticks;
+		current_ticks(curr_ticks);
+		return curr_ticks.QuadPart*1000/__win_high_time_freq*10001;
 	}
-	static LONGLONG currrent_as_milli_second()
+	static LONGLONG current_as_milli_second()
 	{
-		LARGE_INTEGER curr;
-		current_ticks(curr);
-		return curr.QuadPart*1000/__win_high_time_freq;
+		LARGE_INTEGER curr_ticks;
+		current_ticks(curr_ticks);
+		return curr_ticks.QuadPart*1000/__win_high_time_freq;
 	}
-	static LONGLONG currrent_as_second()
+	static LONGLONG current_as_second()
 	{
-		LARGE_INTEGER curr;
-		current_ticks(curr);
-		return curr.QuadPart/__win_high_time_freq;
+		LARGE_INTEGER curr_ticks;
+		current_ticks(curr_ticks);
+		return curr_ticks.QuadPart/__win_high_time_freq;
 	}
-	static LONGLONG currrent_as_double_100nano_second()
+	static LONGLONG current_as_double_100nano_second()
 	{
-		LARGE_INTEGER curr;
-		current_ticks(curr);
-		return curr.QuadPart*100000000.0/__win_high_time_freq;
+		LARGE_INTEGER curr_ticks;
+		current_ticks(curr_ticks);
+		return curr_ticks.QuadPart*100000000.0/__win_high_time_freq;
 	}
-	static LONGLONG currrent_as_double_micro_second()
+	static LONGLONG current_as_double_micro_second()
 	{
-		LARGE_INTEGER curr;
-		current_ticks(curr);
-		return curr.QuadPart*1000000.0/__win_high_time_freq;
+		LARGE_INTEGER curr_ticks;
+		current_ticks(curr_ticks);
+		return curr_ticks.QuadPart*1000000.0/__win_high_time_freq;
 	}
-	static LONGLONG currrent_as_double_milli_second()
+	static LONGLONG current_as_double_milli_second()
 	{
-		LARGE_INTEGER curr;
-		current_ticks(curr);
-		return curr.QuadPart*1000.0/__win_high_time_freq;
+		LARGE_INTEGER curr_ticks;
+		current_ticks(curr_ticks);
+		return curr_ticks.QuadPart*1000.0/__win_high_time_freq;
 	}
-	static LONGLONG currrent_as_double_second()
+	static LONGLONG current_as_double_second()
 	{
-		LARGE_INTEGER curr;
-		current_ticks(curr);
-		return curr.QuadPart*1.0/__win_high_time_freq;
+		LARGE_INTEGER curr_ticks;
+		current_ticks(curr_ticks);
+		return curr_ticks.QuadPart*1.0/__win_high_time_freq;
 	}
-	static LONGLONG elapsed_seconds(LONGLONG const& from,LONGLONG const& to)
+	static LONGLONG elapsed_seconds(LONGLONG const& from_ticks,LONGLONG const& to_ticks)
 	{
-		return elapsed_ticks(from,to)/__win_high_time_freq;
+		return elapsed_ticks(from_ticks,to_ticks)/__win_high_time_freq;
 	}
-	static LONGLONG elapsed_milli_seconds(LONGLONG const& from,LONGLONG const& to)
+	static LONGLONG elapsed_milli_seconds(LONGLONG const& from_ticks,LONGLONG const& to_ticks)
 	{
-		return elapsed_ticks(from,to)*1000/__win_high_time_freq;
+		return elapsed_ticks(from_ticks,to_ticks)*1000/__win_high_time_freq;
 	}
-	static LONGLONG elapsed_macro_seconds(LONGLONG const& from,LONGLONG const& to)
+	static LONGLONG elapsed_macro_seconds(LONGLONG const& from_ticks,LONGLONG const& to_ticks)
 	{
-		return elapsed_ticks(from,to)*1000*1000/__win_high_time_freq;
+		return elapsed_ticks(from_ticks,to_ticks)*1000*1000/__win_high_time_freq;
 	}
-	static LONGLONG elapsed_ticks(LONGLONG const& from,LONGLONG const& to)
+	static LONGLONG elapsed_ticks(LONGLONG const& from_ticks,LONGLONG const& to_ticks)
 	{
-		return to-from;
+		return to_ticks-from_ticks;
+	}
+	static LONGLONG elapsed_seconds(LONGLONG const& to_ticks)
+	{
+		return elapsed_seconds(current_ticks(),to_ticks);
+	}
+	static LONGLONG elapsed_milli_seconds(LONGLONG const& to_ticks)
+	{
+		return elapsed_milli_seconds(current_ticks(),to_ticks);
+	}
+	static LONGLONG elapsed_macro_seconds(LONGLONG const& to_ticks)
+	{
+		return elapsed_macro_seconds(current_ticks(),to_ticks);
+	}
+	static LONGLONG elapsed_ticks(LONGLONG const& to_ticks)
+	{
+		LARGE_INTEGER from; current_ticks(from);
+		return elapsed_ticks(from.QuadPart,to_ticks);
 	}
 };
 struct time_elapsed
 {
 	LARGE_INTEGER _m_from;
 	LARGE_INTEGER _m_to;
-	//LARGE_INTEGER _m_freq;
 	void begin()
 	{
 		win_high_time::current_ticks(_m_from);
@@ -213,7 +230,6 @@ struct win_timer_list
 	win_timer_list()
 	{
 		_m_time_coming_100nano_second = -1;
-		//_m_freq = win_high_time::freq();
 	}
 
 	~win_timer_list()
@@ -280,7 +296,7 @@ struct win_timer_list
 		timer_data const* ptimer = *i;
 		timer_data const& timer = *ptimer;
 		//LARGE_INTEGER duration_rel_100nano_seconds;
-		LONGLONG current_100nano_second = win_high_time::currrent_as_100nano_second();
+		LONGLONG current_100nano_second = win_high_time::current_as_100nano_second();
 		LONGLONG relative_100nano_second = current_100nano_second-timer.time_coming_100nano_seconds;
 		//duration_rel_100nano_seconds.QuadPart = current_100nano_second-timer.time_coming_100nano_seconds;
 		//if (duration_rel_100nano_seconds.QuadPart>=0)
@@ -301,13 +317,13 @@ struct win_timer_list
 	bool is_first_coming() const
 	{
 		if (_m_timer_list.empty()) return false;
-		LONGLONG curr_begin = win_high_time::currrent_as_100nano_second();
+		LONGLONG curr_begin = win_high_time::current_as_100nano_second();
 		timer_data const& timer = **_m_timer_list.begin();
 		return curr_begin>=timer.time_coming_100nano_seconds;//<=_m_time_coming_100nano_second;
 	}
 	void run_first_and_remove()
 	{
-		LONGLONG curr_begin = win_high_time::currrent_as_100nano_second();
+		LONGLONG curr_begin = win_high_time::current_as_100nano_second();
 		LONGLONG curr_curr = 0;
 		LONGLONG curr_real = 0;
 		/// may be somebody erase the timer, just for safety
@@ -334,7 +350,7 @@ struct win_timer_list
 				continue;
 			}
 			/// {{ timer combine
-			curr_curr = win_high_time::currrent_as_100nano_second();
+			curr_curr = win_high_time::current_as_100nano_second();
 			curr_real = _m_time_coming_100nano_second + (curr_curr-curr_begin);
 			LONGLONG distance = curr_real - ptimer->time_coming_100nano_seconds;
 			LONGLONG tail = distance % ptimer->period_100nano_seconds;
@@ -378,7 +394,8 @@ struct win_timer_list
 		td.period_100nano_seconds = period_micro_seconds*10;
 		td.id = timerid;
 		td.task = task;
-		td.time_coming_100nano_seconds = win_high_time::currrent_as_100nano_second() + td.period_100nano_seconds;
+		td.time_coming_100nano_seconds = win_high_time::current_as_100nano_second() + td.period_100nano_seconds;
+		if (td.time_coming_100nano_seconds<0) td.time_coming_100nano_seconds=0;
 
 		timer_position i = _m_timer_list.insert(ptd);
 		if (pos) *pos = i;
@@ -445,6 +462,8 @@ namespace timer
 		size_t taskindex;
 	};
 
+	typedef delegate<void(size_t timerid,LONGLONG const& timeout_ms_end)> timer_new_d;
+
 	template <typename task_tn>
 	struct timer_resolution_task_system
 	{
@@ -456,6 +475,7 @@ namespace timer
 
 		/// types defs'
 		typedef delegate<bool(task_t&,task_position const&,void*)> action_d;
+		typedef delegate<void(task_t const&,void const*)> task_tobe_destructed_d;
 		typedef std::vector<task_t> task_list_t;
 		struct timerid_t
 		{
@@ -471,6 +491,7 @@ namespace timer
 			size_t index_tobe_send;
 			size_t count_of_recved;
 			size_t timerid;
+			LONGLONG timeout_ms_end;
 			bool is_all_recved() const
 			{
 				return count_of_recved>=tasklist.size();
@@ -479,19 +500,23 @@ namespace timer
 			{
 				return index_tobe_send>=tasklist.size();
 			}
+			bool is_timeouted() const
+			{
+				return timeout_ms_end<=-1;
+			}
 		};
 		typedef std::vector<timerid_item*> timerid_list_t;
+		static size_t const __timerid_resolution_half_ms = 50;
 		/// cons', dest'
 		self()
 		{
-			_m_last_time_begin = ox::mos::win_high_time::currrent_as_milli_second();
-			_m_milli_second_before = ox::mos::win_high_time::currrent_as_milli_second()+_m_timerid_resolution;
 			_m_timerid_tobe_sent = 0;
-			add_null();
+			//add_null();
+			_m_timerid_resolution_half = __timerid_resolution_half_ms;
 		}
 		void set_timerid_resolution(size_t resolution_ms)
 		{
-			_m_timerid_resolution = resolution_ms;
+			_m_timerid_resolution_half = resolution_ms/2;
 		}
 		/// methods
 		bool is_any_task_to_send() const
@@ -506,62 +531,109 @@ namespace timer
 			}
 			return false;
 		}
-		void add_null()
-		{
-			timerid_item* item = new (std::nothrow) timerid_item;
-			item->index_tobe_send = 0;
-			item->count_of_recved = 0;
-			item->timerid = _m_timerid.value();
-			_m_timerid_list.push_back(item);
-		}
-		task_position add_task(task_t task)
-		{
-			return add_task(task,ox::mos::win_high_time::currrent_as_milli_second());
-		}
-		task_position add_task(task_t task,size_t task_time_begin)
+		//void add_null()
+		//{
+		//	timerid_item* item = new (std::nothrow) timerid_item;
+		//	assert (item);
+		//	item->index_tobe_send = 0;
+		//	item->count_of_recved = 0;
+		//	item->timerid = _m_timerid.value();
+		//	item->timeout_ms_end = ox::mos::win_high_time::currrent_as_milli_second()+_m_timerid_resolution;
+		//	_m_timerid_list.push_back(item);
+		//	if (!on_timer_new.is_empty()) on_timer_new(item->timerid,item->timeout_ms_end);
+		//}
+		task_position add_task(task_t const& task,LONGLONG const& task_time_end)
 		{
 			task_position pos;
 			pos.taskindex = -1;
 			pos.timerid = -1;
-			if (task_time_begin<_m_last_time_begin)
-			{
-				assert (false && "task time begin is not valid");
-				return pos;
-			}
-			if (task_time_begin)
+			int tid = find_proper_timerid(task_time_end);
+			if (tid>=0)
 				pos.timerid = _m_timerid.value();
-			if (task_time_begin>_m_milli_second_before)
+			else /// new a timer id
 			{
-				_m_milli_second_before = task_time_begin+_m_timerid_resolution;
 				pos.timerid = _m_timerid.next();
 				timerid_item* item = new (std::nothrow) timerid_item;
 				item->index_tobe_send = 0;
 				item->count_of_recved = 0;
 				item->timerid = pos.timerid;
+				item->timeout_ms_end = task_time_end;
 				_m_timerid_list.push_back(item);
+				if (!on_timer_new.is_empty()) on_timer_new(pos.timerid,task_time_end);
 			}
 			timerid_item* item = get_timer_item(pos.timerid);
 			item->tasklist.push_back(task);
 			pos.taskindex = item->tasklist.size()-1;
 			return pos;
 		}
-		bool clear_task(task_position const& tp,task_ptr taskptr)
+		struct event_destructor
 		{
-			return clear_task(tp.timerid,tp.taskindex,taskptr);
+			event_destructor(task_tobe_destructed_d const& on_task_tobe_destructed,void const* bind)
+				: _m_on_task_tobe_destructed(on_task_tobe_destructed)
+				, _m_bind(bind)
+			{}
+			void operator()(task_t const& task) const
+			{
+				if (!_m_on_task_tobe_destructed.is_empty())
+					_m_on_task_tobe_destructed(task,_m_bind);
+			}
+			void const* _m_bind;
+			task_tobe_destructed_d const& _m_on_task_tobe_destructed;
+		};
+		struct event_destructor_null
+		{
+			template <typename t> void operator()(t const&) {}
+		};
+		size_t clear_timerid(size_t timerid)
+		{
+			return clear_timerid<event_destructor_null>(timerid,event_destructor_null());
 		}
-		bool clear_task(size_t timerid,size_t subindex,task_ptr taskptr)
+		size_t clear_timerid(size_t timerid,task_tobe_destructed_d const& on_task_tobe_destructed,void const* bind)
 		{
+			return clear_timerid<event_destructor>(timerid,event_destructor(on_task_tobe_destructed,bind));
+		}
+		template <typename event_d>
+		size_t clear_timerid(size_t timerid,event_d event)
+		{
+			size_t count = 0;
 			timerid_item* item = get_timer_item(timerid);
-			if (item==0) return false;
-			task_ptr ptask = get_task(item,subindex);
-			if (ptask.is_empty()) return true;
-			item->count_of_recved++;
-			if (!taskptr.is_empty()) taskptr()=*ptask;
-			ptask().~task_t();
-			memset(ptask.pointer(),0,sizeof(task_t));
-			//if (!item->is_all_recved()) return false;
+			if (item==0) return count;
+			for (task_list_t::iterator i=item->tasklist.begin();i!=item->tasklist.end();++i)
+			{
+				task_t& task = *i;
+				if (!task) continue;
+				++count;
+				event(task);
+				task.~task_t();
+			}
+			item->tasklist.clear();
+			item->count_of_recved = 0;
+			item->index_tobe_send = 0;
 			try_erase_begin();
-			return true;
+			return count;
+		}
+		void clear_task(task_position const& tp
+			,task_tobe_destructed_d const& on_task_tobe_destructed,void const* bind
+			,size_t* count)
+		{
+			clear_task(tp.timerid,tp.taskindex,on_task_tobe_destructed,bind,count);
+		}
+		void clear_task(size_t timerid,size_t subindex//,task_ptr taskptr
+			,task_tobe_destructed_d const& on_task_tobe_destructed,void const* bind,size_t* pcount)
+		{
+			size_t count = 0;
+			do {
+				timerid_item* item = get_timer_item(timerid);
+				if (item==0) break;
+				task_ptr ptask = get_task(item,subindex);
+				if (ptask.is_empty()) break;
+				item->count_of_recved++;
+				if (!on_task_tobe_destructed.is_empty())
+					on_task_tobe_destructed(ptask.value(),bind);
+				ptask.value().~task_t();
+				try_erase_begin();
+			} while(0);
+			if (pcount) *pcount=count;
 		}
 		void foreach_task_tobe_sent(action_d action,void* bind)
 		{
@@ -580,24 +652,6 @@ namespace timer
 				item->index_tobe_send = item->tasklist.size();
 			}
 		}
-		//void foreach_task_tobe_recv(action_d action,void* bind)
-		//{
-		//	bool is_break = false;
-		//	for (int i=0;i<_m_timerid_list.size();++i)
-		//	{
-		//		timerid_item* item = _m_timerid_list[i];
-		//		for (size_t j=item->index_tobe_send;j<item->tasklist.size();++j)
-		//		{
-		//			task_t& task = item->tasklist[j];
-		//			task_position pos;
-		//			pos.timerid = item->timerid;
-		//			pos.taskindex = j;
-		//			is_break = action(task,pos,bind);
-		//			if (is_break) break;
-		//		}
-		//		if (is_break) break;
-		//	}
-		//}
 		template <typename action_tn>
 		void move_to_done(action_tn& action,size_t timerid)
 		{
@@ -656,7 +710,7 @@ namespace timer
 				}
 				if (!item->is_all_recved()) break;
 				for (task_list_t::iterator i=item->tasklist.begin();i!=item->tasklist.end();++i)
-					assert (*i==0);
+					assert (!(*i));
 				_m_timerid_list.erase(_m_timerid_list.begin());
 				delete item;
 			}
@@ -679,12 +733,35 @@ namespace timer
 			//if (_m_timerid_list.empty()) return -1;
 			return _m_timerid_list.back().timerid;
 		}
+		/// -1: no result, should create a new timerid
+		int find_proper_timerid(LONGLONG const& timeout_end) const
+		{
+			typedef timerid_list_t::reverse_iterator I;
+			static size_t __max_count = 8;
+			if (_m_timerid_list.empty()) return -1;
+			size_t list_count = _m_timerid_list.size();
+			for (int i=list_count-1;i>=0;--i)
+			{
+				if (i+__max_count<list_count) break;
+				assert (_m_timerid_list[i]);
+				timerid_item& ti = *_m_timerid_list[i];
+				if (is_timeout_hit(timeout_end,ti.timeout_ms_end))
+					return ti.timerid;
+			}
+			return -1;
+		}
+		bool is_timeout_hit(size_t timeout_ms_end,size_t timeout_ms_std) const
+		{
+			int dist = timeout_ms_std>timeout_ms_end
+				? timeout_ms_std-timeout_ms_end
+				: timeout_ms_end-timeout_ms_std;
+			return dist<=_m_timerid_resolution_half;
+		}
 		timerid_list_t _m_timerid_list;
 		timerid_t _m_timerid;
-		size_t _m_milli_second_before;
-		size_t _m_last_time_begin;
 		size_t _m_timerid_tobe_sent;
-		size_t _m_timerid_resolution;
+		size_t _m_timerid_resolution_half;
+		timer_new_d on_timer_new;
 	};
 }
 	
