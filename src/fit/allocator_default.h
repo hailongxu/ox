@@ -35,6 +35,7 @@ struct cppmalloc_tt<void>
 };
 typedef cppmalloc_tt<void> cppmalloc;
 
+
 struct nullmalloc
 {
 	char* allocate(size_t size)

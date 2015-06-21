@@ -18,6 +18,12 @@ struct vector_helper
 		for (size_t i=0;i<size;++i)
 			(begin++)->~object_tn();
 	}
+	template <typename object_tn>
+	static void destruct_objects(object_tn** begin,size_t size)
+	{
+		for (size_t i=0;i<size;++i)
+			(*(begin++))->~object_tn();
+	}
 	template <typename values_tn>
 	static void destruct_values(values_tn* begin,size_t size)
 	{
@@ -27,6 +33,12 @@ struct vector_helper
 	{
 		for (size_t i=0;i<size;++i)
 			new (begin++) object_tn();
+	}
+	template <typename object_tn>
+	static void construct_objects(object_tn** begin,size_t size)
+	{
+		for (size_t i=0;i<size;++i)
+			new (*(begin++)) object_tn();
 	}
 
 	template <typename object_tn>
@@ -92,6 +104,7 @@ struct vector_on_size_changed
 		rooter._m_head._m_size += size;
 	}
 };
+
 template<typename value_tn,typename size_changed_tn=vector_on_size_changed,typename allocator_tn=cppmalloc>
 struct vector_rooter : allocator_tn
 {
@@ -267,12 +280,23 @@ struct vector_tt : vector_rooter_tn
 {
 	typedef vector_rooter_tn rooter;
 	typedef typename rooter::value_type value_type;
+	struct on_inserted_nothing
+	{
+		template <typename vec,typename node,typename value>
+		void operator()(vec&,size_t off,node&,value&)
+		{}
+	};
 
 	bool is_empty() const
 	{
 		return rooter::size()==0;
 	}
 	value_type* insert(size_t off,value_type const& value)
+	{
+		return insert(off,value,on_inserted_nothing());
+	}
+	template <typename on_inserted_tn>
+	value_type* insert(size_t off,value_type const& value,on_inserted_tn& on_inserted)
 	{
 		value_type* value_begin = 0;
 		if (rooter::size()>=rooter::capacity())
@@ -293,13 +317,19 @@ struct vector_tt : vector_rooter_tn
 			*value_begin = value;
 			rooter::on_size_changed()(*this,1);
 		}
+		on_inserted(*this,off,value_begin,value);
 		return value_begin;
 	}
 	value_type* push_front(value_type const& value)
 	{
-		return insert(0,value);
+		return insert(0,value,on_inserted_nothing());
 	}
 	value_type* push_back(value_type const& value)
+	{
+		return push_back(value,on_inserted_nothing());
+	}
+	template <typename on_pushed_tn>
+	value_type* push_back(value_type const& value,on_pushed_tn& on_pushed)
 	{
 		if (rooter::size()>=rooter::capacity())
 			rooter::reserve(is_empty()?2:rooter::size()*2);
@@ -308,6 +338,7 @@ struct vector_tt : vector_rooter_tn
 		value_type* added_begin = begin+rooter::size();
 		*added_begin = value;
 		rooter::on_size_changed()(root(),1);
+		on_pushed(*this,rooter::size(),added_begin,value);
 		return added_begin;
 	}
 	void erase(size_t off,size_t size)
@@ -370,6 +401,78 @@ struct string : vector_tt<string_rooter<value_tn,string_on_size_changed,allocato
 template <typename array_tn>
 struct static_string: vector_tt<static_string_rooter<array_tn,string_on_size_changed>>
 {};
+
+
+template <typename value_tn,typename allocator_tn=cppmalloc>
+struct indirect_vector
+{
+	typedef value_tn value_type;
+	typedef vector_tt<vector_rooter<value_tn*,vector_on_size_changed,allocator_tn>> vector_type;
+	vector_type _m_vector;
+	size_t size() const
+	{
+		return _m_vector.size();
+	}
+	size_t capacity() const
+	{
+		return _m_vector.capacity();
+	}
+	bool is_empty() const
+	{
+		return _m_vector.is_empty();
+	}
+	void reserve(size_t size)
+	{
+		_m_vector.reserve(size);
+	}
+	void resize(size_t size)
+	{
+		size_t old_size = _m_vector.size();
+		if (size<=old_size)
+			vector_helper::destruct_objects(&_m_vector.at(size),old_size-size);
+		_m_vector.resize(size);
+		if (size<=old_size) return;
+		value_type** begin = _m_vector.data_begin();
+		for (size_t i=old_size;i<size;++i)
+		{
+			*begin = _m_vector.allocator::allocate(sizeof(value_type));
+			new (*begin) value_type();
+		}
+	}
+	value_type* insert(size_t off,value_type const& value)
+	{
+		value_type* pv = _m_vector.allocator::allocate(sizeof(value_type));
+		assert(pv);
+		_m_vector.insert(off,pv);
+		return pv;
+	}
+	value_type* push_back(value_type const& value)
+	{
+		value_type* pv = _m_vector.allocator::allocate(sizeof(value_type));
+		assert(pv);
+		_m_vector.push_back(pv);
+		return pv;
+	}
+	value_type* push_front(value_type const& value)
+	{
+		return insert(0,value);
+	}
+	template <typename action>
+	struct indirect_act
+	{
+		action& _m_action;
+		indirect_act(action& act): _m_action(act) {}
+		bool operator()(value_type*& pvalue)
+		{
+			return _m_action(*pvalue);
+		}
+	};
+	template <typename action>
+	void foreach(action& act)
+	{
+		_m_vector.foreach(indirect_act(act));
+	}
+};
 
 
 ___namespace2_end()
