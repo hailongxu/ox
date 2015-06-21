@@ -33,6 +33,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dict_test", "dict_test\dict
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "math_test", "math_test\math_test.vcproj", "{A3B52CC3-1D1E-484C-B3AF-634D993A5631}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vector_test", "vector_test\vector_test.vcproj", "{7BAF0D10-D5CB-49C1-A02E-0F59DF1207CA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -103,6 +105,10 @@ Global
 		{A3B52CC3-1D1E-484C-B3AF-634D993A5631}.Debug|Win32.Build.0 = Debug|Win32
 		{A3B52CC3-1D1E-484C-B3AF-634D993A5631}.Release|Win32.ActiveCfg = Release|Win32
 		{A3B52CC3-1D1E-484C-B3AF-634D993A5631}.Release|Win32.Build.0 = Release|Win32
+		{7BAF0D10-D5CB-49C1-A02E-0F59DF1207CA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7BAF0D10-D5CB-49C1-A02E-0F59DF1207CA}.Debug|Win32.Build.0 = Debug|Win32
+		{7BAF0D10-D5CB-49C1-A02E-0F59DF1207CA}.Release|Win32.ActiveCfg = Release|Win32
+		{7BAF0D10-D5CB-49C1-A02E-0F59DF1207CA}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
