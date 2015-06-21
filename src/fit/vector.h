@@ -255,8 +255,11 @@ struct static_string_rooter<value_tn[n],size_changed_tn>
 	: static_vector_rooter<value_tn[n],1,size_changed_tn>
 {
 	friend vector_tt<static_string_rooter>;
-	static_vector_rooter<value_tn[n],1,size_changed_tn>::_m_head;
-	//*(static_vector_rooter<value_tn[n],1,size_changed_tn>::data_begin())=0;
+	typedef static_string_rooter self;
+	self()
+	{
+		*data_begin()=0;
+	}
 };
 
 template<typename vector_rooter_tn>
