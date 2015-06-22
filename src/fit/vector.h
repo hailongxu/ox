@@ -2,6 +2,8 @@
 #include <assert.h>
 #include "../ox/nsab.h"
 #include "allocator_default.h"
+#include "../met/mod.h"
+#include "../met/_if_switch.h"
 
 
 
@@ -105,14 +107,43 @@ struct vector_on_size_changed
 	}
 };
 
-template<typename value_tn,typename size_changed_tn=vector_on_size_changed,typename allocator_tn=cppmalloc>
+struct vector_on_value_inserted
+{
+	template <typename rooter_tn>
+	void operator()(rooter_tn& rooter,size_t off,typename rooter_tn::value_type& value)
+	{}
+};
+struct vector_on_value_deleting
+{
+	template <typename rooter_tn>
+	void operator()(rooter_tn& rooter,size_t off,typename rooter_tn::value_type& value)
+	{}
+};
+
+struct vector_event
+{
+	typedef vector_on_size_changed on_size_changed;
+	typedef vector_on_value_inserted on_value_inserted;
+	typedef vector_on_value_deleting on_value_deleting;
+};
+
+struct string_event
+{
+	typedef string_on_size_changed on_size_changed;
+	typedef vector_on_value_inserted on_value_inserted;
+	typedef vector_on_value_deleting on_value_deleting;
+};
+
+template<typename value_tn,typename events_tn=vector_event,typename allocator_tn=cppmalloc>
 struct vector_rooter : allocator_tn
 {
 	friend vector_tt<vector_rooter>;
 	friend vector_on_size_changed;
 	friend string_on_size_changed;
 	typedef value_tn value_type;
-	typedef size_changed_tn on_size_changed;
+	typedef typename events_tn::on_size_changed on_size_changed;
+	typedef typename events_tn::on_value_inserted on_value_inserted;
+	typedef typename events_tn::on_value_deleting on_value_deleting;
 protected:
 	typedef vector_rooter self;
 	typedef allocator_tn allocator;
@@ -183,22 +214,22 @@ public:
 	}
 };
 
-template<typename value_tn,typename size_changed_tn=vector_on_size_changed,typename allocator_tn=cppmalloc>
-struct string_rooter : vector_rooter<value_tn,size_changed_tn,allocator_tn>
+template<typename value_tn,typename string_events_tn=string_event,typename allocator_tn=cppmalloc>
+struct string_rooter : vector_rooter<value_tn,string_events_tn,allocator_tn>
 {
 	friend vector_tt<string_rooter>;
 	string_rooter()
 	{
 		_m_head._m_data_begin = allocator::allocate(0);
-		size_changed_tn()(*this,0);
+		string_events_tn::on_size_changed()(*this,0);
 	}
 };
 
 
-template<typename array,size_t added,typename size_changed_tn=vector_on_size_changed>
+template<typename array,size_t added,typename vector_events_tn=vector_event>
 struct static_vector_rooter;
-template<typename value_tn,size_t n,size_t added,typename size_changed_tn>
-struct static_vector_rooter<value_tn[n],added,size_changed_tn>
+template<typename value_tn,size_t n,size_t added,typename vector_events_tn>
+struct static_vector_rooter<value_tn[n],added,vector_events_tn>
 {
 	friend vector_tt<static_vector_rooter>;
 	friend vector_on_size_changed;
@@ -207,7 +238,9 @@ struct static_vector_rooter<value_tn[n],added,size_changed_tn>
 	typedef value_tn array_type[n+added];
 protected:
 	typedef static_vector_rooter self;
-	typedef size_changed_tn on_size_changed;
+	typedef typename vector_events_tn::on_size_changed on_size_changed;
+	typedef typename vector_events_tn::on_value_inserted on_value_inserted;
+	typedef typename vector_events_tn::on_value_deleting on_value_deleting;
 	struct head_t
 	{
 		head_t(): _m_size(0) {}
@@ -261,11 +294,11 @@ public:
 	}
 };
 
-template<typename array,typename size_changed_tn=string_on_size_changed>
+template<typename array,typename string_events_tn=string_event>
 struct static_string_rooter;
-template<typename value_tn,size_t n,typename size_changed_tn>
-struct static_string_rooter<value_tn[n],size_changed_tn>
-	: static_vector_rooter<value_tn[n],1,size_changed_tn>
+template<typename value_tn,size_t n,typename string_events_tn>
+struct static_string_rooter<value_tn[n],string_events_tn>
+	: static_vector_rooter<value_tn[n],1,string_events_tn>
 {
 	friend vector_tt<static_string_rooter>;
 	typedef static_string_rooter self;
@@ -387,91 +420,101 @@ protected:
 };
 
 template <typename value_tn,typename allocator_tn=cppmalloc>
-struct vector : vector_tt<vector_rooter<value_tn,vector_on_size_changed,allocator_tn>>
+struct vector : vector_tt<vector_rooter<value_tn,vector_event,allocator_tn>>
 {};
 
 template <typename array_tn>
-struct static_vector: vector_tt<static_vector_rooter<array_tn,0,vector_on_size_changed>>
+struct static_vector: vector_tt<static_vector_rooter<array_tn,0,vector_event>>
 {};
 
 template <typename value_tn,typename allocator_tn=cppmalloc_more<cppmalloc,sizeof(value_tn)>>
-struct string : vector_tt<string_rooter<value_tn,string_on_size_changed,allocator_tn>>
+struct string : vector_tt<string_rooter<value_tn,string_event,allocator_tn>>
 {};
 
 template <typename array_tn>
-struct static_string: vector_tt<static_string_rooter<array_tn,string_on_size_changed>>
+struct static_string: vector_tt<static_string_rooter<array_tn,string_event>>
 {};
 
-
-template <typename value_tn,typename allocator_tn=cppmalloc>
-struct indirect_vector
+template <typename value_tn,typename node_tn=void,typename allocator_tn=cppmalloc>
+struct indirect_vector_rooter
 {
 	typedef value_tn value_type;
-	typedef vector_tt<vector_rooter<value_tn*,vector_on_size_changed,allocator_tn>> vector_type;
-	vector_type _m_vector;
-	size_t size() const
-	{
-		return _m_vector.size();
-	}
-	size_t capacity() const
-	{
-		return _m_vector.capacity();
-	}
-	bool is_empty() const
-	{
-		return _m_vector.is_empty();
-	}
-	void reserve(size_t size)
-	{
-		_m_vector.reserve(size);
-	}
-	void resize(size_t size)
-	{
-		size_t old_size = _m_vector.size();
-		if (size<=old_size)
-			vector_helper::destruct_objects(&_m_vector.at(size),old_size-size);
-		_m_vector.resize(size);
-		if (size<=old_size) return;
-		value_type** begin = _m_vector.data_begin();
-		for (size_t i=old_size;i<size;++i)
-		{
-			*begin = _m_vector.allocator::allocate(sizeof(value_type));
-			new (*begin) value_type();
-		}
-	}
-	value_type* insert(size_t off,value_type const& value)
-	{
-		value_type* pv = _m_vector.allocator::allocate(sizeof(value_type));
-		assert(pv);
-		_m_vector.insert(off,pv);
-		return pv;
-	}
-	value_type* push_back(value_type const& value)
-	{
-		value_type* pv = _m_vector.allocator::allocate(sizeof(value_type));
-		assert(pv);
-		_m_vector.push_back(pv);
-		return pv;
-	}
-	value_type* push_front(value_type const& value)
-	{
-		return insert(0,value);
-	}
-	template <typename action>
-	struct indirect_act
-	{
-		action& _m_action;
-		indirect_act(action& act): _m_action(act) {}
-		bool operator()(value_type*& pvalue)
-		{
-			return _m_action(*pvalue);
-		}
-	};
-	template <typename action>
-	void foreach(action& act)
-	{
-		_m_vector.foreach(indirect_act(act));
-	}
+	typedef allocator_tn allocator_type;
+	typedef typename ox::met::iff<ox::met::is_void<node_tn>::value,value_tn*,node_tn>::type node_type;
+	typedef vector_tt<vector_rooter<node_type,vector_on_size_changed,allocator_tn>> vector_type;
+	vector_type _m_index;
+	vector_type& index() {return _m_index;}
+};
+
+template <typename value_tn,typename allocator_tn=cppmalloc>
+struct indirect_vector: indirect_vector_rooter<value_tn,void,allocator_tn>
+{
+	//typedef value_tn value_type;
+	//typedef vector_tt<vector_rooter<value_tn*,vector_on_size_changed,allocator_tn>> vector_type;
+	//vector_type _m_vector;
+	//size_t size() const
+	//{
+	//	return _m_vector.size();
+	//}
+	//size_t capacity() const
+	//{
+	//	return _m_vector.capacity();
+	//}
+	//bool is_empty() const
+	//{
+	//	return _m_vector.is_empty();
+	//}
+	//void reserve(size_t size)
+	//{
+	//	_m_vector.reserve(size);
+	//}
+	//void resize(size_t size)
+	//{
+	//	size_t old_size = _m_vector.size();
+	//	if (size<=old_size)
+	//		vector_helper::destruct_objects(&_m_vector.at(size),old_size-size);
+	//	_m_vector.resize(size);
+	//	if (size<=old_size) return;
+	//	value_type** begin = _m_vector.data_begin();
+	//	for (size_t i=old_size;i<size;++i)
+	//	{
+	//		*begin = _m_vector.allocator::allocate(sizeof(value_type));
+	//		new (*begin) value_type();
+	//	}
+	//}
+	//value_type* insert(size_t off,value_type const& value)
+	//{
+	//	value_type* pv = _m_vector.allocator::allocate(sizeof(value_type));
+	//	assert(pv);
+	//	_m_vector.insert(off,pv);
+	//	return pv;
+	//}
+	//value_type* push_back(value_type const& value)
+	//{
+	//	value_type* pv = _m_vector.allocator::allocate(sizeof(value_type));
+	//	assert(pv);
+	//	_m_vector.push_back(pv);
+	//	return pv;
+	//}
+	//value_type* push_front(value_type const& value)
+	//{
+	//	return insert(0,value);
+	//}
+	//template <typename action>
+	//struct indirect_act
+	//{
+	//	action& _m_action;
+	//	indirect_act(action& act): _m_action(act) {}
+	//	bool operator()(value_type*& pvalue)
+	//	{
+	//		return _m_action(*pvalue);
+	//	}
+	//};
+	//template <typename action>
+	//void foreach(action& act)
+	//{
+	//	_m_vector.foreach(indirect_act(act));
+	//}
 };
 
 
