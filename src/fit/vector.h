@@ -20,6 +20,15 @@ struct vector_helper
 		for (size_t i=0;i<size;++i)
 			(begin++)->~object_tn();
 	}
+	template <typename event,typename object_tn>
+	static void destruct_objects(event ev,object_tn* begin,size_t size)
+	{
+		for (size_t i=0;i<size;++i)
+		{
+			ev(*begin,i);
+			(begin++)->~object_tn();
+		}
+	}
 	template <typename object_tn>
 	static void destruct_objects(object_tn** begin,size_t size)
 	{
@@ -30,11 +39,15 @@ struct vector_helper
 	static void destruct_values(values_tn* begin,size_t size)
 	{
 	}
-	template <typename object_tn>
-	static void construct_objects(object_tn* begin,size_t size)
+	template <typename event,typename object_tn>
+	static void construct_objects(event& ev,object_tn* begin,size_t size)
 	{
 		for (size_t i=0;i<size;++i)
-			new (begin++) object_tn();
+		{
+			new (begin) object_tn();
+			ev(*begin,i);
+			++begin;
+		}
 	}
 	template <typename object_tn>
 	static void construct_objects(object_tn** begin,size_t size)
@@ -192,22 +205,49 @@ public:
 		_m_head._m_capacity = size;
 		_m_head._m_data_begin = data_begin;
 	}
+	struct object_deleting_event
+	{
+		object_deleting_event(self& root,size_t const& off_begin)
+			: _m_root(root)
+			, _m_off_begin(off_begin)
+		{}
+		self& _m_root; size_t const& _m_off_begin;
+		void operator()(value_type& value,size_t off)
+		{
+			on_value_deleting()(_m_root,_m_off_begin+off,value);
+		}
+	};
+	struct object_inserted_event
+	{
+		object_inserted_event(self& root,size_t const& off_begin)
+			: _m_root(root)
+			, _m_off_begin(off_begin)
+		{}
+		self& _m_root; size_t const& _m_off_begin;
+		void operator()(value_type& value,size_t off)
+		{
+			on_value_inserted()(_m_root,_m_off_begin+off,value);
+		}
+	};
 	void resize(size_t size)
 	{
 		if (size<=_m_head._m_size)
 		{
-			vector_helper::destruct_objects(_m_head._m_data_begin+size,_m_head._m_size-size);
+			object_deleting_event deleting_event(*this,size);
+			vector_helper::destruct_objects(deleting_event,_m_head._m_data_begin+size,_m_head._m_size-size);
 			_m_head._m_size = size;
 		}
 		else if (size<_m_head._m_capacity)
 		{
-			vector_helper::construct_objects(_m_head._m_data_begin+_m_head._m_size,size-_m_head._m_size);
+			object_inserted_event inserted_event(*this,_m_head._m_size);
+			vector_helper::construct_objects(inserted_event,_m_head._m_data_begin+_m_head._m_size,size-_m_head._m_size);
 			_m_head._m_size = size;
 		}
 		else
 		{
 			reserve(size-_m_head._m_size);
-			vector_helper::construct_objects(_m_head._m_data_begin+_m_head._m_size,size-_m_head._m_size);
+			object_inserted_event inserted_event(*this,_m_head._m_size);
+			vector_helper::construct_objects(inserted_event,_m_head._m_data_begin+_m_head._m_size,size-_m_head._m_size);
 			_m_head._m_size = size;
 		}
 		on_size_changed()(*this,0);
