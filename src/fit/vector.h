@@ -2,8 +2,7 @@
 #include <assert.h>
 #include "../ox/nsab.h"
 #include "allocator_default.h"
-#include "../met/mod.h"
-#include "../met/_if_switch.h"
+
 
 
 
@@ -136,15 +135,15 @@ struct vector_on_value_deleting
 struct vector_event
 {
 	typedef vector_on_size_changed on_size_changed;
-	typedef vector_on_value_inserted on_value_inserted;
-	typedef vector_on_value_deleting on_value_deleting;
+	//typedef vector_on_value_inserted on_value_inserted;
+	//typedef vector_on_value_deleting on_value_deleting;
 };
 
 struct string_event
 {
 	typedef string_on_size_changed on_size_changed;
-	typedef vector_on_value_inserted on_value_inserted;
-	typedef vector_on_value_deleting on_value_deleting;
+	//typedef vector_on_value_inserted on_value_inserted;
+	//typedef vector_on_value_deleting on_value_deleting;
 };
 
 template<typename value_tn,typename events_tn=vector_event,typename allocator_tn=cppmalloc>
@@ -155,8 +154,8 @@ struct vector_rooter : allocator_tn
 	friend string_on_size_changed;
 	typedef value_tn value_type;
 	typedef typename events_tn::on_size_changed on_size_changed;
-	typedef typename events_tn::on_value_inserted on_value_inserted;
-	typedef typename events_tn::on_value_deleting on_value_deleting;
+	//typedef typename events_tn::on_value_inserted on_value_inserted;
+	//typedef typename events_tn::on_value_deleting on_value_deleting;
 protected:
 	typedef vector_rooter self;
 	typedef allocator_tn allocator;
@@ -205,48 +204,72 @@ public:
 		_m_head._m_capacity = size;
 		_m_head._m_data_begin = data_begin;
 	}
-	struct object_deleting_event
+	template <typename deleting_event_tn>
+	struct object_deleting_event_tt
 	{
-		object_deleting_event(self& root,size_t const& off_begin)
+		object_deleting_event_tt(self& root,size_t const& off_begin)
 			: _m_root(root)
 			, _m_off_begin(off_begin)
 		{}
 		self& _m_root; size_t const& _m_off_begin;
 		void operator()(value_type& value,size_t off)
 		{
-			on_value_deleting()(_m_root,_m_off_begin+off,value);
+			deleting_event_tn()(_m_root,_m_off_begin+off,value);
 		}
 	};
-	struct object_inserted_event
+	template <typename inserted_event>
+	struct object_inserted_event_tt
 	{
-		object_inserted_event(self& root,size_t const& off_begin)
+		object_inserted_event_tt(self& root,size_t const& off_begin)
 			: _m_root(root)
 			, _m_off_begin(off_begin)
 		{}
 		self& _m_root; size_t const& _m_off_begin;
 		void operator()(value_type& value,size_t off)
 		{
-			on_value_inserted()(_m_root,_m_off_begin+off,value);
+			inserted_event()(_m_root,_m_off_begin+off,value);
 		}
 	};
+	template <>
+	struct object_deleting_event_tt <void>
+	{
+		object_deleting_event_tt(self& root,size_t const& off_begin)
+		{}
+		void operator()(value_type& value,size_t off)
+		{}
+	};
+	template <>
+	struct object_inserted_event_tt <void>
+	{
+		object_inserted_event_tt(self& root,size_t const& off_begin)
+		{}
+		void operator()(value_type& value,size_t off)
+		{}
+	};
+
+	void resize(size_t size)
+	{
+		resize<void,void>(size);
+	}
+	template <typename object_deleting_event,typename object_inserted_event>
 	void resize(size_t size)
 	{
 		if (size<=_m_head._m_size)
 		{
-			object_deleting_event deleting_event(*this,size);
+			object_deleting_event_tt<object_deleting_event> deleting_event(*this,size);
 			vector_helper::destruct_objects(deleting_event,_m_head._m_data_begin+size,_m_head._m_size-size);
 			_m_head._m_size = size;
 		}
 		else if (size<_m_head._m_capacity)
 		{
-			object_inserted_event inserted_event(*this,_m_head._m_size);
+			object_inserted_event_tt<object_inserted_event> inserted_event(*this,_m_head._m_size);
 			vector_helper::construct_objects(inserted_event,_m_head._m_data_begin+_m_head._m_size,size-_m_head._m_size);
 			_m_head._m_size = size;
 		}
 		else
 		{
 			reserve(size-_m_head._m_size);
-			object_inserted_event inserted_event(*this,_m_head._m_size);
+			object_inserted_event_tt<object_inserted_event> inserted_event(*this,_m_head._m_size);
 			vector_helper::construct_objects(inserted_event,_m_head._m_data_begin+_m_head._m_size,size-_m_head._m_size);
 			_m_head._m_size = size;
 		}
@@ -279,8 +302,8 @@ struct static_vector_rooter<value_tn[n],added,vector_events_tn>
 protected:
 	typedef static_vector_rooter self;
 	typedef typename vector_events_tn::on_size_changed on_size_changed;
-	typedef typename vector_events_tn::on_value_inserted on_value_inserted;
-	typedef typename vector_events_tn::on_value_deleting on_value_deleting;
+	//typedef typename vector_events_tn::on_value_inserted on_value_inserted;
+	//typedef typename vector_events_tn::on_value_deleting on_value_deleting;
 	struct head_t
 	{
 		head_t(): _m_size(0) {}
@@ -475,13 +498,14 @@ template <typename array_tn>
 struct static_string: vector_tt<static_string_rooter<array_tn,string_event>>
 {};
 
-template <typename value_tn,typename node_tn=void,typename allocator_tn=cppmalloc>
+template <typename value_tn,typename node_tn=value_tn*,typename allocator_tn=cppmalloc>
 struct indirect_vector_rooter
 {
 	typedef value_tn value_type;
 	typedef allocator_tn allocator_type;
-	typedef typename ox::met::iff<ox::met::is_void<node_tn>::value,value_tn*,node_tn>::type node_type;
-	typedef vector_tt<vector_rooter<node_type,vector_on_size_changed,allocator_tn>> vector_type;
+	typedef node_tn node_type;
+	typedef vector_tt<vector_rooter<node_type,vector_event,allocator_tn>> vector_type;
+	//typedef node_type index_value_type;
 	vector_type _m_index;
 	vector_type& index() {return _m_index;}
 };
@@ -489,6 +513,17 @@ struct indirect_vector_rooter
 template <typename value_tn,typename allocator_tn=cppmalloc>
 struct indirect_vector: indirect_vector_rooter<value_tn,void,allocator_tn>
 {
+	struct inserted_event
+	{
+		void operator()()
+		{
+			
+		}
+	};
+	void resize(size_t size)
+	{
+		index().resize(size);
+	}
 	//typedef value_tn value_type;
 	//typedef vector_tt<vector_rooter<value_tn*,vector_on_size_changed,allocator_tn>> vector_type;
 	//vector_type _m_vector;
