@@ -1,6 +1,7 @@
 
 #include <assert.h>
 #include "../ox/nsab.h"
+#include "../met/infof_array.h"
 #include "allocator_default.h"
 
 
@@ -516,11 +517,29 @@ struct indirect_vector_rooter
 	//typedef node_type index_value_type;
 	vector_type _m_index;
 	vector_type& index() {return _m_index;}
+	char* allocate(size_t size)
+	{
+		return index().allocate(size);
+	}
+};
+template <typename value_tn,typename node_array,typename allocator_tn>
+struct static_indirect_vector_rooter : allocator_tn
+{
+	typedef value_tn value_type;
+	typedef static_vector<node_array> vector_type;
+	typedef typename vector_type::value_type node_type;
+	//typedef node_type index_value_type;
+	vector_type _m_index;
+	vector_type& index() {return _m_index;}
 };
 
-template <typename value_tn,typename allocator_tn=cppmalloc>
-struct indirect_vector: indirect_vector_rooter<value_tn,value_tn*,allocator_tn>
+//template <typename value_tn,typename allocator_tn=cppmalloc>
+template <typename indirect_vector_rooter>
+struct indirect_vector_tt: indirect_vector_rooter
 {
+	typedef indirect_vector_rooter rooter_type;
+	typedef typename rooter_type::node_type node_type;
+	typedef typename rooter_type::value_type value_type;
 	struct deleting_event
 	{
 		template <typename rooter_tn>
@@ -563,7 +582,7 @@ struct indirect_vector: indirect_vector_rooter<value_tn,value_tn*,allocator_tn>
 	}
 	value_type** push_back(value_type const& value)
 	{
-		char* p = index().allocate(sizeof(value_type));
+		char* p = allocate(sizeof(value_type));
 		value_type* pv = new (p) value_type(value);
 		return index().push_back(pv);
 	}
@@ -588,6 +607,14 @@ struct indirect_vector: indirect_vector_rooter<value_tn,value_tn*,allocator_tn>
 		index().foreach(indirect_act<action>(act));
 	}
 };
+
+template <typename value_tn,typename allocator_tn=cppmalloc>
+struct indirect_vector: indirect_vector_tt<indirect_vector_rooter<value_tn,value_tn*,allocator_tn>>
+{};
+template <typename value_tn,typename node_array,typename allocator_tn=cppmalloc>
+struct static_indirect_vector: indirect_vector_tt<static_indirect_vector_rooter<value_tn,node_array,allocator_tn>>
+{};
+
 
 
 ___namespace2_end()
