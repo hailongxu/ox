@@ -9,6 +9,14 @@
 
 namespace vector_test
 {
+	struct act
+	{
+		bool operator()(int& v)
+		{
+			printf("%d\n",v);
+			return true;
+		}
+	};
 	void test()
 	{
 		typedef ox::fit::vector<int> V;
@@ -17,6 +25,7 @@ namespace vector_test
 		v.push_back(3);
 		v.insert(1,2);
 		v.insert(1,4);
+		v.erase(1);
 		typedef ox::fit::static_vector<int[4]> SV;
 		SV sv;
 		sv.push_back(1);
@@ -36,6 +45,17 @@ namespace vector_test
 		ss.push_back('2');
 		ss.push_back('3');
 		ss.push_back('4');
+		typedef ox::fit::indirect_vector<int> IV;
+		IV iv;
+		iv.resize(1);
+		iv.push_back(2);
+		//iv.erase(1);
+		
+		iv.foreach(act());
+
+		typedef ox::fit::static_indirect_vector<int,int*[3]> SIV;
+		SIV siv;
+		siv.push_back(1);
 	}
 }
 
