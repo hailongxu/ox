@@ -382,6 +382,12 @@ struct vector_tt : vector_rooter_tn
 		void operator()(vec&,size_t off,node&)
 		{}
 	};
+	struct on_deleting_nothing
+	{
+		template <typename vec,typename value_tn>
+		void operator()(vec&,size_t off,size_t size,value_tn*)
+		{}
+	};
 
 	bool is_empty() const
 	{
@@ -446,11 +452,11 @@ struct vector_tt : vector_rooter_tn
 		value_type* src = out+size;
 		on_deleteing(*this,off,size,out);
 		vector_helper::move_objects<value_type>(out,-1,src,rooter::size()-off-size);
-		rooter::on_size_changed(-size);
+		rooter::on_size_changed()(root(),-size);
 	}
 	void erase(size_t i)
 	{
-		erase(off,1);
+		erase(i,1,on_deleting_nothing());
 	}
 	void erase_to_end(size_t i)
 	{
@@ -561,9 +567,9 @@ struct indirect_vector: indirect_vector_rooter<value_tn,value_tn*,allocator_tn>
 		value_type* pv = new (p) value_type(value);
 		return index().push_back(pv);
 	}
-	void erase(size_t off,size_t size)
+	void erase(size_t off,size_t size=1)
 	{
-		index().erase(off,size);
+		index().erase(off,size,deleting_event());
 	}
 };
 
