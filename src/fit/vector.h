@@ -24,7 +24,7 @@ struct vector_helper
 	{
 		for (size_t i=0;i<size;++i)
 		{
-			ev(*begin,i);
+			ev(begin,i);
 			(begin++)->~object_tn();
 		}
 	}
@@ -176,7 +176,7 @@ protected:
 	{
 		return _m_head._m_data_begin;
 	}
-	void exchange(self& other)
+	void swap(self& other)
 	{
 		head_t t = _m_head;
 		_m_head = other._m_head;
@@ -212,9 +212,9 @@ public:
 			, _m_off_begin(off_begin)
 		{}
 		self& _m_root; size_t const& _m_off_begin;
-		void operator()(value_type& value,size_t off)
+		void operator()(value_type* value,size_t off)
 		{
-			deleting_event_tn()(_m_root,_m_off_begin+off,value);
+			deleting_event_tn()(_m_root,_m_off_begin+off,1,value);
 		}
 	};
 	template <typename inserted_event>
@@ -227,7 +227,7 @@ public:
 		self& _m_root; size_t const& _m_off_begin;
 		void operator()(value_type& value,size_t off)
 		{
-			inserted_event()(_m_root,_m_off_begin+off,value);
+			inserted_event()(_m_root,_m_off_begin+off,&value);
 		}
 	};
 	template <>
@@ -235,7 +235,7 @@ public:
 	{
 		object_deleting_event_tt(self& root,size_t const& off_begin)
 		{}
-		void operator()(value_type& value,size_t off)
+		void operator()(value_type* value,size_t off)
 		{}
 	};
 	template <>
@@ -378,8 +378,8 @@ struct vector_tt : vector_rooter_tn
 	typedef typename rooter::value_type value_type;
 	struct on_inserted_nothing
 	{
-		template <typename vec,typename node,typename value>
-		void operator()(vec&,size_t off,node&,value&)
+		template <typename vec,typename node>
+		void operator()(vec&,size_t off,node&)
 		{}
 	};
 
@@ -398,7 +398,7 @@ struct vector_tt : vector_rooter_tn
 		if (rooter::size()>=rooter::capacity())
 		{
 			rooter _old_rooter;
-			rooter::exchange(_old_rooter);
+			rooter::swap(_old_rooter);
 			rooter::reserve(_old_rooter.size()==0?2:_old_rooter.size()*2);
 			vector_helper::move_objects(rooter::data_begin(),-1,_old_rooter.data_begin(),off);
 			vector_helper::move_objects(rooter::data_begin()+off+1,-1,_old_rooter.data_begin()+off,_old_rooter.size()-off);
@@ -413,7 +413,7 @@ struct vector_tt : vector_rooter_tn
 			*value_begin = value;
 			rooter::on_size_changed()(*this,1);
 		}
-		on_inserted(*this,off,value_begin,value);
+		on_inserted(*this,off,*value_begin);
 		return value_begin;
 	}
 	value_type* push_front(value_type const& value)
@@ -434,15 +434,17 @@ struct vector_tt : vector_rooter_tn
 		value_type* added_begin = begin+rooter::size();
 		*added_begin = value;
 		rooter::on_size_changed()(root(),1);
-		on_pushed(*this,rooter::size(),added_begin,value);
+		on_pushed(*this,rooter::size(),*added_begin);
 		return added_begin;
 	}
-	void erase(size_t off,size_t size)
+	template <typename on_deleting_tn>
+	void erase(size_t off,size_t size,on_deleting_tn& on_deleteing)
 	{
 		assert(off<rooter::size() && off+size<rooter::size());
 		value_type* value_begin = rooter::data_begin();
 		value_type* out = value_begin+off;
 		value_type* src = out+size;
+		on_deleteing(*this,off,size,out);
 		vector_helper::move_objects<value_type>(out,-1,src,rooter::size()-off-size);
 		rooter::on_size_changed(-size);
 	}
@@ -511,85 +513,58 @@ struct indirect_vector_rooter
 };
 
 template <typename value_tn,typename allocator_tn=cppmalloc>
-struct indirect_vector: indirect_vector_rooter<value_tn,void,allocator_tn>
+struct indirect_vector: indirect_vector_rooter<value_tn,value_tn*,allocator_tn>
 {
-	struct inserted_event
+	struct deleting_event
 	{
-		void operator()()
+		template <typename rooter_tn>
+		void operator()(rooter_tn& root,size_t off,size_t size,node_type* pnode)
 		{
-			
+			(*pnode)->~value_type();
 		}
 	};
+	struct inserted_event
+	{
+		template <typename rooter_tn>
+		void operator()(rooter_tn& root,size_t off,node_type* value)
+		{
+			(*value) = (value_type*)root.allocate(sizeof(value_type));
+			new (*value) value_type();
+		}
+	};
+
 	void resize(size_t size)
 	{
-		index().resize(size);
+		index().resize<deleting_event,inserted_event>(size);
 	}
-	//typedef value_tn value_type;
-	//typedef vector_tt<vector_rooter<value_tn*,vector_on_size_changed,allocator_tn>> vector_type;
-	//vector_type _m_vector;
-	//size_t size() const
-	//{
-	//	return _m_vector.size();
-	//}
-	//size_t capacity() const
-	//{
-	//	return _m_vector.capacity();
-	//}
-	//bool is_empty() const
-	//{
-	//	return _m_vector.is_empty();
-	//}
-	//void reserve(size_t size)
-	//{
-	//	_m_vector.reserve(size);
-	//}
-	//void resize(size_t size)
-	//{
-	//	size_t old_size = _m_vector.size();
-	//	if (size<=old_size)
-	//		vector_helper::destruct_objects(&_m_vector.at(size),old_size-size);
-	//	_m_vector.resize(size);
-	//	if (size<=old_size) return;
-	//	value_type** begin = _m_vector.data_begin();
-	//	for (size_t i=old_size;i<size;++i)
-	//	{
-	//		*begin = _m_vector.allocator::allocate(sizeof(value_type));
-	//		new (*begin) value_type();
-	//	}
-	//}
-	//value_type* insert(size_t off,value_type const& value)
-	//{
-	//	value_type* pv = _m_vector.allocator::allocate(sizeof(value_type));
-	//	assert(pv);
-	//	_m_vector.insert(off,pv);
-	//	return pv;
-	//}
-	//value_type* push_back(value_type const& value)
-	//{
-	//	value_type* pv = _m_vector.allocator::allocate(sizeof(value_type));
-	//	assert(pv);
-	//	_m_vector.push_back(pv);
-	//	return pv;
-	//}
-	//value_type* push_front(value_type const& value)
-	//{
-	//	return insert(0,value);
-	//}
-	//template <typename action>
-	//struct indirect_act
-	//{
-	//	action& _m_action;
-	//	indirect_act(action& act): _m_action(act) {}
-	//	bool operator()(value_type*& pvalue)
-	//	{
-	//		return _m_action(*pvalue);
-	//	}
-	//};
-	//template <typename action>
-	//void foreach(action& act)
-	//{
-	//	_m_vector.foreach(indirect_act(act));
-	//}
+	void reserve(size_t size)
+	{
+		index().reserve(size);
+	}
+	size_t size() const
+	{
+		return index().size();
+	}
+	size_t capacity() const
+	{
+		return index().capacity();
+	}
+	value_type** insert(size_t off,value_type const& value)
+	{
+		value_type* pv = index().allocate(sizeof(value_type));
+		new (pv) value_type(value);
+		return index().insert(off,pv);
+	}
+	value_type** push_back(value_type const& value)
+	{
+		char* p = index().allocate(sizeof(value_type));
+		value_type* pv = new (p) value_type(value);
+		return index().push_back(pv);
+	}
+	void erase(size_t off,size_t size)
+	{
+		index().erase(off,size);
+	}
 };
 
 
