@@ -1,7 +1,6 @@
 
 #include <assert.h>
 #include "../ox/nsab.h"
-#include "../met/infof_array.h"
 #include "allocator_default.h"
 
 
@@ -514,7 +513,6 @@ struct indirect_vector_rooter
 	typedef allocator_tn allocator_type;
 	typedef node_tn node_type;
 	typedef vector_tt<vector_rooter<node_type,vector_event,allocator_tn>> vector_type;
-	//typedef node_type index_value_type;
 	vector_type _m_index;
 	vector_type& index() {return _m_index;}
 	char* allocate(size_t size)
@@ -528,12 +526,10 @@ struct static_indirect_vector_rooter : allocator_tn
 	typedef value_tn value_type;
 	typedef static_vector<node_array> vector_type;
 	typedef typename vector_type::value_type node_type;
-	//typedef node_type index_value_type;
 	vector_type _m_index;
 	vector_type& index() {return _m_index;}
 };
 
-//template <typename value_tn,typename allocator_tn=cppmalloc>
 template <typename indirect_vector_rooter>
 struct indirect_vector_tt: indirect_vector_rooter
 {
@@ -614,7 +610,6 @@ struct indirect_vector: indirect_vector_tt<indirect_vector_rooter<value_tn,value
 template <typename value_tn,typename node_array,typename allocator_tn=cppmalloc>
 struct static_indirect_vector: indirect_vector_tt<static_indirect_vector_rooter<value_tn,node_array,allocator_tn>>
 {};
-
 
 
 ___namespace2_end()
