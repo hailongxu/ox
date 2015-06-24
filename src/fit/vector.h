@@ -571,6 +571,22 @@ struct indirect_vector: indirect_vector_rooter<value_tn,value_tn*,allocator_tn>
 	{
 		index().erase(off,size,deleting_event());
 	}
+	template <typename act_tn>
+	struct indirect_act
+	{
+		act_tn& _m_act;
+		indirect_act(act_tn& act): _m_act(act) {}
+		bool operator()(node_type& node)
+		{
+			return _m_act(*node);
+		}
+	};
+	/// act(node)
+	template <typename action>
+	void foreach(action& act)
+	{
+		index().foreach(indirect_act<action>(act));
+	}
 };
 
 
