@@ -139,61 +139,61 @@ struct vector_on_value_deleting
 	void operator()(rooter_tn& rooter,size_t off,typename rooter_tn::value_type& value)
 	{}
 };
-struct vector_property_size
-{
-	template <typename rooter_tn>
-	size_t operator()(rooter_tn& rooter) const
-	{
-		return rooter.size();
-	}
-	template <typename rooter_tn>
-	void operator()(rooter_tn& rooter,size_t size) const
-	{
-		rooter.set_size(size);
-	}
-};
-struct vector_property_capacity
-{
-	template <typename rooter_tn>
-	size_t operator()(rooter_tn& rooter) const
-	{
-		return rooter.capacity();
-	}
-	template <typename rooter_tn>
-	void operator()(rooter_tn& rooter,size_t size) const
-	{
-		rooter.set_capacity(size);
-	}
-};
-struct vector_property_data_begin
-{
-	template <typename value_tn,typename rooter_tn>
-	value_tn* get(rooter_tn& rooter,value_tn* = 0) const
-	{
-		return rooter.data_begin();
-	}
-	template <typename rooter_tn,typename value_type>
-	void set(rooter_tn& rooter,value_type* data_begin) const
-	{
-		rooter.set_data_begin(data_begin);
-	}
-};
-struct vector_property_total_bytes
-{
-	template <typename rooter_tn>
-	size_t get(rooter_tn& rooter) const
-	{
-		return rooter.total_bytes();
-	}
-};
+//struct vector_property_size
+//{
+//	template <typename rooter_tn>
+//	size_t operator()(rooter_tn& rooter) const
+//	{
+//		return rooter.size();
+//	}
+//	template <typename rooter_tn>
+//	void operator()(rooter_tn& rooter,size_t size) const
+//	{
+//		rooter.set_size(size);
+//	}
+//};
+//struct vector_property_capacity
+//{
+//	template <typename rooter_tn>
+//	size_t operator()(rooter_tn& rooter) const
+//	{
+//		return rooter.capacity();
+//	}
+//	template <typename rooter_tn>
+//	void operator()(rooter_tn& rooter,size_t size) const
+//	{
+//		rooter.set_capacity(size);
+//	}
+//};
+//struct vector_property_data_begin
+//{
+//	template <typename value_tn,typename rooter_tn>
+//	value_tn* get(rooter_tn& rooter,value_tn* = 0) const
+//	{
+//		return rooter.data_begin();
+//	}
+//	template <typename rooter_tn,typename value_type>
+//	void set(rooter_tn& rooter,value_type* data_begin) const
+//	{
+//		rooter.set_data_begin(data_begin);
+//	}
+//};
+//struct vector_property_total_bytes
+//{
+//	template <typename rooter_tn>
+//	size_t get(rooter_tn& rooter) const
+//	{
+//		return rooter.total_bytes();
+//	}
+//};
 
 struct vector_event
 {
 	typedef vector_on_size_changed on_size_changed;
-	typedef vector_property_size property_size;
-	typedef vector_property_capacity property_capacity;
-	typedef vector_property_data_begin property_data_begin;
-	typedef vector_property_total_bytes property_total_bytes;
+	//typedef vector_property_size property_size;
+	//typedef vector_property_capacity property_capacity;
+	//typedef vector_property_data_begin property_data_begin;
+	//typedef vector_property_total_bytes property_total_bytes;
 	//typedef vector_on_value_inserted on_value_inserted;
 	//typedef vector_on_value_deleting on_value_deleting;;
 };
@@ -201,10 +201,10 @@ struct vector_event
 struct string_event
 {
 	typedef string_on_size_changed on_size_changed;
-	typedef vector_property_size property_size;
-	typedef vector_property_capacity property_capacity;
-	typedef vector_property_data_begin property_data_begin;
-	typedef vector_property_total_bytes property_total_bytes;
+	//typedef vector_property_size property_size;
+	//typedef vector_property_capacity property_capacity;
+	//typedef vector_property_data_begin property_data_begin;
+	//typedef vector_property_total_bytes property_total_bytes;
 	//typedef vector_on_value_inserted on_value_inserted;
 	//typedef vector_on_value_deleting on_value_deleting;
 };
@@ -253,13 +253,13 @@ struct vector_rooter : allocator_tn, head_tn
 	friend allocator_tn;
 	typedef value_tn value_type;
 	typedef typename events_tn::on_size_changed on_size_changed;
-	typedef typename events_tn::property_size property_size;
-	typedef typename events_tn::property_capacity property_capacity;
-	typedef typename events_tn::property_data_begin property_data_begin;
-	typedef typename events_tn::property_total_bytes property_total_bytes;
-	friend property_size;
-	friend property_capacity;
-	friend property_data_begin;
+	//typedef typename events_tn::property_size property_size;
+	//typedef typename events_tn::property_capacity property_capacity;
+	//typedef typename events_tn::property_data_begin property_data_begin;
+	//typedef typename events_tn::property_total_bytes property_total_bytes;
+	//friend property_size;
+	//friend property_capacity;
+	//friend property_data_begin;
 	typedef head_tn head_t;
 	//typedef typename events_tn::on_value_inserted on_value_inserted;
 	//typedef typename events_tn::on_value_deleting on_value_deleting;
@@ -268,6 +268,7 @@ protected:
 	typedef allocator_tn allocator_type;
 	//typedef vector_head_tt<value_type,parts> head_t;
 	head_t& head() {return *this;}
+	head_t const& head() const {return *this;}
 
 	~vector_rooter()
 	{
@@ -278,9 +279,8 @@ protected:
 	}
 	value_type* data_begin()
 	{
-		return property_data_begin().get(*this,(value_type*)(0));
+		return head().data_begin();
 	}
-	//head_t _m_head;
 public:
 	allocator_type& allocator() {return *this;}
 	void swap(self& other)
@@ -291,11 +291,11 @@ public:
 	}
 	size_t size() const
 	{
-		return property_size()(*this);
+		return head().size();
 	}
 	size_t capacity() const
 	{
-		return property_capacity()(*this);
+		return head().capacity();
 	}
 	void reserve(size_t size_reserved,size_t size_copyed=-1)
 	{
@@ -375,20 +375,20 @@ public:
 		{
 			object_deleting_event_tt<object_deleting_event> deleting_event(*this,size_new);
 			vector_helper::destruct_objects(deleting_event,data_begin()+size_new,size()-size_new);
-			property_size()(*this,size_new);
+			head().set_size(size_new);
 		}
 		else if (size_new<capacity())
 		{
 			object_inserted_event_tt<object_inserted_event> inserted_event(*this,size());
 			vector_helper::construct_objects(inserted_event,data_begin()+size(),size_new-size());
-			property_size()(*this,size_new);
+			head().set_size(size_new);
 		}
 		else
 		{
 			reserve(size_new-size());
 			object_inserted_event_tt<object_inserted_event> inserted_event(*this,size());
 			vector_helper::construct_objects(inserted_event,data_begin()+size(),size_new-size());
-			property_size()(*this,size_new);
+			head().set_size(size_new);
 		}
 		on_size_changed()(*this,0);
 	}
@@ -400,7 +400,7 @@ struct string_rooter : vector_rooter<value_tn,head_tn,string_events_tn,allocator
 	friend vector_tt<string_rooter>;
 	string_rooter()
 	{
-		property_data_begin().set(*this,allocator_type::allocate(0));
+		head().set_data_begin(allocator_type::allocate(0));
 		string_events_tn::on_size_changed()(*this,0);
 	}
 };
@@ -777,7 +777,7 @@ struct mono_indirect_vector_rooter
 			rooter* root = static_cast<rooter*>(this);
 			assert (bytes+root->size()<=root->capacity());
 			char* p = root->data_begin()+root->size();
-			vector_event::property_size()(*root,root->size()+bytes);
+			root->head().set_size(root->head().size()+bytes);
 			return p;
 		}
 		void deallocate(char* p)
@@ -796,7 +796,12 @@ struct mono_indirect_vector_rooter
 		using data_vector_type::data_begin;
 		using data_vector_type::~data_vector_type;
 		using data_vector_type::allocator;
-		//using data_vector_type::_m_head;
+	};
+	struct index_vector_public : index_vector_type
+	{
+	public:
+		using index_vector_type::data_begin;
+		using index_vector_type::head;
 	};
 
 
@@ -805,7 +810,7 @@ struct mono_indirect_vector_rooter
 
 	node_type* vector_data_begin(index_vector_type& index_ref)
 	{
-		return index_vector_type::property_data_begin().get<node_type>(index_ref)+index().capacity();
+		return ((index_vector_public*)(&index_ref))->head().data_begin()+index_ref.capacity();
 	}
 	char* allocate(size_t byte_data_size)
 	{
@@ -831,7 +836,7 @@ struct mono_indirect_vector_rooter
 		if (index_usable<size || usable<byte_data_size)
 		{
 			size_t index_capacity = index_usable<size?index().size()+size:index().capacity();
-			size_t total_data_size = data_vector_wrapper::property_total_bytes().get(data_vector)+byte_data_size-usable;
+			size_t total_data_size = data_vector.total_bytes()+byte_data_size-usable;
 			index_allocator_more allocator_more = {index().allocator(),total_data_size};
 			index_vector_type index_new;
 			index_new.reserve(index_capacity,-1,allocator_more);
