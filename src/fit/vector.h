@@ -139,74 +139,14 @@ struct vector_on_value_deleting
 	void operator()(rooter_tn& rooter,size_t off,typename rooter_tn::value_type& value)
 	{}
 };
-//struct vector_property_size
-//{
-//	template <typename rooter_tn>
-//	size_t operator()(rooter_tn& rooter) const
-//	{
-//		return rooter.size();
-//	}
-//	template <typename rooter_tn>
-//	void operator()(rooter_tn& rooter,size_t size) const
-//	{
-//		rooter.set_size(size);
-//	}
-//};
-//struct vector_property_capacity
-//{
-//	template <typename rooter_tn>
-//	size_t operator()(rooter_tn& rooter) const
-//	{
-//		return rooter.capacity();
-//	}
-//	template <typename rooter_tn>
-//	void operator()(rooter_tn& rooter,size_t size) const
-//	{
-//		rooter.set_capacity(size);
-//	}
-//};
-//struct vector_property_data_begin
-//{
-//	template <typename value_tn,typename rooter_tn>
-//	value_tn* get(rooter_tn& rooter,value_tn* = 0) const
-//	{
-//		return rooter.data_begin();
-//	}
-//	template <typename rooter_tn,typename value_type>
-//	void set(rooter_tn& rooter,value_type* data_begin) const
-//	{
-//		rooter.set_data_begin(data_begin);
-//	}
-//};
-//struct vector_property_total_bytes
-//{
-//	template <typename rooter_tn>
-//	size_t get(rooter_tn& rooter) const
-//	{
-//		return rooter.total_bytes();
-//	}
-//};
-
 struct vector_event
 {
 	typedef vector_on_size_changed on_size_changed;
-	//typedef vector_property_size property_size;
-	//typedef vector_property_capacity property_capacity;
-	//typedef vector_property_data_begin property_data_begin;
-	//typedef vector_property_total_bytes property_total_bytes;
-	//typedef vector_on_value_inserted on_value_inserted;
-	//typedef vector_on_value_deleting on_value_deleting;;
 };
 
 struct string_event
 {
 	typedef string_on_size_changed on_size_changed;
-	//typedef vector_property_size property_size;
-	//typedef vector_property_capacity property_capacity;
-	//typedef vector_property_data_begin property_data_begin;
-	//typedef vector_property_total_bytes property_total_bytes;
-	//typedef vector_on_value_inserted on_value_inserted;
-	//typedef vector_on_value_deleting on_value_deleting;
 };
 
 struct vector_sizes
@@ -244,7 +184,7 @@ struct vector_head_tt <value_tn,1>
 	char* _m_vector_begin;
 };
 
-template<typename value_tn,/*size_t parts,*/typename head_tn,typename events_tn=vector_event,typename allocator_tn=cppmalloc>
+template<typename value_tn,typename head_tn,typename events_tn=vector_event,typename allocator_tn=cppmalloc>
 struct vector_rooter : allocator_tn, head_tn
 {
 	friend vector_tt<vector_rooter>;
@@ -253,20 +193,11 @@ struct vector_rooter : allocator_tn, head_tn
 	friend allocator_tn;
 	typedef value_tn value_type;
 	typedef typename events_tn::on_size_changed on_size_changed;
-	//typedef typename events_tn::property_size property_size;
-	//typedef typename events_tn::property_capacity property_capacity;
-	//typedef typename events_tn::property_data_begin property_data_begin;
-	//typedef typename events_tn::property_total_bytes property_total_bytes;
-	//friend property_size;
-	//friend property_capacity;
-	//friend property_data_begin;
 	typedef head_tn head_t;
-	//typedef typename events_tn::on_value_inserted on_value_inserted;
-	//typedef typename events_tn::on_value_deleting on_value_deleting;
+
 protected:
 	typedef vector_rooter self;
 	typedef allocator_tn allocator_type;
-	//typedef vector_head_tt<value_type,parts> head_t;
 	head_t& head() {return *this;}
 	head_t const& head() const {return *this;}
 
@@ -274,7 +205,6 @@ protected:
 	{
 		resize(0);
 		allocator().deallocate(data_begin());
-		//property_data_begin().set(*this,(value_type*)(0));
 		head().set_data_begin(0);
 	}
 	value_type* data_begin()
@@ -313,8 +243,6 @@ public:
 		vector_helper::move_objects(data_begin_new,-1,data_begin(),size_copyed);
 		head().set_capacity(size_reserved);
 		head().set_data_begin(data_begin_new);
-		//property_capacity()(*this,size_reserved);
-		//property_data_begin().set(*this,data_begin_new);
 	}
 	template <typename deleting_event_tn>
 	struct object_deleting_event_tt
@@ -419,8 +347,6 @@ struct static_vector_rooter<value_tn[n],added,vector_events_tn>
 protected:
 	typedef static_vector_rooter self;
 	typedef typename vector_events_tn::on_size_changed on_size_changed;
-	//typedef typename vector_events_tn::on_value_inserted on_value_inserted;
-	//typedef typename vector_events_tn::on_value_deleting on_value_deleting;
 	struct head_t
 	{
 		head_t(): _m_size(0) {}
@@ -849,8 +775,7 @@ struct mono_indirect_vector_rooter
 			{
 				node_type* node = index_new.push_back(node_type());
 				*node = (value_type*)(data_vector_new.allocator().allocate(byte_data_size));
-				index().at(i);
-				//new (*node) value_type (*(index().at(i))); /// copy construct the value
+				new (*node) value_type (*(index().at(i))); /// copy construct the value
 			}
 			index().swap(index_new);
 		}
