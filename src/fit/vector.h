@@ -156,10 +156,10 @@ struct vector_sizes
 	size_t _m_capacity;
 };
 
-template <typename value_tn,size_t is_linked/*1,not,2:linked*/>
-struct vector_head_tt : private vector_sizes
+template <typename value_tn>
+struct vector_head_iso_tt : private vector_sizes
 {
-	vector_head_tt(): _m_data_begin(0) {}
+	vector_head_iso_tt(): _m_data_begin(0) {}
 	void set_size(size_t size) {_m_size=size;}
 	void set_capacity(size_t capacity) {_m_capacity=capacity;}
 	void set_data_begin(value_tn* data_begin) {_m_data_begin=data_begin;}
@@ -170,9 +170,9 @@ struct vector_head_tt : private vector_sizes
 	value_tn* _m_data_begin;
 };
 template <typename value_tn>
-struct vector_head_tt <value_tn,1>
+struct vector_head_mono_tt
 {
-	vector_head_tt() : _m_vector_begin(0) {}
+	vector_head_mono_tt() : _m_vector_begin(0) {}
 	void set_size(size_t size) {sizes()->_m_size=size;}
 	void set_capacity(size_t capacity) {sizes()->_m_capacity=capacity;}
 	void set_data_begin(value_tn* data_begin) {}
@@ -537,7 +537,7 @@ protected:
 };
 
 template <typename value_tn,typename allocator_tn=cppmalloc>
-struct vector : vector_tt<vector_rooter<value_tn,vector_head_tt<value_tn,2>,vector_event,allocator_tn>>
+struct vector : vector_tt<vector_rooter<value_tn,vector_head_iso_tt<value_tn>,vector_event,allocator_tn>>
 {};
 
 template <typename array_tn>
@@ -545,7 +545,7 @@ struct static_vector: vector_tt<static_vector_rooter<array_tn,0,vector_event>>
 {};
 
 template <typename value_tn,typename allocator_tn=cppmalloc_more<cppmalloc,sizeof(value_tn)>>
-struct string : vector_tt<string_rooter<value_tn,vector_head_tt<value_tn,2>,string_event,allocator_tn>>
+struct string : vector_tt<string_rooter<value_tn,vector_head_iso_tt<value_tn>,string_event,allocator_tn>>
 {};
 
 template <typename array_tn>
@@ -584,7 +584,7 @@ struct indirect_vector_rooter
 	typedef value_tn value_type;
 	typedef allocator_tn allocator_type;
 	typedef node_tn node_type;
-	typedef vector_tt<vector_rooter<node_type,vector_head_tt<node_tn,1>,vector_event,allocator_tn>> vector_type;
+	typedef vector_tt<vector_rooter<node_type,vector_head_mono_tt<node_tn>,vector_event,allocator_tn>> vector_type;
 	vector_type _m_index;
 	vector_type& index() {return _m_index;}
 	char* allocate(size_t size)
@@ -693,8 +693,8 @@ struct mono_indirect_vector_rooter
 		}
 	};
 	struct data_allocator_ref;
-	typedef vector_tt<vector_rooter<node_type,vector_head_tt<node_type,1>,vector_event,allocator_tn>> index_vector_type;
-	typedef vector_rooter<char,vector_head_tt<char,1>,vector_event,data_allocator_ref> data_vector_type;
+	typedef vector_tt<vector_rooter<node_type,vector_head_mono_tt<node_type>,vector_event,allocator_tn>> index_vector_type;
+	typedef vector_rooter<char,vector_head_mono_tt<char>,vector_event,data_allocator_ref> data_vector_type;
 	struct data_allocator_ref
 	{
 		char* allocate(size_t bytes)
