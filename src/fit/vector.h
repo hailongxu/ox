@@ -157,12 +157,26 @@ struct vector_property_capacity
 		head.set_capacity(size);
 	}
 };
+struct vector_property_data_begin
+{
+	template <typename value_tn,typename head_tn>
+	value_tn* get(head_tn& head,value_tn* = 0) const
+	{
+		return head.data_begin();
+	}
+	template <typename head_tn,typename value_type>
+	void set(head_tn& head,value_type* data_begin) const
+	{
+		head.set_data_begin(data_begin);
+	}
+};
 
 struct vector_event
 {
 	typedef vector_on_size_changed on_size_changed;
 	typedef vector_property_size property_size;
 	typedef vector_property_capacity property_capacity;
+	typedef vector_property_data_begin property_data_begin;
 	//typedef vector_on_value_inserted on_value_inserted;
 	//typedef vector_on_value_deleting on_value_deleting;;
 };
@@ -172,6 +186,7 @@ struct string_event
 	typedef string_on_size_changed on_size_changed;
 	typedef vector_property_size property_size;
 	typedef vector_property_capacity property_capacity;
+	typedef vector_property_data_begin property_data_begin;
 	//typedef vector_on_value_inserted on_value_inserted;
 	//typedef vector_on_value_deleting on_value_deleting;
 };
@@ -189,6 +204,7 @@ struct vector_head_tt : private vector_sizes
 	vector_head_tt(): _m_data_begin(0) {}
 	void set_size(size_t size) {_m_size=size;}
 	void set_capacity(size_t capacity) {_m_capacity=capacity;}
+	void set_data_begin(value_tn* data_begin) {_m_data_begin=data_begin;}
 	size_t size() const {return _m_size;}
 	size_t capacity() const {return _m_capacity;}
 	value_tn* data_begin() {return _m_data_begin;};
@@ -200,6 +216,7 @@ struct vector_head_tt <value_tn,1>
 	vector_head_tt() : _m_data_begin(0) {}
 	void set_size(size_t size) {sizes()->_m_size=size;}
 	void set_capacity(size_t capacity) {sizes()->_m_capacity=capacity;}
+	void set_data_begin(value_tn* data_begin) {}
 	size_t size() {return sizes()->_m_size;}
 	size_t capacity() {return sizes()->_m_capacity;}
 	value_tn* data_begin() {return (value_tn*)((char*)(_m_vector_begin)+sizeof(vector_sizes));};
@@ -217,6 +234,7 @@ struct vector_rooter : allocator_tn
 	typedef typename events_tn::on_size_changed on_size_changed;
 	typedef typename events_tn::property_size property_size;
 	typedef typename events_tn::property_capacity property_capacity;
+	typedef typename events_tn::property_data_begin property_data_begin;
 	//typedef typename events_tn::on_value_inserted on_value_inserted;
 	//typedef typename events_tn::on_value_deleting on_value_deleting;
 protected:
@@ -227,12 +245,12 @@ protected:
 	~vector_rooter()
 	{
 		resize(0);
-		allocator::deallocate(_m_head._m_data_begin);
-		_m_head._m_data_begin = 0;
+		allocator::deallocate(data_begin());
+		property_data_begin().set(_m_head,(value_type*)(0));
 	}
 	value_type* data_begin()
 	{
-		return _m_head._m_data_begin;
+		return property_data_begin().get(_m_head,(value_type*)(0));
 	}
 	void swap(self& other)
 	{
@@ -255,12 +273,12 @@ public:
 		if (size_copyed==-1) size_copyed = size();
 		size_t usable_size = capacity()-size();
 		if (usable_size>=size_reserved) return;
-		value_type* data_begin = _m_head._m_data_begin;
-		data_begin = (value_type*)allocator::allocate((size()+size_reserved)*sizeof(value_type));
-		assert (data_begin);
-		vector_helper::move_objects(data_begin,-1,_m_head._m_data_begin,size_copyed);
+		value_type* data_begin_new = data_begin();
+		data_begin_new = (value_type*)allocator::allocate((size()+size_reserved)*sizeof(value_type));
+		assert (data_begin_new);
+		vector_helper::move_objects(data_begin_new,-1,data_begin(),size_copyed);
 		property_capacity()(_m_head,size_reserved);
-		_m_head._m_data_begin = data_begin;
+		property_data_begin().set(_m_head,data_begin_new);
 	}
 	template <typename deleting_event_tn>
 	struct object_deleting_event_tt
@@ -315,20 +333,20 @@ public:
 		if (size_new<=size())
 		{
 			object_deleting_event_tt<object_deleting_event> deleting_event(*this,size_new);
-			vector_helper::destruct_objects(deleting_event,_m_head.data_begin()+size_new,size()-size_new);
+			vector_helper::destruct_objects(deleting_event,data_begin()+size_new,size()-size_new);
 			property_size()(_m_head,size_new);
 		}
 		else if (size_new<capacity())
 		{
 			object_inserted_event_tt<object_inserted_event> inserted_event(*this,size());
-			vector_helper::construct_objects(inserted_event,_m_head._m_data_begin+size(),size_new-size());
+			vector_helper::construct_objects(inserted_event,data_begin()+size(),size_new-size());
 			property_size()(_m_head,size_new);
 		}
 		else
 		{
 			reserve(size_new-size());
 			object_inserted_event_tt<object_inserted_event> inserted_event(*this,size());
-			vector_helper::construct_objects(inserted_event,_m_head._m_data_begin+size(),size_new-size());
+			vector_helper::construct_objects(inserted_event,data_begin()+size(),size_new-size());
 			property_size()(_m_head,size_new);
 		}
 		on_size_changed()(*this,0);
@@ -341,7 +359,7 @@ struct string_rooter : vector_rooter<value_tn,false,string_events_tn,allocator_t
 	friend vector_tt<string_rooter>;
 	string_rooter()
 	{
-		_m_head._m_data_begin = allocator::allocate(0);
+		property_data_begin().set(_m_head,allocator::allocate(0));
 		string_events_tn::on_size_changed()(*this,0);
 	}
 };
