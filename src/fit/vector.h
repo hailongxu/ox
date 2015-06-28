@@ -692,18 +692,13 @@ struct mono_indirect_vector_rooter
 			allocator.deallocate(p);
 		}
 	};
-	struct data_allocator_ref;
-	typedef vector_tt<vector_rooter<node_type,vector_head_mono_tt<node_type>,vector_event,allocator_tn>> index_vector_type;
-	typedef vector_rooter<char,vector_head_mono_tt<char>,vector_event,data_allocator_ref> data_vector_type;
-	struct data_allocator_ref
+	struct head_allocator : vector_head_mono_tt<char>
 	{
 		char* allocate(size_t bytes)
 		{
-			typedef data_vector_type rooter;
-			rooter* root = static_cast<rooter*>(this);
-			assert (bytes+root->size()<=root->capacity());
-			char* p = root->data_begin()+root->size();
-			root->head().set_size(root->head().size()+bytes);
+			assert (bytes+size()<=capacity());
+			char* p = data_begin()+size();
+			set_size(size()+bytes);
 			return p;
 		}
 		void deallocate(char* p)
@@ -712,9 +707,11 @@ struct mono_indirect_vector_rooter
 		}
 		void attach(char* vector_begin)
 		{
-			static_cast<data_vector_type*>(this)->head()._m_vector_begin = vector_begin;
+			_m_vector_begin = vector_begin;
 		}
 	};
+	typedef vector_tt<vector_rooter<node_type,vector_head_mono_tt<node_type>,vector_event,allocator_tn>> index_vector_type;
+	typedef vector_rooter<char,head_allocator,vector_event,nullmalloc> data_vector_type;
 
 	struct data_vector_wrapper : data_vector_type
 	{
@@ -743,7 +740,7 @@ struct mono_indirect_vector_rooter
 		reserve(index().size()+1,byte_data_size);
 		char* data_begin = (char*)(vector_data_begin(index()));
 		data_vector_wrapper data_vector;
-		data_vector.allocator().attach(data_begin);
+		data_vector.attach(data_begin);
 		return data_vector.allocator().allocate(byte_data_size);
 	}
 	void resize(size_t size)
@@ -756,7 +753,7 @@ struct mono_indirect_vector_rooter
 	{
 		char* data_begin = (char*)(vector_data_begin(index()));
 		data_vector_wrapper data_vector;
-		data_vector.allocator().attach(data_begin);
+		data_vector.attach(data_begin);
 		size_t usable = data_vector.capacity()-data_vector.size();
 		size_t index_usable = index().capacity()-index().size();
 		if (index_usable<size || usable<byte_data_size)
@@ -769,7 +766,7 @@ struct mono_indirect_vector_rooter
 			/// get the new data vector
 			data_vector_wrapper data_vector_new;
 			data_begin = (char*)(vector_data_begin(index_new));
-			data_vector_new.allocator().attach(data_begin);
+			data_vector_new.attach(data_begin);
 			char* value_begin = data_vector_new.data_begin();
 			for (size_t i=0;i<index_new.size();++i)
 			{

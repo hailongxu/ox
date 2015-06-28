@@ -9,7 +9,7 @@ ___namespace2_begin(ox,fit)
 
 
 template <typename data_tn>
-struct cppmalloc_tt
+struct cppmalloc_tt : data_tn
 {
 	char* allocate(size_t size)
 	{
@@ -19,7 +19,6 @@ struct cppmalloc_tt
 	{
 		delete [] p;
 	}
-	data_tn _m_data;
 };
 template <>
 struct cppmalloc_tt<void>
