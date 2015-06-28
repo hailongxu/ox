@@ -11,11 +11,11 @@ ___namespace2_begin(ox,fit)
 template <typename data_tn>
 struct cppmalloc_tt : data_tn
 {
-	char* allocate(size_t size)
+	static char* allocate(size_t size)
 	{
 		return new (std::nothrow) char [size];
 	}
-	void deallocate(void* p)
+	static void deallocate(void* p)
 	{
 		delete [] p;
 	}
@@ -23,11 +23,11 @@ struct cppmalloc_tt : data_tn
 template <>
 struct cppmalloc_tt<void>
 {
-	char* allocate(size_t size)
+	static char* allocate(size_t size)
 	{
 		return new (std::nothrow) char [size];
 	}
-	void deallocate(void* p)
+	static void deallocate(void* p)
 	{
 		delete [] p;
 	}
