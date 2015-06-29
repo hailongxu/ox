@@ -33,9 +33,9 @@ struct slist_node_tt
 	slist_node_tt* _m_next;
 	value_tn _m_value;
 	/// necessary
-	set_next(slist_node_tt* next) {_m_next=next;}
+	void set_next(slist_node_tt* next) {_m_next=next;}
 	slist_node_tt* get_next() {return _m_next;}
-	slist_node_tt const* get_next() {return _m_next;}
+	slist_node_tt const* get_next() const {return _m_next;}
 	value_tn& operator*() {return _m_value;}
 	value_tn const& operator*() const {return _m_value;}
 };
@@ -47,18 +47,18 @@ struct list_node_tt
 	list_node_tt* _m_prev;
 	value_tn _m_value;
 	/// necessary
-	set_next(list_node_tt* next) {_m_next=next;}
+	void set_next(list_node_tt* next) {_m_next=next;}
 	list_node_tt* get_next() {return _m_next;}
-	list_node_tt const* get_next() {return _m_next;}
-	set_prev(list_node_tt* prev) {_m_prev=prev;}
+	list_node_tt const* get_next() const {return _m_next;}
+	void set_prev(list_node_tt* prev) {_m_prev=prev;}
 	list_node_tt* get_prev() {return _m_prev;}
 	list_node_tt const* get_prev() {return _m_prev;}
 	value_tn& operator*() {return _m_value;}
 	value_tn const& operator*() const {return _m_value;}
 };
 
-template <typename value_tn,typename head_tn,typename node_tn,typename allocator_tn>
-struct slist_rooter : head_tn
+template <typename value_tn,typename node_tn,typename head_tn,typename allocator_tn>
+struct xlist_rooter : head_tn
 {
 	typedef head_tn head_type;
 	typedef allocator_tn allocator_type;
@@ -69,7 +69,7 @@ struct slist_rooter : head_tn
 	typedef node_tn node_type;
 	node_type* allocate_node(size_t data_bytes)
 	{
-		node_type* pnode = allocator_type::allocate(sizeof(node_type));
+		node_type* pnode = (node_type*)allocator_type::allocate(sizeof(node_type));
 		return new (pnode) node_type ();
 	}
 	node_type* deallocate_node(node_type* pnode)
@@ -81,27 +81,13 @@ struct slist_rooter : head_tn
 
 
 template <typename rooter_tn>
-struct slist : rooter_tn
+struct slist_tt : rooter_tn
 {
 	typedef rooter_tn rooter_type;
 	rooter_type& rooter() {return *this;}
 	rooter_type const& rooter() const {return *this;}
 	typedef typename rooter_type::value_type value_type;
 	typedef typename rooter_type::node_type node_type;
-	node_type* add_front(value_type const& value)
-	{
-		node_type* node_new = rooter().allocate_node();
-		*node_new = value;
-		return add_front(node_new);
-	}
-	node_type* add_front(node_type* node_new)
-	{
-		node_new->set_next(rooter().head().get_first());
-		/// update header
-		rooter().head().set_first(node_new);
-		if (!rooter().head()->get_first()->get_next()) rooter().head().set_last(node_new);
-		return node_new;
-	}
 	node_type* remove_front()
 	{
 		if (rooter().head().is_empty())
@@ -117,15 +103,21 @@ struct slist : rooter_tn
 		node_type* victim = remove_front();
 		deallocate_node(victim);
 	}
-	void add_after(value_type const& value,node_type* node)
+	node_type* add_after(value_type const& value,node_type* node)
 	{
-		node_type* node_new = rooter().allocate_node();
-		*node_new = value;
-		if (!node) add_front(node_new);
+		node_type* node_new = rooter().allocate_node(sizeof(node_type));
+		**node_new = value;
+		node_type* next = node?node->get_next():0;
 		node_new->set_next(node->get_next());
 		node->set_next(node_new);
 		/// update header.last
-		if (!node_new->get_next()) rooter().head().set_last(node_new);
+		if (!node) rooter().head().set_first(node_new);
+		if (!next) rooter().head().set_last(node_new);
+		return node_new;
+	}
+	node_type* add_front(value_type const& value)
+	{
+		return add_after(value,0);
 	}
 	node_type* remove_after(node_type* node)
 	{
@@ -156,7 +148,7 @@ struct slist : rooter_tn
 
 
 template <typename rooter_tn>
-struct list : rooter_tn
+struct list_tt : rooter_tn
 {
 	typedef rooter_tn rooter_type;
 	rooter_type& rooter() {return *this;}
@@ -258,6 +250,14 @@ struct list : rooter_tn
 		}
 	}
 };
+
+template <typename value_tn,typename allocator_tn=cppmalloc>
+struct slist : slist_tt<xlist_rooter<value_tn,slist_node_tt<value_tn>,xlist_head_tt<slist_node_tt<value_tn>>,allocator_tn>>
+{};
 	
+template <typename value_tn,typename allocator_tn=cppmalloc>
+struct list : list_tt<xlist_rooter<value_tn,list_node_tt<value_tn>,xlist_head_tt<list_node_tt<value_tn>>,allocator_tn>>
+{};
+
 
 ___namespace2_end()
