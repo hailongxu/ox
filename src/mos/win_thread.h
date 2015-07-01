@@ -92,26 +92,26 @@ public:
 	{
 		_m_your_name[0]=0;
 		init();
-		function.assign(f);
+		_m_function.assign(f);
 	}
 	template <typename c, typename f>
 	win_thread(c* _c, f _f)
 	{
 		_m_your_name[0]=0;
 		init();
-		function.assign(_c,_f);
+		_m_function.assign(_c,_f);
 	}
 	win_thread(function_t const& d)
 	{
 		_m_your_name[0]=0;
 		init();
-		function.assign(d);
+		_m_function.assign(d);
 	}
 	win_thread(function_closure const& o)
 	{
 		_m_your_name[0]=0;
 		init();
-		function.assign(o);
+		_m_function.assign(o);
 	}
 
 	bool is_running() const
@@ -203,9 +203,9 @@ public:
 	}
 	static wait_enum join_thread_id(size_t threadid,size_t timeout_ms=-1)
 	{
-		HANDLE handle = OpenThread(SYNCHRONIZE,FALSE,threadid);
+		HANDLE handle = OpenThread(SYNCHRONIZE,FALSE,(DWORD)threadid);
 		if (handle==0) return __okay;
-		DWORD id = ::WaitForSingleObject(handle,timeout_ms);
+		DWORD id = ::WaitForSingleObject(handle,(DWORD)timeout_ms);
 		CloseHandle(handle);
 		return wait_enum(id);
 	}
@@ -293,6 +293,7 @@ protected:
 			OutputDebugStringA(buff);
 		}
 #endif
+        me->_m_threadid = -1;
 		return exitcode;
 	}
 

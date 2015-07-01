@@ -25,6 +25,7 @@ ___namespace2_begin(ox,mos)
 		typedef win_queue_thread_with_timer self;
 		typedef win_timer_list timer_list_t;
 		typedef win_timer_list::task_timer_t task_timer_t;
+		typedef win_timer_list::timer_event_d timer_event_d;
 		typedef win_timer_list::timer_position timer_position;
 		typedef win_waitable_timer_engine timer_engine;
 		//typedef timer_t::event_d timer_event_d;
@@ -82,6 +83,25 @@ ___namespace2_begin(ox,mos)
 		{
 			return add_timer_micro(timer_task,period_seconds*1000*1000,timerid,pos);
 		}
+		size_t add_timer_micro(timer_event_d const& timer_event,LONGLONG period_micro_seconds,void const* binded,size_t timerid=-1,timer_position* pos=0)
+		{
+			if (is_exiting()) return 0;
+			//size_t timerid = timer_t::make_timerid();
+			if (GetCurrentThreadId()==_m_threadid)
+				do_add_timer(timer_event,period_micro_seconds,binded,timerid,pos);
+			else
+				win_queue_thread::add(task_single<void>::make(
+					this,&self::do_add_timer,timer_event,period_micro_seconds,binded,timerid,pos));
+			return timerid;
+		}
+		size_t add_timer_milli(timer_event_d const& timer_event,LONGLONG period_milli_seconds,void const* binded,size_t timerid=-1,timer_position* pos=0)
+		{
+			return add_timer_micro(timer_event,period_milli_seconds*1000,binded,timerid,pos);
+		}
+		size_t add_timer_second(timer_event_d const& timer_event,LONGLONG period_seconds,void const* binded,size_t timerid=-1,timer_position* pos=0)
+		{
+			return add_timer_micro(timer_event,period_seconds*1000*1000,binded,timerid,pos);
+		}
 		void erase_timer(size_t timerid)
 		{
 			if (is_exiting()) return;
@@ -110,6 +130,13 @@ ___namespace2_begin(ox,mos)
 		void do_add_timer(task_timer_t* task_timer,LONGLONG period_micro_seconds,size_t timerid,timer_position* pos)
 		{
 			_m_timer_list.add_timer(task_timer,period_micro_seconds,timerid,pos);
+			LONGLONG relative_100nano = 0;
+			_m_timer_list.calculate_next_timer(&relative_100nano);
+			_m_timer_engine.set_after_100nano(relative_100nano);
+		}
+		void do_add_timer(timer_event_d const& timer_event,LONGLONG period_micro_seconds,void const* binded,size_t timerid,timer_position* pos)
+		{
+			_m_timer_list.add_timer(timer_event,period_micro_seconds,binded,timerid,pos);
 			LONGLONG relative_100nano = 0;
 			_m_timer_list.calculate_next_timer(&relative_100nano);
 			_m_timer_engine.set_after_100nano(relative_100nano);

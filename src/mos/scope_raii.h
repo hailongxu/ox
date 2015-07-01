@@ -44,15 +44,21 @@ struct critical_section
 
 struct win_mutex
 {
-	win_mutex() : _m_mutex_handle(0) {}
+	~win_mutex()
+	{
+		uninit();
+	}
+	win_mutex() : _m_mutex_handle(0)
+	{
+		_m_mutex_handle = 0;
+		init(0,false);
+	}
+	win_mutex(bool init_later) : _m_mutex_handle(0)
+	{}
 	win_mutex(char const* name,bool is_owned=false)
 	{
 		_m_mutex_handle = 0;
 		init(name,is_owned);
-	}
-	~win_mutex()
-	{
-		uninit();
 	}
 	void init(char const* name,bool is_owned=false)
 	{
@@ -76,15 +82,22 @@ private:
 
 struct win_mutex_slave
 {
-	win_mutex_slave() : _m_mutex_handle(0) {}
-	win_mutex_slave(char const* name)
-	{
-		open(name);
-	}
 	~win_mutex_slave()
 	{
 		CloseHandle(_m_mutex_handle);
-		_m_mutex_handle = 0;//INVALID_HANDLE_VALUE;
+
+	}
+	win_mutex_slave()
+	{
+        _m_mutex_handle = 0;//INVALID_HANDLE_VALUE;
+		open(0);
+	}
+	win_mutex_slave(bool init_later) : _m_mutex_handle(0)
+	{}
+	win_mutex_slave(char const* name)
+	{
+        _m_mutex_handle = 0;//INVALID_HANDLE_VALUE;
+		open(name);
 	}
 	bool open(char const* name)
 	{
@@ -246,7 +259,7 @@ struct scope_sync <win_event<bmanual>>
 	}
 	static wait_enum wait(HANDLE hevent,size_t timeout_mill_second=-1)
 	{
-		DWORD ret = ::WaitForSingleObject(hevent,timeout_mill_second);
+		DWORD ret = ::WaitForSingleObject(hevent,(DWORD)(timeout_mill_second));
 		bool isok = (ret==WAIT_OBJECT_0 || ret==WAIT_ABANDONED);
 		assert(isok);
 		return wait_enum(ret);

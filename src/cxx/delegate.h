@@ -20,8 +20,6 @@
 
 
 #include <new.h>
-//#include <string.h>
-
 #include "macro_params.h"
 
 
@@ -40,30 +38,143 @@ struct iff <false,a,b>
 };
 
 template <typename class_function>
-struct is_mf_const
+struct mf_prop
 {
-	static bool const value = false;
+	static bool const is_const = false;
+	static bool const is_stdcall = false;
+	template <bool> struct add_const {typedef class_function type;};
+	template <bool> struct add_stdcall {typedef class_function type;};
+};
+
+template <typename c,typename r>
+struct mf_prop <r(c::*)()>
+{
+	static bool const is_const = false;
+	static bool const is_stdcall = false;
+	template <bool> struct add_const {typedef r(c::*type)();};
+	template <bool> struct add_stdcall {typedef r(c::*type)();};
+	template <> struct add_const<true> {typedef r(c::*type)()const;};
+	template <> struct add_stdcall<true> {typedef r(__stdcall c::*type)();};
 };
 template <typename c,typename r>
-struct is_mf_const <r(c::*)()const>
+struct mf_prop <r(c::*)()const>
 {
-	static bool const value = true;
+	static bool const is_const = true;
+	static bool const is_stdcall = false;
+	template <bool> struct add_const {typedef r(c::*type)()const;};
+	template <bool> struct add_stdcall {typedef r(c::*type)()const;};
+	template <> struct add_const<true> {typedef r(c::*type)()const;};
+	template <> struct add_stdcall<true> {typedef r(__stdcall c::*type)();};
 };
-template <typename c,typename r,typename p1>
-struct is_mf_const <r(c::*)(p1)const>
+template <typename c,typename r>
+struct mf_prop <r(__stdcall c::*)()>
 {
-	static bool const value = true;
+	static bool const is_const = false;
+	static bool const is_stdcall = true;
+	template <bool> struct add_const {typedef r(__stdcall c::*type)();};
+	template <bool> struct add_stdcall {typedef r(__stdcall c::*type)();};
+	template <> struct add_const<true> {typedef r(__stdcall c::*type)()const;};
+	template <> struct add_stdcall<true> {typedef r(__stdcall c::*type)();};
 };
-template <typename c,typename r,typename p1,typename p2>
-struct is_mf_const <r(c::*)(p1,p2)const>
+template <typename c,typename r>
+struct mf_prop <r(__stdcall c::*)()const>
 {
-	static bool const value = true;
+	static bool const is_const = true;
+	static bool const is_stdcall = true;
+	template <bool> struct add_const {typedef r(__stdcall c::*type)()const;};
+	template <bool> struct add_stdcall {typedef r(__stdcall c::*type)()const;};
+	template <> struct add_const<true> {typedef r(__stdcall c::*type)()const;};
+	template <> struct add_stdcall<true> {typedef r(__stdcall c::*type)()const;};
 };
-template <typename c,typename r,typename p1,typename p2,typename p3>
-struct is_mf_const <r(c::*)(p1,p2,p3)const>
-{
-	static bool const value = true;
+
+#define MACRO_MF_PROP(n) \
+template <typename c,typename r,DEF_TYPENAMES(n)> \
+struct mf_prop <r(c::*)(DEF_TYPES(n))> \
+{ \
+	static bool const is_const = false; \
+	static bool const is_stdcall = false; \
+	template <bool> struct add_const {typedef r(c::*type)(DEF_TYPES(n));}; \
+	template <bool> struct add_stdcall {typedef r(c::*type)(DEF_TYPES(n));}; \
+	template <> struct add_const<true> {typedef r(c::*type)(DEF_TYPES(n))const;}; \
+	template <> struct add_stdcall<true> {typedef r(__stdcall c::*type)(DEF_TYPES(n));}; \
+}; \
+template <typename c,typename r,DEF_TYPENAMES(n)> \
+struct mf_prop <r(c::*)(DEF_TYPES(n))const> \
+{ \
+	static bool const is_const = true; \
+	static bool const is_stdcall = false; \
+	template <bool> struct add_const {typedef r(c::*type)(DEF_TYPES(n))const;}; \
+	template <bool> struct add_stdcall {typedef r(c::*type)(DEF_TYPES(n))const;}; \
+	template <> struct add_const<true> {typedef r(c::*type)(DEF_TYPES(n))const;}; \
+	template <> struct add_stdcall<true> {typedef r(__stdcall c::*type)(DEF_TYPES(n)) const;}; \
+}; \
+template <typename c,typename r,DEF_TYPENAMES(n)> \
+struct mf_prop <r(__stdcall c::*)(DEF_TYPES(n))> \
+{ \
+	static bool const is_const = false; \
+	static bool const is_stdcall = true; \
+	template <bool> struct add_const {typedef r(__stdcall c::*type)(DEF_TYPES(n));}; \
+	template <bool> struct add_stdcall {typedef r(__stdcall c::*type)(DEF_TYPES(n));}; \
+	template <> struct add_const<true> {typedef r(__stdcall c::*type)(DEF_TYPES(n))const;}; \
+	template <> struct add_stdcall<true> {typedef r(__stdcall c::*type)(DEF_TYPES(n));}; \
+}; \
+template <typename c,typename r,DEF_TYPENAMES(n)> \
+struct mf_prop <r(__stdcall c::*)(DEF_TYPES(n))const> \
+{ \
+	static bool const is_const = true; \
+	static bool const is_stdcall = true; \
+	template <bool> struct add_const {typedef r(__stdcall c::*type)(DEF_TYPES(n))const;}; \
+	template <bool> struct add_stdcall {typedef r(__stdcall c::*type)(DEF_TYPES(n))const;}; \
+	template <> struct add_const<true> {typedef r(__stdcall c::*type)(DEF_TYPES(n))const;}; \
+	template <> struct add_stdcall<true> {typedef r(__stdcall c::*type)(DEF_TYPES(n)) const;}; \
 };
+
+MACRO_MF_PROP(1)
+MACRO_MF_PROP(2)
+MACRO_MF_PROP(3)
+MACRO_MF_PROP(4)
+MACRO_MF_PROP(5)
+MACRO_MF_PROP(6)
+MACRO_MF_PROP(7)
+MACRO_MF_PROP(8)
+MACRO_MF_PROP(9)
+
+#undef MACRO_MF_PROP
+
+//template <typename c,typename r,DEF_TYPENAMES(2)>
+//struct mf_prop <r(c::*)(DEF_TYPES(2))>
+//{
+//	static bool const is_const = false;
+//	static bool const is_stdcall = false;
+//	template <bool> struct add_const {typedef r(c::*type)(DEF_TYPES(2))const;};
+//	template <bool> struct add_stdcall {typedef r(__stdcall c::*type)(DEF_TYPES(2));};
+//};
+//template <typename c,typename r,DEF_TYPENAMES(2)>
+//struct mf_prop <r(c::*)(DEF_TYPES(2))const>
+//{
+//	static bool const is_const = true;
+//	static bool const is_stdcall = false;
+//	template <bool> struct add_const {typedef r(c::*type)(DEF_TYPES(2))const;};
+//	template <bool> struct add_stdcall {typedef r(__stdcall c::*type)(DEF_TYPES(2))const;};
+//};
+//
+//template <typename c,typename r,DEF_TYPENAMES(3)>
+//struct mf_prop <r(c::*)(DEF_TYPES(3))>
+//{
+//	static bool const is_const = false;
+//	static bool const is_stdcall = false;
+//	template <bool> struct add_const {typedef r(c::*type)(DEF_TYPES(3))const;};
+//	template <bool> struct add_stdcall {typedef r(__stdcall c::*type)(DEF_TYPES(3));};
+//};
+//template <typename c,typename r,DEF_TYPENAMES(3)>
+//struct mf_prop <r(c::*)(DEF_TYPES(3))const>
+//{
+//	static bool const is_const = true;
+//	static bool const is_stdcall = false;
+//	template <bool> struct add_const {typedef r(c::*type)(DEF_TYPES(3))const;};
+//	template <bool> struct add_stdcall {typedef r(__stdcall c::*type)(DEF_TYPES(3))const;};
+//};
+//
 
 
 template <typename function_tn>
@@ -130,13 +241,13 @@ private:
 		c* o;
 	};
 
-	template <bool bconstf,typename c, typename r>
+	template <bool bconstf,bool bstdcallf,typename c, typename r>
 	struct mfunction : vfunction <r>
 	{
 		typedef mfunction self;
 		typedef r (c::*function_nc)();
-		typedef r (c::*function_c)() const;
-		typedef typename iff<bconstf,function_c,function_nc>::type function;
+		typedef typename mf_prop<function_nc>::add_const<bconstf>::type function1;
+		typedef typename mf_prop<function_nc>::add_stdcall<bstdcallf>::type function;
 		virtual r invoke() const
 		{
 			return (o->*f)();
@@ -192,7 +303,7 @@ public:
 	template <typename c, typename f>
 	delegate& assign(c* _c, f _f)
 	{
-		typedef mfunction<is_mf_const<f>::value,c,r> mf;
+		typedef mfunction<mf_prop<f>::is_const,mf_prop<f>::is_stdcall,c,r> mf;
 		mf* pmf = new(buffer)mf;
 		pmf->o = _c;
 		pmf->f = _f;
@@ -243,7 +354,7 @@ public:
 
 private:
 	vfunction<r>* vf;
-	char buffer[16];
+	char buffer[16*sizeof(void*)/4];
 };
 
 template <typename r,typename p1>
@@ -307,13 +418,13 @@ private:
 		c* o;
 	};
 
-	template <bool bconstf,typename c, typename r, typename p1>
+	template <bool bconstf,bool bstdcallf,typename c, typename r, typename p1>
 	struct mfunction : vfunction <r,p1>
 	{
 		typedef mfunction self;
 		typedef r (c::*function_nc)(p1);
-		typedef r (c::*function_c)(p1) const;
-		typedef typename iff<bconstf,function_c,function_nc>::type function;
+		typedef typename mf_prop<function_nc>::add_const<bconstf>::type function1;
+		typedef typename mf_prop<function_nc>::add_stdcall<bstdcallf>::type function;
 		virtual r invoke(p1 _p1) const
 		{
 			return (o->*f)(_p1);
@@ -371,7 +482,7 @@ public:
 	template <typename c, typename f>
 	delegate& assign(c* _c, f _f)
 	{
-		typedef mfunction<is_mf_const<f>::value,c,r,p1> mf;
+		typedef mfunction<mf_prop<f>::is_const,mf_prop<f>::is_stdcall,c,r,p1> mf;
 		mf* pmf = new(buffer)mf;
 		pmf->o = _c;
 		pmf->f = _f;
@@ -422,7 +533,7 @@ public:
 
 private:
 	vfunction<r,p1>* vf;
-	char buffer[16];
+	char buffer[16*sizeof(void*)/4];
 };
 
 template <typename r,DEF_TYPENAMES(2)>
@@ -486,13 +597,13 @@ private:public:
 		c* o;
 	};
 
-	template <bool bconstf,typename c, typename r,DEF_TYPENAMES(2)>
+	template <bool bconstf,bool bstdcallf,typename c, typename r,DEF_TYPENAMES(2)>
 	struct mfunction : vfunction <r,DEF_TYPES(2)>
 	{
 		typedef mfunction self;
 		typedef r (c::*function_nc)(DEF_TYPES(2));
-		typedef r (c::*function_c)(DEF_TYPES(2)) const;
-		typedef typename iff<bconstf,function_c,function_nc>::type function;
+		typedef typename mf_prop<function_nc>::add_const<bconstf>::type function1;
+		typedef typename mf_prop<function_nc>::add_stdcall<bstdcallf>::type function;
 		virtual r invoke(DEF_ARGS(2)) const
 		{
 			return (o->*f)(DEF_OBJS(2));
@@ -550,7 +661,7 @@ public:
 	template <typename c, typename f>
 	delegate& assign(c* _c, f _f)
 	{
-		typedef mfunction<is_mf_const<f>::value,c,r,DEF_TYPES(2)> mf;
+		typedef mfunction<mf_prop<f>::is_const,mf_prop<f>::is_stdcall,c,r,DEF_TYPES(2)> mf;
 		mf* pmf = new(buffer)mf;
 		pmf->o = _c;
 		pmf->f = _f;
@@ -601,7 +712,7 @@ public:
 	
 private:
 	vfunction<r,DEF_TYPES(2)>* vf;
-	char buffer[16];
+	char buffer[16*sizeof(void*)/4];
 };
 
  
@@ -667,13 +778,13 @@ private: \
 		c* o; \
 	}; \
  \
-	template <bool bconstf,typename c, typename r,DEF_TYPENAMES(n)> \
+	template <bool bconstf,bool bstdcallf,typename c, typename r,DEF_TYPENAMES(n)> \
 	struct mfunction : vfunction <r,DEF_TYPES(n)> \
 	{ \
 		typedef mfunction self; \
 		typedef r (c::*function_nc)(DEF_TYPES(n)); \
-		typedef r (c::*function_c)(DEF_TYPES(n)) const; \
-		typedef typename iff<bconstf,function_c,function_nc>::type function; \
+		typedef typename mf_prop<function_nc>::add_const<bconstf>::type function1; \
+		typedef typename mf_prop<function_nc>::add_stdcall<bstdcallf>::type function; \
 		virtual r invoke(DEF_ARGS(n)) const \
 		{ \
 			return (o->*f)(DEF_OBJS(n)); \
@@ -731,7 +842,7 @@ public: \
 	template <typename c, typename f> \
 	delegate& assign(c* _c, f _f) \
 	{ \
-		typedef mfunction<is_mf_const<f>::value,c,r,DEF_TYPES(n)> mf; \
+		typedef mfunction<mf_prop<f>::is_const,mf_prop<f>::is_stdcall,c,r,DEF_TYPES(n)> mf; \
 		mf* pmf = new(buffer)mf; \
 		pmf->o = _c; \
 		pmf->f = _f; \
@@ -781,7 +892,7 @@ public: \
 	} \
  \
 private: \
-	char buffer[16]; \
+	char buffer[16*sizeof(void*)/4]; \
 	vfunction<r,DEF_TYPES(n)>* vf; \
 };
 

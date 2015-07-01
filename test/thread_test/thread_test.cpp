@@ -4,17 +4,17 @@
 #include "stdafx.h"
 #include <conio.h>
 
-#include "../../src/thread/task_feedback.h"
-#include "../../src/thread/win_queue_thread.h"
-#include "../../src/thread/win_queue_multi_thread.h"
-#include "../../src/thread/win_queue_pool_thread.h"
-#include "../../src/thread/win_ui_thread.h"
+#include "../../src/mos/task_feedback.h"
+#include "../../src/mos/win_queue_thread.h"
+#include "../../src/mos/win_queue_multi_thread.h"
+#include "../../src/mos/win_queue_pool_thread.h"
+#include "../../src/mos/win_ui_thread.h"
 
 
 
 
 
-typedef ox::win_queue_thread thread_t;
+typedef ox::mos::win_queue_thread thread_t;
 
 
 namespace event
@@ -56,16 +56,16 @@ namespace event
 		printf ("thread is running out\n");
 		return 0;
 	}
-	void recall(ox::win_queue_thread* th)
+	void recall(ox::mos::win_queue_thread* th)
 	{
-		th->add(ox::task_single<void>::make(&event::f1));
+		th->add(ox::mos::thread_task_helper::make(&event::f1));
 	}
 }
 
 namespace uithread_test
 {
-	ox::win_ui_thread ui;
-	ox::win_queue_thread ui_task;
+	ox::mos::win_ui_thread ui;
+	ox::mos::win_queue_thread ui_task;
 	bool timer_event()
 	{
 		static int i = 0;
@@ -77,15 +77,15 @@ namespace uithread_test
 		while(getch())
 		{
 			printf("post task\n");
-			ui.add(ox::task_single<void>::make(&event::f3));
+			ui.add(ox::mos::thread_task_helper::make(&event::f3));
 		}
 	}
 	void test()
 	{
 		ui.start();
-		ui.add_timer(ox::timer_task_helper::make(timer_event),2*1000);
+		ui.add_timer(ox::mos::timer_task_helper::make(timer_event),2*1000);
 		ui_task.start();
-		ui_task.add(ox::task_single<void>::make(&post_task));
+		ui_task.add(ox::mos::thread_task_helper::make(&post_task));
 		::MessageBoxA(0,0,0,0);
 		//ui.stop();
 	}
@@ -93,7 +93,7 @@ namespace uithread_test
 
 namespace thread_test
 {
-	typedef ox::win_thread<unsigned()> thread_t;
+	typedef ox::mos::win_thread<unsigned()> thread_t;
 	thread_t thread;
 	void test()
 	{
@@ -107,10 +107,10 @@ namespace thread_test
 
 namespace win_queue_thread_test
 {
-	ox::win_queue_thread thread;
+	ox::mos::win_queue_thread thread;
 	void test()
 	{
-		thread.add(ox::task_single<void>::make(&event::recall,&thread));
+		thread.add(ox::mos::thread_task_helper::make(&event::recall,&thread));
 		thread.start();
 		Sleep(10);
 		thread.stop();
@@ -119,19 +119,19 @@ namespace win_queue_thread_test
 
 namespace multi_queue_thread_test
 {
-	typedef ox::win_queue_multi_threads mth;
+	typedef ox::mos::win_queue_multi_threads mth;
 	mth m(2,"multi_queue_thread_test");
 	void test()
 	{
-		ox::win_queue_thread control;
+		ox::mos::win_queue_thread control;
 		control.start();
 		m.bind(&control);
 		m.on_idle().assign(&event::on_idle);
 		m.on_busy().assign(&event::on_busy);
 		thread_t* t = m.create_thread();
 		thread_t* t2 = m.create_thread();
-		t->add(ox::task_single<void>::make(&event::f1));
-		t2->add(ox::task_single<void>::make(&event::f1));
+		t->add(ox::mos::thread_task_helper::make(&event::f1));
+		t2->add(ox::mos::thread_task_helper::make(&event::f1));
 		m.stop();
 		printf("sub stoped \n");
 		control.stop();
@@ -140,11 +140,11 @@ namespace multi_queue_thread_test
 }
 
 
-#include "../../src/thread/timer.h"
+#include "../../src/mos/timer.h"
 namespace thread_performace_test
 {
 	//ox::win_high_timer<ox::win_waitable_timer_engine> high;
-	ox::win_queue_thread thread;
+	ox::mos::win_queue_thread thread;
 	void f() {}
 	void test()
 	{
@@ -153,7 +153,7 @@ namespace thread_performace_test
 		//counter.begin();
 		for (int i=0;i<5/*600*1000*/;i++)
 		{
-			thread.add(ox::task_single<void>::make(f));
+			thread.add(ox::mos::thread_task_helper::make(f));
 			//thread.add(ox::thread_task_helper::make(event::f2,0));
 			//thread.add(ox::thread_task_helper::make(event::f2,0));
 			//thread.add_high(ox::thread_task_helper::make(event::f1));
@@ -165,12 +165,12 @@ namespace thread_performace_test
 
 
 
-#include "../../src/thread/win_multi_thread.h"
+#include "../../src/mos/win_multi_thread.h"
 namespace multi_thread_test
 {
-	typedef ox::win_thread<unsigned()> thread_t;
-	typedef ox::win_queue_thread control_thread_t;
-	typedef ox::win_multi_threads<thread_t> mth;
+	typedef ox::mos::win_thread<unsigned()> thread_t;
+	typedef ox::mos::win_queue_thread control_thread_t;
+	typedef ox::mos::win_multi_threads<thread_t> mth;
 	mth m(1,"multi_thread_test");
 	unsigned f() {return 0;}
 	void test()
@@ -190,10 +190,10 @@ namespace multi_thread_test
 	}
 }
 
-#include "../../src/thread/win_queue_thread_with_timer.h"
+#include "../../src/mos/win_queue_thread_with_timer.h"
 namespace thread_timer_test
 {
-	ox::win_queue_thread_with_timer thread;
+	ox::mos::win_queue_thread_with_timer thread;
 	bool on_timer()
 	{
 		printf("on timer\n");
@@ -202,16 +202,16 @@ namespace thread_timer_test
 	void test()
 	{
 		thread.start();
-		thread.add_timer_second(ox::timer_task_helper::make(on_timer),4);
+		thread.add_timer_second(ox::mos::timer_task_helper::make(on_timer),4);
 	}
 }
 
 
-#include "../../src/thread/win_queue_pool_thread.h"
+#include "../../src/mos/win_queue_pool_thread.h"
 namespace thread_pool_test
 {
-	ox::win_queue_pool_thread pool;
-	ox::win_queue_thread control;
+	ox::mos::win_queue_pool_thread pool;
+	ox::mos::win_queue_thread control;
 	bool on_timer()
 	{
 		printf("on timer\n");
@@ -241,15 +241,15 @@ namespace thread_pool_test
 		pool.on_can_normal_task_run().assign(is_normal_allowed);
 		for (int i=0;i<10;i++)
 		{
-			pool.add(ox::thread_task_helper::make(normal_task));
-			pool.add(ox::thread_task_helper::make(normal_task));
-			pool.add(ox::thread_task_helper::make(normal_task));
-			pool.add(ox::thread_task_helper::make(normal_task));
-			pool.add(ox::thread_task_helper::make(normal_task));
-			pool.add(ox::thread_task_helper::make(normal_task));
-			pool.add(ox::thread_task_helper::make(normal_task));
-			pool.add(ox::thread_task_helper::make(normal_task));
-			pool.add(ox::thread_task_helper::make(high_task));
+			pool.add(ox::mos::thread_task_helper::make(normal_task));
+			pool.add(ox::mos::thread_task_helper::make(normal_task));
+			pool.add(ox::mos::thread_task_helper::make(normal_task));
+			pool.add(ox::mos::thread_task_helper::make(normal_task));
+			pool.add(ox::mos::thread_task_helper::make(normal_task));
+			pool.add(ox::mos::thread_task_helper::make(normal_task));
+			pool.add(ox::mos::thread_task_helper::make(normal_task));
+			pool.add(ox::mos::thread_task_helper::make(normal_task));
+			pool.add(ox::mos::thread_task_helper::make(high_task));
 		}
 		Sleep(1500);
 		//pool.astop();
@@ -261,6 +261,7 @@ namespace thread_pool_test
 
 
 //#include <vld.h>
+
 
 int _tmain(int argc, _TCHAR* argv[])
 {

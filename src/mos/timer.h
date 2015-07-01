@@ -66,25 +66,25 @@ struct win_high_time : win_high_time_freq
 	{
 		LARGE_INTEGER curr_ticks;
 		current_ticks(curr_ticks);
-		return curr_ticks.QuadPart*100000000.0/__win_high_time_freq;
+		return LONGLONG(curr_ticks.QuadPart*100000000.0/__win_high_time_freq);
 	}
 	static LONGLONG current_as_double_micro_second()
 	{
 		LARGE_INTEGER curr_ticks;
 		current_ticks(curr_ticks);
-		return curr_ticks.QuadPart*1000000.0/__win_high_time_freq;
+		return LONGLONG(curr_ticks.QuadPart*1000000.0/__win_high_time_freq);
 	}
 	static LONGLONG current_as_double_milli_second()
 	{
 		LARGE_INTEGER curr_ticks;
 		current_ticks(curr_ticks);
-		return curr_ticks.QuadPart*1000.0/__win_high_time_freq;
+		return LONGLONG(curr_ticks.QuadPart*1000.0/__win_high_time_freq);
 	}
 	static LONGLONG current_as_double_second()
 	{
 		LARGE_INTEGER curr_ticks;
 		current_ticks(curr_ticks);
-		return curr_ticks.QuadPart*1.0/__win_high_time_freq;
+		return LONGLONG(curr_ticks.QuadPart*1.0/__win_high_time_freq);
 	}
 	static LONGLONG elapsed_seconds(LONGLONG const& from_ticks,LONGLONG const& to_ticks)
 	{
@@ -198,18 +198,18 @@ struct win_timer_list
 	//typedef communication_const constant;
 	//typedef communication_const::error_selfdefine_enum error_enum;
 
-	//typedef delegate<bool(size_t id,LONGLONG period_micro_second,void const* bind)> event_d;
+	typedef delegate<bool(size_t id,LONGLONG period_micro_second,void const* bind)> timer_event_d;
 	typedef task_tt<bool> task_timer_t;
 
 	struct timer_data
 	{
 		size_t id;
 		LONGLONG period_100nano_seconds;
-		//event_d event;
-		task_timer_t* task;
-		//void const* binded;
-		//timer_control control;
 		LONGLONG time_coming_100nano_seconds;
+		task_timer_t* task;
+		timer_event_d event;
+		void const* binded;
+		//timer_control control;
 	};
 	struct is_less
 	{
@@ -221,11 +221,11 @@ struct win_timer_list
 	typedef std::multiset<timer_data*,is_less> timer_list;
 	typedef timer_list::iterator timer_position;
 
-	static size_t make_timerid()
-	{
-		static atomic_long static_id = 0;
-		return ++static_id;
-	}
+	//static size_t make_timerid()
+	//{
+	//	static atomic_long static_id = 0;
+	//	return ++static_id;
+	//}
 
 	win_timer_list()
 	{
@@ -340,12 +340,12 @@ struct win_timer_list
 			timer_data& timer = *ptimer;
 			if (timer.time_coming_100nano_seconds>_m_time_coming_100nano_second)
 				break;
-			bool bcontinue = timer.task->run();
+			bool bcontinue = timer.task?timer.task->run():timer.event(timer.id,timer.period_100nano_seconds,timer.binded);
 			_m_timer_list.erase(i);
 			if (!bcontinue)
 			{
 				i = _m_timer_list.begin();
-				timer.task->destroy();
+				if (timer.task) timer.task->destroy();
 				delete ptimer;
 				continue;
 			}
@@ -394,6 +394,7 @@ struct win_timer_list
 		td.period_100nano_seconds = period_micro_seconds*10;
 		td.id = timerid;
 		td.task = task;
+		td.binded = 0;
 		td.time_coming_100nano_seconds = win_high_time::current_as_100nano_second() + td.period_100nano_seconds;
 		if (td.time_coming_100nano_seconds<0) td.time_coming_100nano_seconds=0;
 
@@ -401,6 +402,26 @@ struct win_timer_list
 		if (pos) *pos = i;
 		return __error_null;
 	}
+
+	size_t add_timer(timer_event_d const& timer_event,LONGLONG period_micro_seconds,void const* binded,size_t timerid,timer_position* pos=0)
+	{
+		timer_data* ptd = new (std::nothrow) timer_data;
+		if (!ptd) return __error_no_enough_memory;
+
+		timer_data& td = *ptd;
+		td.period_100nano_seconds = period_micro_seconds*10;
+		td.id = timerid;
+		td.task = 0;
+		td.binded = 0;
+		td.event = timer_event;
+		td.time_coming_100nano_seconds = win_high_time::current_as_100nano_second() + td.period_100nano_seconds;
+		if (td.time_coming_100nano_seconds<0) td.time_coming_100nano_seconds=0;
+
+		timer_position i = _m_timer_list.insert(ptd);
+		if (pos) *pos = i;
+		return __error_null;
+	}
+
 
 	//size_t add_timer(size_t timerid,LONGLONG period_micro_seconds,event_d const& timer_event,void const* binded,timer_position* pos=0)
 	//{
@@ -467,7 +488,6 @@ namespace timer
 	template <typename task_tn>
 	struct timer_resolution_task_system
 	{
-	
 		/// type def itself
 		typedef timer_resolution_task_system self;
 		typedef task_tn task_t;
@@ -479,11 +499,15 @@ namespace timer
 		typedef std::vector<task_t> task_list_t;
 		struct timerid_t
 		{
-			timerid_t() : _m_id(0),_m_max(-1) {}
+			timerid_t() : _m_id(0),_m_max_back(-1) {}
 			size_t _m_id;
 			size_t value() const {return _m_id;}
-			size_t next() {if(++_m_id>_m_max) _m_id=0;return _m_id;}
-			size_t _m_max;
+			size_t next() {if(++_m_id>_m_max_back) _m_id=0;return _m_id;}
+			size_t distance(size_t a,size_t b) const
+			{
+				return b>=a ? b-a : (_m_max_back-a)+1+b;
+			}
+			size_t _m_max_back;/// [0,_m_max_back]
 		};
 		struct timerid_item
 		{
@@ -522,7 +546,7 @@ namespace timer
 		bool is_any_task_to_send() const
 		{
 			if (_m_timerid_list.empty()) return false;
-			for (timerid_list_t::iterator i=_m_timerid_list.begin();i!=_m_timerid_list.end();++i)
+			for (timerid_list_t::const_iterator i=_m_timerid_list.begin();i!=_m_timerid_list.end();++i)
 			{
 				timerid_item* item = *i;
 				if (!item) continue;
@@ -628,6 +652,7 @@ namespace timer
 				task_ptr ptask = get_task(item,subindex);
 				if (ptask.is_empty()) break;
 				item->count_of_recved++;
+				count ++;
 				if (!on_task_tobe_destructed.is_empty())
 					on_task_tobe_destructed(ptask.value(),bind);
 				ptask.value().~task_t();
@@ -635,7 +660,46 @@ namespace timer
 			} while(0);
 			if (pcount) *pcount=count;
 		}
-		void foreach_task_tobe_sent(action_d action,void* bind)
+		struct find_first_action
+		{
+			bool operator()(task_t& task,task_position const& tp,void* bind)
+			{
+				_m_finded = true;
+				_m_tp = tp;
+				return false;
+			}
+			bool _m_finded;
+			task_position _m_tp;
+		};
+		task_position find_next_tobe_sent(bool* bfinded) const
+		{
+			find_first_action action;
+			action._m_finded = false;
+			action._m_tp.timerid = -1;
+			action._m_tp.taskindex = -1;
+			foreach_task_tobe_sent(action_d(&action),0);
+			if (bfinded) *bfinded = action._m_finded;
+			return action._m_tp;
+		}
+		bool clear_next_task_tobe_sent(
+			task_tobe_destructed_d const& on_task_tobe_destructed,void const* bind,size_t* pcount)
+		{
+			bool is_finded_tp = false;
+			task_position tp = find_next_tobe_sent(&is_finded_tp);
+			if (!is_finded_tp) return false;
+			timerid_item* item = get_timer_item(tp.timerid);
+			if (item==0 || item->index_tobe_send!=tp.taskindex)
+			{
+				assert (false && "not find timerid or the task index is not equal to the next index to be sent");
+				if (pcount) *pcount=0;
+				return false;
+			}
+			assert (item->index_tobe_send<item->tasklist.size());
+			item->index_tobe_send++; /// okay the index is right
+			clear_task(tp,on_task_tobe_destructed,bind,pcount);
+			return true;
+		}
+		void foreach_task_tobe_sent(action_d action,void* bind) const
 		{
 			for (int i=0;i<_m_timerid_list.size();++i)
 			{
@@ -647,22 +711,23 @@ namespace timer
 				{
 					task_t& task = item->tasklist[j];
 					pos.taskindex = j;
-					action(task,pos,bind);
+					if (!action(task,pos,bind)) break;
+					item->index_tobe_send++;
 				}
-				item->index_tobe_send = item->tasklist.size();
+				assert (item->index_tobe_send <= item->tasklist.size());
 			}
 		}
-		template <typename action_tn>
-		void move_to_done(action_tn& action,size_t timerid)
-		{
-			timerid_item* item = get_timer_item(timerid);
-			for (size_t i=item->index_tobe_send;i<item->tasklist.size();++i)
-			{
-				task_t& task = item->tasklist[i];
-				action(task);
-			}
-			item->index_tobe_send = item->tasklist.size();
-		}
+		//template <typename action_tn>
+		//void move_to_done(action_tn& action,size_t timerid)
+		//{
+		//	timerid_item* item = get_timer_item(timerid);
+		//	for (size_t i=item->index_tobe_send;i<item->tasklist.size();++i)
+		//	{
+		//		task_t& task = item->tasklist[i];
+		//		action(task);
+		//	}
+		//	item->index_tobe_send = item->tasklist.size();
+		//}
 		task_ptr get_task(task_position const& pos)
 		{
 			timerid_item* item = get_timer_item(pos.timerid);
@@ -682,14 +747,13 @@ namespace timer
 				return 0;
 			size_t timerid_begin = _m_timerid_list.front()->timerid;
 			size_t timerid_back = _m_timerid_list.back()->timerid;
-			bool is_valid_timerid = (timerid>=timerid_begin && timerid<=timerid_back);
-			if (!is_valid_timerid)
+			size_t timerid_distance = _m_timerid.distance(timerid_begin,timerid);
+			if (timerid_distance>_m_timerid_list.size())
 			{
 				/// all the task has been completed
 				return 0;
 			}
-			size_t timerid_index = timerid-timerid_begin;
-			timerid_item* item = _m_timerid_list[timerid_index];
+			timerid_item* item = _m_timerid_list[timerid_distance];
 			if (!item)
 			{
 				assert (false && "some error happens");
