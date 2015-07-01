@@ -64,7 +64,7 @@ struct mf_prop <r(c::*)()const>
 	template <bool> struct add_const {typedef r(c::*type)()const;};
 	template <bool> struct add_stdcall {typedef r(c::*type)()const;};
 	template <> struct add_const<true> {typedef r(c::*type)()const;};
-	template <> struct add_stdcall<true> {typedef r(__stdcall c::*type)();};
+	template <> struct add_stdcall<true> {typedef r(__stdcall c::*type)()const;};
 };
 template <typename c,typename r>
 struct mf_prop <r(__stdcall c::*)()>
@@ -106,7 +106,7 @@ struct mf_prop <r(c::*)(DEF_TYPES(n))const> \
 	template <bool> struct add_const {typedef r(c::*type)(DEF_TYPES(n))const;}; \
 	template <bool> struct add_stdcall {typedef r(c::*type)(DEF_TYPES(n))const;}; \
 	template <> struct add_const<true> {typedef r(c::*type)(DEF_TYPES(n))const;}; \
-	template <> struct add_stdcall<true> {typedef r(__stdcall c::*type)(DEF_TYPES(n)) const;}; \
+	template <> struct add_stdcall<true> {typedef r(__stdcall c::*type)(DEF_TYPES(n))const;}; \
 }; \
 template <typename c,typename r,DEF_TYPENAMES(n)> \
 struct mf_prop <r(__stdcall c::*)(DEF_TYPES(n))> \
@@ -126,7 +126,7 @@ struct mf_prop <r(__stdcall c::*)(DEF_TYPES(n))const> \
 	template <bool> struct add_const {typedef r(__stdcall c::*type)(DEF_TYPES(n))const;}; \
 	template <bool> struct add_stdcall {typedef r(__stdcall c::*type)(DEF_TYPES(n))const;}; \
 	template <> struct add_const<true> {typedef r(__stdcall c::*type)(DEF_TYPES(n))const;}; \
-	template <> struct add_stdcall<true> {typedef r(__stdcall c::*type)(DEF_TYPES(n)) const;}; \
+	template <> struct add_stdcall<true> {typedef r(__stdcall c::*type)(DEF_TYPES(n))const;}; \
 };
 
 MACRO_MF_PROP(1)
@@ -247,7 +247,7 @@ private:
 		typedef mfunction self;
 		typedef r (c::*function_nc)();
 		typedef typename mf_prop<function_nc>::add_const<bconstf>::type function1;
-		typedef typename mf_prop<function_nc>::add_stdcall<bstdcallf>::type function;
+		typedef typename mf_prop<function1>::add_stdcall<bstdcallf>::type function;
 		virtual r invoke() const
 		{
 			return (o->*f)();
@@ -424,7 +424,7 @@ private:
 		typedef mfunction self;
 		typedef r (c::*function_nc)(p1);
 		typedef typename mf_prop<function_nc>::add_const<bconstf>::type function1;
-		typedef typename mf_prop<function_nc>::add_stdcall<bstdcallf>::type function;
+		typedef typename mf_prop<function1>::add_stdcall<bstdcallf>::type function;
 		virtual r invoke(p1 _p1) const
 		{
 			return (o->*f)(_p1);
@@ -603,7 +603,7 @@ private:public:
 		typedef mfunction self;
 		typedef r (c::*function_nc)(DEF_TYPES(2));
 		typedef typename mf_prop<function_nc>::add_const<bconstf>::type function1;
-		typedef typename mf_prop<function_nc>::add_stdcall<bstdcallf>::type function;
+		typedef typename mf_prop<function1>::add_stdcall<bstdcallf>::type function;
 		virtual r invoke(DEF_ARGS(2)) const
 		{
 			return (o->*f)(DEF_OBJS(2));
@@ -784,7 +784,7 @@ private: \
 		typedef mfunction self; \
 		typedef r (c::*function_nc)(DEF_TYPES(n)); \
 		typedef typename mf_prop<function_nc>::add_const<bconstf>::type function1; \
-		typedef typename mf_prop<function_nc>::add_stdcall<bstdcallf>::type function; \
+		typedef typename mf_prop<function1>::add_stdcall<bstdcallf>::type function; \
 		virtual r invoke(DEF_ARGS(n)) const \
 		{ \
 			return (o->*f)(DEF_OBJS(n)); \
