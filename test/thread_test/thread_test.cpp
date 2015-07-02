@@ -37,6 +37,14 @@ namespace event
 		sprintf (buf,"[%u,%d] tttttttttt\n",GetCurrentThreadId(),++i);
 		OutputDebugStringA(buf);
 	}
+	void fwait(size_t mills=0)
+	{
+		if (mills!=0) Sleep(mills);
+		static int i = 0;
+		char buf[64];
+		sprintf (buf,"[%u,%d] tttttttttt\n",GetCurrentThreadId(),++i);
+		printf("%s",buf);
+	}
 	void on_idle(thread_t* t)
 	{
 		printf ("%d is idle\n",t->threadid());
@@ -114,6 +122,22 @@ namespace win_queue_thread_test
 		thread.start();
 		Sleep(10);
 		thread.stop();
+	}
+}
+
+namespace win_queue_thread_stop_till_test
+{
+	ox::mos::win_queue_thread thread;
+	void test()
+	{
+		thread.add(ox::mos::thread_task_helper::make(&event::fwait,500));
+		thread.add(ox::mos::thread_task_helper::make(&event::fwait,500));
+		thread.add(ox::mos::thread_task_helper::make(&event::fwait,500));
+		thread.add(ox::mos::thread_task_helper::make(&event::fwait,500));
+		thread.start();
+		Sleep(10);
+		thread.stop_till();
+		thread.join();
 	}
 }
 
@@ -266,6 +290,7 @@ namespace thread_pool_test
 int _tmain(int argc, _TCHAR* argv[])
 {
 	do {
+		win_queue_thread_stop_till_test::test();break;
 		thread_pool_test::test();break;
 		thread_performace_test::test();break;
 		uithread_test::test(); break;
