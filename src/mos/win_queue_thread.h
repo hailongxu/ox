@@ -77,6 +77,17 @@ private:
 		HANDLE handle;
 		event_arrived_d event;
 	};
+	struct stop_till_task: thread_task_t
+	{
+		stop_till_task(win_queue_thread* th): _m_thread(th) {}
+		typedef void r;
+		virtual r run() {assert (_m_thread);_m_thread->stop_next();}
+		virtual void destroy() {destroy_task(this);}
+		virtual ~stop_till_task() {}
+		win_queue_thread* _m_thread;
+		static stop_till_task* make(win_queue_thread* th) {return new (std::nothrow) stop_till_task(th);}
+		static void destroy_task(stop_till_task* p) {delete p;}
+	};
 
 public:
 	~win_queue_thread()
@@ -201,6 +212,13 @@ public:
 		//	DWORD err = GetLastError();
 		//	assert(false && "SetEvent Error");
 		//}
+	}
+	bool stop_till()
+	{
+		stop_till_task* till_task = stop_till_task::make(this);
+		assert (till_task);
+		if (!till_task) return false;
+		if (0!=add(till_task)) stop_till_task::destroy_task(till_task);
 	}
 
 	wait_enum stop()
@@ -433,6 +451,10 @@ private:
 		_m_service_array[_m_service_size].event = event_arrived;
 		_m_htaskadded[4+_m_service_size] = hevent;
 		_m_service_size++;
+	}
+	void do_stop_util()
+	{
+		stop_next();
 	}
 	void init(char const* your_name,size_t your_id)
 	{
