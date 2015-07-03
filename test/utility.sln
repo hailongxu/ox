@@ -35,6 +35,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "math_test", "math_test\math
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vector_test", "vector_test\vector_test.vcproj", "{7BAF0D10-D5CB-49C1-A02E-0F59DF1207CA}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "list_test", "list_test\list_test.vcproj", "{99B417A7-45ED-4122-9CAE-F043BDCF278C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -109,6 +111,10 @@ Global
 		{7BAF0D10-D5CB-49C1-A02E-0F59DF1207CA}.Debug|Win32.Build.0 = Debug|Win32
 		{7BAF0D10-D5CB-49C1-A02E-0F59DF1207CA}.Release|Win32.ActiveCfg = Release|Win32
 		{7BAF0D10-D5CB-49C1-A02E-0F59DF1207CA}.Release|Win32.Build.0 = Release|Win32
+		{99B417A7-45ED-4122-9CAE-F043BDCF278C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{99B417A7-45ED-4122-9CAE-F043BDCF278C}.Debug|Win32.Build.0 = Debug|Win32
+		{99B417A7-45ED-4122-9CAE-F043BDCF278C}.Release|Win32.ActiveCfg = Release|Win32
+		{99B417A7-45ED-4122-9CAE-F043BDCF278C}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

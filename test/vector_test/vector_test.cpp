@@ -49,16 +49,29 @@ namespace vector_test
 		IV iv;
 		iv.resize(1);
 		iv.push_back(2);
-		//iv.erase(1);
+		iv.erase(1);
 		
 		iv.foreach(act());
 
 		typedef ox::fit::static_indirect_vector<int,int*[3]> SIV;
 		SIV siv;
 		siv.push_back(1);
+
+
+		typedef ox::fit::mono_indirect_vector_rooter<ox::fit::value_trait<int>> MIVR;
+		MIVR mivr;
+		mivr.allocate(2);
 	}
 }
 
+namespace variable_vector_test
+{
+	void test()
+	{
+		ox::fit::variable_indirect_vector<char> ddd;
+		ddd.push_back(ox::utl::data_t(0,10));
+	}
+}
 
 int _tmain(int argc, _TCHAR* argv[])
 {

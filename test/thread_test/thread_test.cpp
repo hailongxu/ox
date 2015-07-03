@@ -37,7 +37,7 @@ namespace event
 		sprintf (buf,"[%u,%d] tttttttttt\n",GetCurrentThreadId(),++i);
 		OutputDebugStringA(buf);
 	}
-	void fwait(size_t mills=0)
+	void fwait(unsigned int mills=0)
 	{
 		if (mills!=0) Sleep(mills);
 		static int i = 0;
@@ -112,7 +112,7 @@ namespace thread_test
 		printf ("join finished\n");
 	}
 }
-
+//
 namespace win_queue_thread_test
 {
 	ox::mos::win_queue_thread thread;
@@ -137,6 +137,7 @@ namespace win_queue_thread_stop_till_test
 		thread.start();
 		Sleep(10);
 		thread.stop_till();
+		thread.add(ox::mos::thread_task_helper::make(&event::fwait,500));
 		thread.join();
 	}
 }
@@ -295,7 +296,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		thread_performace_test::test();break;
 		uithread_test::test(); break;
 		thread_timer_test::test(); break;
-        multi_thread_test::test();break;
+		multi_thread_test::test();break;
 		thread_test::test();break;
 		win_queue_thread_test::test();break;
 		multi_queue_thread_test::test();break;
