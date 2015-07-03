@@ -2,6 +2,7 @@
 #include <assert.h>
 #include "../ox/nsab.h"
 #include "allocator_default.h"
+#include "../utl/data_t.h"
 
 
 
@@ -322,7 +323,7 @@ public:
 	}
 };
 
-template<typename value_tn,typename head_tn,typename string_events_tn=string_event,typename allocator_tn=cppmalloc>
+template<typename value_tn,typename head_tn,typename string_events_tn/*=string_event*/,typename allocator_tn>
 struct string_rooter : vector_rooter<value_tn,head_tn,string_events_tn,allocator_tn>
 {
 	friend vector_tt<string_rooter>;
@@ -577,19 +578,91 @@ struct indirect_vector_inserted_event
 	}
 };
 
+struct get_value_size
+{
+	template <typename rooter_tn,typename value_tn>
+	size_t get(rooter_tn const& root,value_tn const& value)
+	{
+		return sizeof(value);
+	}
+};
+struct get_cdata_value_size
+{
+	template <typename rooter_tn>
+	size_t get(rooter_tn const& root,ox::utl::cdata_t const& value)
+	{
+		return value.size;
+	}
+	template <typename rooter_tn>
+	size_t get(rooter_tn const& root,ox::utl::data_t const& value)
+	{
+		return value.size;
+	}
+};
 
-template <typename value_tn,typename node_tn=value_tn*,typename allocator_tn=cppmalloc>
+template <typename type_tn>
+struct value_trait
+{
+	typedef type_tn value_type;
+	typedef value_type* value_pointer;
+	typedef value_pointer node_type;
+};
+template <typename type_tn>
+struct space_value_trait
+{
+	typedef ox::utl::data_tt<type_tn> value_type;
+	typedef value_type value_pointer;
+	typedef value_pointer node_type;
+};
+
+template <typename value_tn>
+struct space_indirect_allocator
+{
+	typedef ox::utl::data_tt<value_tn> value_type;
+	typedef value_type value_pointer;
+	template <typename rooter_tn>
+	static value_pointer allocate(rooter_tn& rooter,value_type const& value)
+	{
+		value_type v = value;
+		v.begin = new char[value.size];
+		return v;
+	}
+	template <typename rooter_tn>
+	static void deallcoate(rooter_tn& rooter,value_pointer const& vp)
+	{
+		delete vp.begin;
+	}
+};
+
+template <typename value_tn>
+struct allocator_trait
+{
+	typedef cppmalloc index_allocator;
+	typedef value_allocator<value_tn> value_allocator;
+};
+template <typename value_tn>
+struct space_allocator_trait
+{
+	typedef cppmalloc index_allocator;
+	typedef space_indirect_allocator<value_tn> value_allocator;
+};
+
+
+template <typename value_trait,typename allocator_trait>
 struct indirect_vector_rooter
 {
-	typedef value_tn value_type;
-	typedef allocator_tn allocator_type;
-	typedef node_tn node_type;
-	typedef vector_tt<vector_rooter<node_type,vector_head_mono_tt<node_tn>,vector_event,allocator_tn>> vector_type;
+	typedef typename value_trait::value_type value_type;
+	typedef typename value_trait::value_pointer value_pointer;
+	typedef typename value_trait::node_type node_type;
+	typedef typename allocator_trait::index_allocator index_allocator_type;
+	typedef typename allocator_trait::value_allocator value_allocator_type;
+
+	typedef vector_tt<vector_rooter<node_type,vector_head_mono_tt<node_type>,vector_event,index_allocator_type>> vector_type;
 	vector_type _m_index;
 	vector_type& index() {return _m_index;}
-	char* allocate(size_t size)
+	value_pointer allocate(value_type const& value)
 	{
-		return index().allocate(size);
+		return value_allocator_type::allocate(*this,value);
 	}
 	void resize(size_t size)
 	{
@@ -611,17 +684,18 @@ struct indirect_vector_rooter
 	}
 };
 template <typename value_tn,typename node_array,typename allocator_tn>
-struct static_indirect_vector_rooter : allocator_tn
+struct static_indirect_vector_rooter
 {
 	typedef value_tn value_type;
+	typedef value_type* value_pointer;
 	typedef static_vector<node_array> vector_type;
 	typedef typename vector_type::value_type node_type;
 	typedef allocator_tn allocate_type;
 	vector_type _m_index;
 	vector_type& index() {return _m_index;}
-	char* allocate(size_t size)
+	value_pointer allocate(value_type const& value)
 	{
-		return allocate_type::allocate(size);
+		return allocate_type().allocate(*this,value);
 	}
 };
 
@@ -631,16 +705,15 @@ struct indirect_vector_tt: indirect_vector_rooter
 	typedef indirect_vector_rooter rooter_type;
 	typedef typename rooter_type::node_type node_type;
 	typedef typename rooter_type::value_type value_type;
-	value_type** insert(size_t off,value_type const& value)
+	typedef typename rooter_type::value_pointer value_pointer;
+	node_type* insert(size_t off,value_type const& value)
 	{
-		value_type* pv = allocate(sizeof(value_type));
-		new (pv) value_type(value);
+		value_pointer pv = allocate(value);
 		return index().insert(off,pv);
 	}
-	value_type** push_back(value_type const& value)
+	node_type* push_back(value_type const& value)
 	{
-		char* p = allocate(sizeof(value_type));
-		value_type* pv = new (p) value_type(value);
+		value_pointer pv = allocate(value);
 		return index().push_back(pv);
 	}
 	void erase(size_t off,size_t size=1)
@@ -665,23 +738,27 @@ struct indirect_vector_tt: indirect_vector_rooter
 	}
 };
 
-template <typename value_tn,typename allocator_tn=cppmalloc>
-struct indirect_vector: indirect_vector_tt<indirect_vector_rooter<value_tn,value_tn*,allocator_tn>>
+template <typename value_tn>
+struct indirect_vector: indirect_vector_tt<indirect_vector_rooter<value_trait<value_tn>,allocator_trait<value_tn>>>
 {};
-template <typename value_tn,typename node_array,typename allocator_tn=cppmalloc>
+template <typename value_tn>
+struct variable_indirect_vector: indirect_vector_tt<indirect_vector_rooter<space_value_trait<value_tn>,space_allocator_trait<value_tn>>>
+{};
+template <typename value_tn,typename node_array,typename allocator_tn=value_allocator<value_tn>>
 struct static_indirect_vector: indirect_vector_tt<static_indirect_vector_rooter<value_tn,node_array,allocator_tn>>
 {};
 
 
-template <typename value_tn,typename node_tn=value_tn*,typename allocator_tn=cppmalloc>
+template <typename value_trait,typename allocator_tn=cppmalloc>
 struct mono_indirect_vector_rooter
 {
-	typedef value_tn value_type;
-	typedef allocator_tn allocator_type;
-	typedef node_tn node_type;
+	typedef typename value_trait::value_type value_type;
+	typedef typename value_trait::value_pointer value_pointer;
+	typedef typename value_trait::node_type node_type;
+	typedef allocator_tn allcator_type;
 	struct index_allocator_more
 	{
-		allocator_type& allocator;
+		allcator_type& allocator;
 		size_t _m_bytes_more;
 		char* allocate(size_t size)
 		{
@@ -710,7 +787,7 @@ struct mono_indirect_vector_rooter
 			_m_vector_begin = vector_begin;
 		}
 	};
-	typedef vector_tt<vector_rooter<node_type,vector_head_mono_tt<node_type>,vector_event,allocator_tn>> index_vector_type;
+	typedef vector_tt<vector_rooter<node_type,vector_head_mono_tt<node_type>,vector_event,allcator_type>> index_vector_type;
 	typedef vector_rooter<char,head_allocator,vector_event,nullmalloc> data_vector_type;
 
 	struct data_vector_wrapper : data_vector_type

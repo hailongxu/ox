@@ -243,7 +243,7 @@ public:
 
 	size_t wait_added_event() const
 	{
-		DWORD id = WaitForMultipleObjects(4+_m_service_size,_m_htaskadded,FALSE,INFINITE);
+		DWORD id = WaitForMultipleObjects(DWORD(4+_m_service_size),_m_htaskadded,FALSE,INFINITE);
 		if (id!=WAIT_FAILED)
 			return id-WAIT_OBJECT_0;
 		return WAIT_FAILED;
@@ -476,7 +476,7 @@ protected:
 	}
 	bool get_is_exiting_or_set()
 	{
-		return _m_exit_enabled.assign_and_return_old(1);
+		return 0!=_m_exit_enabled.assign_and_return_old(1);
 	}
 
 private:

@@ -30,6 +30,7 @@ template <typename value_tn>
 struct slist_node_tt
 {
 	slist_node_tt() : _m_next(0) {}
+	slist_node_tt(value_tn const& value): _m_value(value) {}
 	slist_node_tt* _m_next;
 	value_tn _m_value;
 	/// necessary
@@ -43,6 +44,7 @@ template <typename value_tn>
 struct list_node_tt
 {
 	list_node_tt() : _m_next(0) {}
+	list_node_tt(value_tn const& value): _m_value(value) {}
 	list_node_tt* _m_next;
 	list_node_tt* _m_prev;
 	value_tn _m_value;
@@ -67,10 +69,10 @@ struct xlist_rooter : head_tn
 
 	typedef value_tn value_type;
 	typedef node_tn node_type;
-	node_type* allocate_node(size_t data_bytes)
+	node_type* allocate_node(value_type const& value)
 	{
 		node_type* pnode = (node_type*)allocator_type::allocate(sizeof(node_type));
-		return new (pnode) node_type ();
+		return new (pnode) node_type (value);
 	}
 	node_type* deallocate_node(node_type* pnode)
 	{
@@ -78,7 +80,6 @@ struct xlist_rooter : head_tn
 		allocator_type::deallocate(pnode);
 	}
 };
-
 
 template <typename rooter_tn>
 struct slist_tt : rooter_tn
@@ -105,8 +106,7 @@ struct slist_tt : rooter_tn
 	}
 	node_type* add_after(value_type const& value,node_type* node)
 	{
-		node_type* node_new = rooter().allocate_node(sizeof(node_type));
-		**node_new = value;
+		node_type* node_new = rooter().allocate_node(value);
 		node_type* next = node?node->get_next():0;
 		node_new->set_next(node->get_next());
 		node->set_next(node_new);
@@ -157,8 +157,7 @@ struct list_tt : rooter_tn
 	typedef typename rooter_type::node_type node_type;
 	node_type* add_front(value_type const& value)
 	{
-		node_type* node_new = rooter().allocate_node();
-		*node_new = value;
+		node_type* node_new = rooter().allocate_node(value);
 		return add_front(node_new);
 	}
 	node_type* add_front(node_type* node_new)
@@ -183,8 +182,7 @@ struct list_tt : rooter_tn
 	node_type* insert(value_type const& value,node_type* node)
 	{
 		/// make a new node
-		node_type* node_new = rooter().allocate_node();
-		*node_new = value;
+		node_type* node_new = rooter().allocate_node(value);
 		/// if append to end
 		if (!node) return add_back(node_new);
 		/// 

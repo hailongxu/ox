@@ -31,9 +31,9 @@ template <typename character>
 static void get_str_value(json_object<character> jsobj, character const* key,std::basic_string<character>& str_value)
 {
 	json::json_object<character>::const_iterator i = jsobj.find(key);
+	str_value.clear();
 	if (i != jsobj.end())
 		str_value = i->second->as_string().c_str();
-	str_value.clear();
 }
 
 template <typename character,typename integer_tn>

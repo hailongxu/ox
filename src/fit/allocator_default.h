@@ -34,6 +34,27 @@ struct cppmalloc_tt<void>
 };
 typedef cppmalloc_tt<void> cppmalloc;
 
+template <typename value_tn>
+struct value_allocator
+{
+	typedef value_tn value_type;
+	typedef value_tn* value_pointer;
+	template <typename rooter_tn>
+	static value_pointer allocate(rooter_tn& rooter,value_tn const& value)
+	{
+		return new value_tn(value);
+	}
+	template <typename rooter_tn>
+	static void deallocate(rooter_tn& rooter,value_pointer vp)
+	{
+		delete vp;
+	}
+	template <typename rooter_tn>
+	static value_pointer allocate_success(rooter_tn& rooter,size_t size)
+	{
+		return new value_type[size]
+	}
+};
 
 struct nullmalloc
 {
