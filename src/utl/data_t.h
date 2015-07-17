@@ -22,6 +22,12 @@ namespace ox
 			data_tt(data_tt const& data)
 				: begin(data.begin), size(data.size)
 			{}
+			template <size_t n>
+			explicit data_tt(character(&array)[n])
+			{
+				begin = array;
+				size = n;
+			}
 			void assign(data_tt const& data)
 			{
 				begin = data.begin;
@@ -32,6 +38,11 @@ namespace ox
 				this->begin = data;
 				this->size = size;
 			}
+			void set_intv(character* begin, character* end)
+			{
+				this->begin = begin;
+				this->size = end-begin;
+			}
 			bool is_empty() const
 			{
 				return begin==0 || size==0;
@@ -39,6 +50,14 @@ namespace ox
 			void clear()
 			{
 				begin=0,size=0;
+			}
+			void set_end(character const& c=0)
+			{
+				*end() = c;
+			}
+			bool is_end_eq(character const& c=0)
+			{
+				return *end() == c;
 			}
 			character* end() const
 			{
@@ -76,6 +95,18 @@ namespace ox
 			cdata_tt(data_tt<character> const& data)
 				: begin(data.begin), size(data.size)
 			{}
+			template <size_t n>
+			explicit cdata_tt(character const(&array)[n])
+			{
+				begin = array;
+				size = n;
+			}
+			template <size_t n>
+			explicit cdata_tt(character(&array)[n])
+			{
+				begin = array;
+				size = n;
+			}
 			void assign(cdata_tt<character> const& data)
 			{
 				begin = data.begin;
@@ -90,6 +121,11 @@ namespace ox
 			{
 				this->begin = data;
 				this->size = size;
+			}
+			void set_intv(character const* begin, character const* end)
+			{
+				this->begin = begin;
+				this->size = end-begin;
 			}
 			bool is_empty() const
 			{
