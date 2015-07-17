@@ -35,45 +35,54 @@ struct cppmalloc_tt<void>
 typedef cppmalloc_tt<void> cppmalloc;
 
 template <typename value_tn>
-struct value_allocator
+struct object_allocator
 {
 	typedef value_tn value_type;
 	typedef value_tn* value_pointer;
-	template <typename rooter_tn>
-	static value_pointer allocate(rooter_tn& rooter,value_tn const& value)
+	static value_pointer allocate(value_tn const& value)
 	{
 		return new value_tn(value);
 	}
-	template <typename rooter_tn>
-	static void deallocate(rooter_tn& rooter,value_pointer vp)
+	static value_pointer allocate()
+	{
+		return new value_tn();
+	}
+	static void deallocate(value_pointer vp)
 	{
 		delete vp;
-	}
-	template <typename rooter_tn>
-	static value_pointer allocate_success(rooter_tn& rooter,size_t size)
-	{
-		return new value_type[size]
 	}
 };
 
 struct nullmalloc
 {
-	char* allocate(size_t size)
+	//char* allocate(size_t size)
+	//{
+	//	return 0;
+	//}
+	//void deallocate(void* p)
+	//{
+	//}
+};
+template <typename mallocator,size_t size_added_tc>
+struct cppmalloc_before_more : mallocator
+{
+	static char* allocate(size_t size)
 	{
-		return 0;
+		return mallocator::allocate(size+size_added_tc)+size_added_tc;
 	}
-	void deallocate(void* p)
+	static void deallocate(void* p)
 	{
+		mallocator::deallocate((char*)p-size_added_tc);
 	}
 };
 template <typename mallocator,size_t size_added_tc>
-struct cppmalloc_more : mallocator
+struct cppmalloc_after_more : mallocator
 {
-	char* allocate(size_t size)
+	static char* allocate(size_t size)
 	{
 		return mallocator::allocate(size+size_added_tc);
 	}
-	void deallocate(void* p)
+	static void deallocate(void* p)
 	{
 		mallocator::deallocate(p);
 	}
@@ -149,6 +158,104 @@ struct malloc_pointer_default
 
 	allocator_type* _m_allocator;
 };
+
+
+
+template<class ty>
+class stl_allocator
+{
+	template<class t>
+	struct remove_const
+	{
+		typedef t type;
+	};
+
+	template<class t>
+	struct remove_const<const t>
+	{
+		typedef t type;
+	};
+
+public:
+	typedef typename remove_const<ty>::type value_type;
+	typedef value_type* pointer;
+	typedef value_type& reference;
+	typedef const value_type* const_pointer;
+	typedef const value_type& const_reference;
+
+	typedef size_t size_type;
+	typedef int difference_type;
+
+	template<class other_tn>
+	struct rebind
+	{
+		typedef stl_allocator<other_tn> other;
+	};
+
+	pointer address(reference val) const
+	{
+		return (&val);
+	}
+
+	const_pointer address(const_reference val) const
+	{
+		return (&val);
+	}
+
+	stl_allocator() throw()
+	{
+	}
+
+	stl_allocator(const stl_allocator<ty>&) throw()
+	{
+	}
+
+	template<class other>
+	stl_allocator(const stl_allocator<other>&) throw()
+	{
+	}
+
+	template<class other>
+	stl_allocator<ty>& operator=(const stl_allocator<other>&)
+	{
+		return (*this);
+	}
+
+	void deallocate(pointer ptr, size_type)
+	{
+		::operator delete(ptr);
+	}
+
+	pointer allocate(size_type count)
+	{
+		if (count <= 0) count = 0;
+		else if (((size_type)(-1) / count) < sizeof (value_type))
+			throw std::bad_alloc(0);
+		return (pointer)(::operator new(count * sizeof (ty)));
+	}
+
+	pointer allocate(size_type count, const void*)
+	{
+		return (allocate(count));
+	}
+
+	void construct(pointer ptr, const ty& val)
+	{
+		::new ((void*)ptr) ty(val);
+	}
+
+	void destroy(pointer ptr)
+	{
+		ptr->~ty();
+	}
+
+	size_type max_size() const throw()
+	{
+		size_type count = (size_type)(-1) / sizeof (ty);
+		return (0 < count ? count : 1);
+	}
+};
+
 
 
 ___namespace2_end()
