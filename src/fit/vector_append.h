@@ -11,7 +11,7 @@
 ___namespace2_begin(ox,fit)
 
 
-template <typename head_tn,typename value_trait,typename vector_trait>
+template <typename head_tn,typename value_trait>
 struct vector_append : head_tn
 {
 	typedef head_tn head_t;
@@ -20,7 +20,6 @@ struct vector_append : head_tn
 	typedef typename value_trait::value_size value_size;
 	typedef typename value_trait::value_construct value_construct;
 	typedef typename value_trait::pointer_is_null pointer_is_null;
-	typedef typename vector_trait::on_size_changed on_size_changed;
 
 	head_t& head() {return *this;}
 	head_t const& head() const {return *this;}
@@ -60,13 +59,42 @@ struct vector_append : head_tn
 			head().set_size(used+vsize);
 			break;
 		}
-		if (!pointer_is_null()(vp)) on_size_changed()(*this,vsize);
+		//if (!pointer_is_null()(vp)) on_size_changed()(*this,vsize);
 		return vp;
 	}
 };
 
 struct buffer_append_head_mono_tt : protected vector_head_mono_tt<char>
 {
+	typedef vector_head_mono_tt<char> base;
+	void attach(ox::utl::data_t const& buff)
+	{
+		set_data_begin(buff.begin+__head_size);
+		set_capacity(buff.size-__head_size);
+	}
+	void detach()
+	{
+		set_data_begin((char*)(0)+__head_size);
+		set_capacity(0);
+		set_size(0);
+	}
+};
+struct string_append_head_mono_tt : protected vector_head_mono_tt<char>
+{
+	typedef vector_head_mono_tt<char> base;
+	bool attach(ox::utl::data_t const& buff)
+	{
+		if (buff.size<__head_size+1) return false;
+		set_data_begin(buff.begin+__head_size);
+		set_capacity(buff.size-__head_size-1);
+		return true;
+	}
+	void detach()
+	{
+		set_data_begin((char*)(0)+__head_size);
+		set_capacity(0);
+		set_size(0);
+	}
 };
 
 template <typename type_tn>
@@ -80,9 +108,9 @@ struct space_trait_tt
 	{
 		value_pointer operator()(char* buff,value_const const& value)
 		{
-			//if (value.is_empty())
-				return value_pointer((type_tn*)buff,value.size);
-			//memmove()
+			if (value.begin)
+				memmove(buff,value.begin,value.size);
+			return value_pointer((type_tn*)buff,value.size);
 		}
 	};
 	struct pointer_is_null
@@ -94,33 +122,13 @@ struct space_trait_tt
 	};
 };
 
-struct vector_append_trait
-{
-	struct on_size_changed
-	{
-		template <typename vector_tn>
-		void operator()(vector_tn& vec,size_t size_appended)
-		{
-		}
-	};
-};
+
 template <typename type_tn,typename space_trait=space_trait_tt<type_tn>>
 struct buffer_append
-	: vector_append<buffer_append_head_mono_tt,space_trait,vector_append_trait>
+	: vector_append<buffer_append_head_mono_tt,space_trait>
 {
-	typedef vector_append<buffer_append_head_mono_tt,space_trait,vector_append_trait> base;
+	typedef vector_append<buffer_append_head_mono_tt,space_trait> base;
 	typedef ox::utl::data_tt<type_tn> data_t;
-	void attach(ox::utl::data_t const& buff)
-	{
-		base::head().set_data_begin(buff.begin+head_t::__head_size);
-		base::head().set_capacity(buff.size-head_t::__head_size);
-	}
-	void detach()
-	{
-		base::head().set_data_begin(0);
-		base::head().set_capacity(0);
-		base::head().set_size(0);
-	}
 	void clear()
 	{
 		base::head().set_size(0);
@@ -130,18 +138,6 @@ struct buffer_append
 		return base::append(data_t((type_tn*)data,size));
 	}
 };
-
-//struct string_append_trait
-//{
-//	struct on_size_changed
-//	{
-//		template <typename vector_tn>
-//		void operator()(vector_tn& vec,size_t size_appended)
-//		{
-//			vec.head().data_begin()+
-//		}
-//	};
-//};
 
 template <typename type_tn>
 struct string_space_trait_tt
@@ -153,8 +149,10 @@ struct string_space_trait_tt
 	{
 		value_pointer operator()(char* buff,value_type const& value)
 		{
+			if (value.begin)
+				memmove(buff,value.begin,value.size);
 			*((type_tn*)buff+value) = 0;
-			return value_pointer((type_tn*)buff,value);
+			return value_pointer((type_tn*)buff,value.size);
 		}
 	};
 	struct pointer_is_null
