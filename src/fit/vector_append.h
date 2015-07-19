@@ -229,6 +229,10 @@ struct loop_string_append_head_mono_tt : protected vector_head_mono_tt<char>
 			size = size%base::capacity()+base::capacity();
 		base::set_size(size);
 	}
+	char_type const* data() const
+	{
+		return base::data_begin();
+	}
 };
 template <typename type_tn,typename space_trait=string_space_trait_tt<type_tn>>
 struct loop_string_append

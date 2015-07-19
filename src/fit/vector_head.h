@@ -58,6 +58,10 @@ struct vector_head_mono_tt
 	{
 		return (value_tn*)((char*)(_m_vector_begin)+sizeof(vector_sizes));
 	};
+	value_tn const* data_begin() const
+	{
+		return (value_tn*)((char*)(_m_vector_begin)+sizeof(vector_sizes));
+	};
 	vector_sizes* sizes() const
 	{
 		return (vector_sizes*)_m_vector_begin;
