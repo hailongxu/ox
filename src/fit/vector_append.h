@@ -43,18 +43,19 @@ struct vector_append : head_tn
 	template <typename on_fail_tn>
 	value_pointer append(value_type const& value,on_fail_tn& on_fail)
 	{
-		size_t total = head().capacity();
-		size_t used = head().offset();
-		char* next = head().next();
+		size_t capacity = head().capacity();
+		size_t used = head().size();
+		void* next = (void*)head().next();
 		size_t vsize = value_size()(value);
 		value_pointer vp;
-		switch (used+vsize>total?true:false)
+		switch (used+vsize>capacity?true:false)
 		{
 		case true:
 			vp = on_fail(*this,value);
 			break;
 		case false:
-			vp = value_construct()(next,value);
+			value_construct ss;
+			//vp = value_construct()(next,value);
 			head().add_size(vsize);
 			break;
 		}
@@ -62,85 +63,103 @@ struct vector_append : head_tn
 	}
 };
 
-struct buffer_append_head_mono_tt : protected vector_head_mono_tt<char>
+/// construct(ptr,value,off,size)
+template <typename head_tn,typename space_trait=space_trait_tt<type_tn>>
+struct loop_vector_append : head_tn
 {
-	typedef vector_head_mono_tt<char> base;
+	typedef typename space_trait::value_pointer value_pointer;
+	typedef typename space_trait::value_type value_type;
+	typedef typename space_trait::value_size value_size;
+	typedef typename space_trait::value_construct value_construct;
+
+	head_tn& head() {return *this;}
+	void clear()
+	{
+		head().clear();
+	}
+	/// the value supports partly construct
+	value_pointer append(value_type const& value)
+	{
+		size_t capacity = head().capacity();
+		size_t used = head().offset();
+		void* next = head().next();
+		size_t vsize = value_size()(value);
+		value_pointer vp;
+		if (used+vsize<=capacity)
+		{
+			vp = value_construct()(next,value,0,vsize);
+			head().add_size(vsize);
+		}
+		else if (vsize<=capacity)
+		{
+			size_t former_size = capacity-used;
+			vp = value_construct()(next,value,0,former_size);
+			value_construct()(head().data_begin(),value,former_size,vsize-former_size);
+			head().add_size(vsize);
+		}
+		else /// vsize is longer than the capacity
+		{
+			vp = value_construct()(next,value,vsize-capacity,capacity);
+			head().clear();
+			head().add_size(capacity);
+		}
+		return vp;
+	}
+};
+
+/// head
+template <typename atom_tn,size_t tail_size_reserved>
+struct space_append_head_mono_tt : protected vector_head_mono_tt<atom_tn>
+{
+	typedef atom_tn atom_type;
+	typedef vector_head_mono_tt<atom_type> base;
 	void attach(ox::utl::data_t const& buff)
 	{
-		set_data_begin(buff.begin+__head_size);
-		set_capacity(buff.size-__head_size);
+		static size_t const __byte_size_meta = __head_size+tail_size_reserved*sizeof(atom_type);
+		set_data_begin((atom_type*)(buff.begin+__byte_size_meta));
+		set_capacity((buff.size-__byte_size_meta)/sizeof(atom_type));
 	}
 	void detach()
 	{
 		set_data_begin((char*)(0)+__head_size);
 		set_capacity(0);
 		set_size(0);
-	}
-	char* next()
-	{
-		return data_begin()+base::size();
-	}
-	size_t offset() const
-	{
-		return base::size();
 	}
 	void add_size(size_t delta)
 	{
-		assert(delta+offset()<=capacity());
-		set_size(offset()+delta);
-	}
-};
-template <typename char_tn>
-struct string_append_head_mono_tt : protected vector_head_mono_tt<char>
-{
-	typedef vector_head_mono_tt<char> base;
-	typedef char_tn char_type;
-	bool attach(ox::utl::data_t const& buff)
-	{
-		assert(buff.size>=__head_size+1);
-		if (buff.size<__head_size+1) return false;
-		set_data_begin(buff.begin+__head_size);
-		set_capacity(buff.size-__head_size-1);
-		return true;
-	}
-	void detach()
-	{
-		set_data_begin((char*)(0)+__head_size);
-		set_capacity(0);
-		set_size(0);
-	}
-	char* next()
-	{
-		return data_begin()+base::size();
+		assert(delta+base::size()<=capacity());
+		set_size(base::size()+delta);
 	}
 	void clear()
 	{
-		base::set_size(0);
+		set_size(0);
 	}
-	size_t offset() const
+	atom_type const* next() const
 	{
-		return base::size();
-	}
-	void add_size(size_t delta)
-	{
-		assert(delta+offset()<=capacity());
-		set_size(offset()+delta);
+		return data_begin()+base::size();
 	}
 };
 
 template <typename type_tn>
 struct space_trait_tt
 {
+	typedef type_tn char_type;
 	typedef ox::utl::data_tt<type_tn> value_type;
 	typedef value_type value_pointer;
 	typedef ox::utl::cdata_tt<type_tn> value_const;
-	struct value_size {size_t operator()(value_type const& value) {return value.size;}};
+	struct value_size
+	{
+		size_t operator()(value_type const& value)
+		{
+			return value.size;
+		}
+	};
 	struct value_construct
 	{
-		value_pointer operator()(char* buff,value_const const& value)
+		value_pointer operator()(void* buff,value_const const& value)
 		{
 			if (value.begin)
-				memmove(buff,value.begin,value.size);
+				memmove(buff,value.begin,value.size*sizeof(type_tn));
 			return value_pointer((type_tn*)buff,value.size);
 		}
 	};
@@ -154,19 +173,19 @@ struct space_trait_tt
 };
 
 
-template <typename type_tn,typename space_trait=space_trait_tt<type_tn>>
+template <typename type_tn,size_t tail_size_reserved=0,typename space_trait=space_trait_tt<type_tn>>
 struct buffer_append
-	: vector_append<buffer_append_head_mono_tt,space_trait>
+	: vector_append<space_append_head_mono_tt<type_tn,tail_size_reserved>,space_trait>
 {
-	typedef vector_append<buffer_append_head_mono_tt,space_trait> base;
+	typedef vector_append<space_append_head_mono_tt<type_tn,tail_size_reserved>,space_trait> base;
 	typedef ox::utl::data_tt<type_tn> data_t;
-	void clear()
-	{
-		base::head().set_size(0);
-	}
 	value_pointer append(type_tn const* data,size_t size)
 	{
 		return base::append(data_t((type_tn*)data,size));
+	}
+	type_tn* data() const
+	{
+		return (type_tn*)(data_begin());
 	}
 };
 
@@ -175,15 +194,24 @@ struct string_space_trait_tt
 {
 	typedef ox::utl::data_tt<type_tn> value_type;
 	typedef ox::utl::data_tt<type_tn> value_pointer;
-	struct value_size {size_t operator()(value_type const& value) {return value.size;}};
+	struct value_size
+	{
+		size_t operator()(value_type const& value)
+		{
+			return value.size;
+		}
+	};
+	/// construct partly
 	struct value_construct
 	{
-		value_pointer operator()(char* buff,value_type const& value)
+		value_pointer operator()(void* buff,value_type const& value,size_t off,size_t size)
 		{
+			if (off>value.size) return value_pointer();
+			if (off+size>value.size) size = value.size-off;
 			if (value.begin)
-				memmove(buff,value.begin,value.size);
-			*((type_tn*)buff+value.size) = 0;
-			return value_pointer((type_tn*)buff,value.size);
+				memmove(buff,value.begin+off,size*sizeof(type_tn));
+			*((type_tn*)buff+size) = 0;
+			return value_pointer((type_tn*)buff,size);
 		}
 	};
 	struct pointer_is_null
@@ -195,32 +223,40 @@ struct string_space_trait_tt
 	};
 };
 
-
 template <typename type_tn,typename space_trait=string_space_trait_tt<type_tn>>
 struct string_append
-	: vector_append<string_append_head_mono_tt<type_tn>,space_trait>
+	: vector_append<space_append_head_mono_tt<type_tn,sizeof(type_tn)>,space_trait>
 {
-	typedef vector_append<string_append_head_mono_tt<type_tn>,space_trait> base;
+	typedef vector_append<space_append_head_mono_tt<type_tn,sizeof(type_tn)>,space_trait> base;
 	typedef ox::utl::data_tt<type_tn> data_t;
 	value_pointer append(type_tn const* data,size_t size)
 	{
 		return base::append(data_t((type_tn*)data,size));
 	}
+	void clear()
+	{
+		base::clear();
+		append(0,0);
+	}
+	type_tn* data() const
+	{
+		return (type_tn*)(data_begin());
+	}
 };
 
 
 template <typename char_tn,size_t tail_size_reserved=0>
-struct loop_vector_append_head_mono_tt : protected vector_head_mono_tt<char>
+struct loop_space_append_head_mono_tt : protected vector_head_mono_tt<char_tn>
 {
-	typedef vector_head_mono_tt<char> base;
+	typedef vector_head_mono_tt<char_tn> base;
 	typedef char_tn char_type;
 	bool attach(ox::utl::data_t const& buff)
 	{
-		static size_t __meta_size = __head_size+tail_size_reserved;
-		assert(buff.size>=__meta_size);
-		if (buff.size<__meta_size) return false;
-		set_data_begin(buff.begin+__head_size);
-		set_capacity(buff.size-__head_size);
+		static size_t const __meta_byte_size = __head_size+tail_size_reserved*sizeof(char_tn);
+		assert(buff.size>=__meta_byte_size);
+		if (buff.size<__meta_byte_size) return false;
+		set_data_begin((char_tn*)(buff.begin+__head_size));
+		set_capacity((buff.size-__meta_byte_size)/sizeof(char_tn));
 		return true;
 	}
 	void detach()
@@ -229,7 +265,7 @@ struct loop_vector_append_head_mono_tt : protected vector_head_mono_tt<char>
 		set_capacity(0);
 		set_size(0);
 	}
-	char* next()
+	char_type* next()
 	{
 		return data_begin()+offset();
 	}
@@ -239,19 +275,11 @@ struct loop_vector_append_head_mono_tt : protected vector_head_mono_tt<char>
 	}
 	size_t offset() const
 	{
-		return base::size()<=base::capacity()?base::size():base::size()%base::capacity();
+		return base::size()%base::capacity();
 	}
 	size_t size() const
 	{
 		return base::size()>base::capacity()?base::capacity():base::size();
-	}
-	void set_size(size_t size)
-	{
-		if (base::size()>base::capacity())
-			size += base::capacity();
-		if (size>base::capacity())
-			size = size%base::capacity()+base::capacity();
-		base::set_size(size);
 	}
 	void add_size(size_t delta)
 	{
@@ -262,51 +290,24 @@ struct loop_vector_append_head_mono_tt : protected vector_head_mono_tt<char>
 	}
 	char_type const* data() const
 	{
-		return base::data_begin();
+		return (char_type const*)base::data_begin();
 	}
 };
-template <typename type_tn,size_t tail_size_reserved=0,typename space_trait=space_trait_tt<type_tn>>
-struct loop_vector_append
-	: vector_append<loop_vector_append_head_mono_tt<type_tn,tail_size_reserved>,space_trait>
-{
-	typedef vector_append<loop_vector_append_head_mono_tt<type_tn,tail_size_reserved>,space_trait> base;
-	typedef ox::utl::data_tt<type_tn> data_t;
 
-	struct on_fail
-	{
-		template <typename value_tn>
-		value_pointer operator()(base& vec,value_tn& space)
-		{
-			size_t capacity = vec.head().capacity();
-			size_t offset = vec.head().offset();
-			/// if length < capacity, append the str with length(capa-size),
-			/// adds from begin with the rest space data
-			if (value_size()(space)<capacity)
-			{
-				size_t first = capacity-offset;
-				vec.append(data_t(space.begin,first));
-				return vec.append(data_t(space.begin+first,space.size-first));
-			}
-			/// just fill the whole buffer with the last capacity length data
-			vec.head().clear();
-			return vec.append(data_t(space.begin+space.size-capacity,capacity));
-		}
-	};
-	value_pointer append(type_tn const* data,size_t size)
-	{
-		return base::append(data_t((type_tn*)data,size),on_fail());
-	}
-};
 
 template <typename type_tn,typename space_trait=string_space_trait_tt<type_tn>>
 struct loop_string_append
-	: loop_vector_append<type_tn,1,space_trait>
+	: loop_vector_append<loop_space_append_head_mono_tt<type_tn>,space_trait>
 {
-	typedef loop_vector_append<type_tn,1,space_trait> base;
+	typedef loop_vector_append<loop_space_append_head_mono_tt<type_tn>,space_trait> base;
 	void clear()
 	{
 		base::clear();
-		append("",0);
+		append(0,0);
+	}
+	value_pointer append(type_tn const* begin,size_t size)
+	{
+		return base::append(value_type((type_tn*)begin,size));
 	}
 };
 

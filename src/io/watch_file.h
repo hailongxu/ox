@@ -3,8 +3,8 @@
 #include <string>
 #include "win_shell_kit.h"
 #include "../cxx/delegate.h"
-#include "../thread/win_queue_thread_with_timer.h"
-#include "../thread/task_feedback.h"
+#include "../mos/win_queue_thread_with_timer.h"
+#include "../mos/task_feedback.h"
 #include "../utl/destructor.h"
 
 
