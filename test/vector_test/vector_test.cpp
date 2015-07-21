@@ -86,9 +86,9 @@ namespace indirect_vector_test
 
 #include "../../src/fit/vector_append.h"
 
-namespace vector_append_test
+namespace buffer_append_test
 {
-	void test()
+	void test_char()
 	{
 		char buff[16];
 		ox::fit::buffer_append<char> buffer;
@@ -96,6 +96,20 @@ namespace vector_append_test
 		buffer.clear();
 		buffer.append("12345",4);
 		buffer.append("abcdef",4);
+	}
+	void test_wchar()
+	{
+		char buff[16];
+		ox::fit::buffer_append<wchar_t> buffer;
+		buffer.attach(ox::utl::data_t(buff));
+		buffer.clear();
+		buffer.append(L"12345",2);
+		buffer.append(L"abcdef",2);
+	}
+	void test()
+	{
+		test_char();
+		test_wchar();
 	}
 }
 
@@ -109,47 +123,93 @@ namespace string_append_test
 		buffer.clear();
 		buffer.append("12345",4);
 		buffer.append("abcdef",4);
+
+		{
+			char buff[16];
+			ox::fit::string_append<wchar_t> buffer;
+			buffer.attach(ox::utl::data_t(buff));
+			buffer.clear();
+			buffer.append(L"12345",2);
+			buffer.append(L"abcdef",3);
+			wprintf(L"%s",buffer.data());
+		}
 	}
 }
 
 #include <string>
-namespace loop_vector_append_test
+namespace loop_buffer_append_test
 {
-	void test()
+	void test_char()
 	{
 		char buff[16];
-		ox::fit::loop_vector_append<char> buf;
-		buf.attach(ox::utl::data_t(buff));
-		buf.clear();
-		buf.append("12345",4);
-		buf.append("abcdefghijklmn",10);
-		std::string str(buf.data(),buf.size());
+		ox::fit::loop_buffer_append<char> str;
+		str.attach(ox::utl::data_t(buff));
+		str.clear();
+		str.append("12345",3);
+		str.append("1234567890",6);
+		str.append("abcdefghijklmn",10);
 		printf("%s",str.data());
+	}
+	void test_wchar()
+	{
+		char buff[16];
+		ox::fit::loop_buffer_append<wchar_t> str;
+		str.attach(ox::utl::data_t(buff));
+		str.clear();
+		str.append(L"12345",2);
+		str.append(L"1234567890",3);
+		str.append(L"abcdefghijklmn",10);
+		wprintf(L"%s",str.data());
+	}
+	void test()
+	{
+		test_char();
+		test_wchar();
 	}
 }
 namespace loop_string_append_test
 {
-	void test()
+	void test_char()
 	{
 		char buff[16];
 		ox::fit::loop_string_append<char> str;
 		str.attach(ox::utl::data_t(buff));
 		str.clear();
-		str.append("12345",4);
+		str.append("12345",3);
+		str.append("1234567890",6);
 		str.append("abcdefghijklmn",10);
 		printf("%s",str.data());
 	}
+	void test_wchar()
+	{
+		char buff[16];
+		ox::fit::loop_string_append<wchar_t> str;
+		str.attach(ox::utl::data_t(buff));
+		str.clear();
+		str.append(L"12345",2);
+		str.append(L"1234567890",2);
+		str.append(L"abcdefghijklmn",10);
+		wprintf(L"%s",str.data());
+	}
+	void test()
+	{
+		test_char();
+		test_wchar();
+	}
 }
+
+
+
 
 int _tmain(int argc, _TCHAR* argv[])
 {
 	//std::vector<int,ox::fit::stl_allocator<int>> v;
 	//v.reserve(3);
 	switch(1) { default:
+	loop_buffer_append_test::test();break;
 	loop_string_append_test::test();break;
-	loop_vector_append_test::test();break;
+	buffer_append_test::test();break;
 	string_append_test::test();break;
-	vector_append_test::test();break;
 	indirect_vector_test::test();break;
 	variable_vector_test::test();break;
 	vector_test::test();break;
