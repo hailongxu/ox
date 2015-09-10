@@ -73,16 +73,31 @@ public:
 	{
 		return string_traits::strncpy(str,src,n);
 	}
-	static size_t cpy(character* str, character const* src)
+	// min(strlen(src))
+	static size_t cpy(character* str,character const* src)
 	{
-		string_traits::strcpy(str,src);
-		return length(src);
+		character const* p=src;
+		while(*p) *str++=*p++;
+		return p-src;
 	}
-	static size_t cpyn(character* str, character const* src,size_t n)
+	// min(n,strlen(src))
+	static size_t cpy_min(character* str,character const* src,size_t n)
 	{
-		string_traits::strncpy(str,src,n);
-		size_t len = length(src);
-		return len>n?len:n;
+		character const* p=src;
+		size_t i=n;
+		while(*p && i) *str++=*p++,--i;
+		*str = 0;
+		return n-i;
+	}
+	// min(m,n,strlen(src))
+	static size_t cpy_min(character* str,size_t m,character const* src,size_t n)
+	{
+		size_t mm = m>n?n:m;
+		size_t i=mm;
+		character* p=src;
+		while(*p && i) *str++=*p++,--i;
+		*str = 0;
+		return mm-i;
 	}
 	/// return next zero position
 	static character* append(character* str,character const* src)

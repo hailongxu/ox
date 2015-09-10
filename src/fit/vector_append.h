@@ -4,6 +4,7 @@
 #include <assert.h>
 #include "../ox/nsab.h"
 #include "../utl/data_t.h"
+#include "vector_head.h"
 
 
 
@@ -48,15 +49,14 @@ struct vector_append : head_tn
 		void* next = (void*)head().next();
 		size_t vsize = value_size()(value);
 		value_pointer vp;
-		switch (used+vsize>capacity?true:false)
+		if (used+vsize>capacity)
 		{
-		case true:
 			vp = on_fail(*this,value);
-			break;
-		case false:
+		}
+		else
+		{
 			vp = value_construct()(next,value);
 			head().add_size(vsize);
-			break;
 		}
 		return vp;
 	}

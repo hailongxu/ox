@@ -9,6 +9,7 @@
 #include "./string_simple_kit.h"
 #include "./character_trait.h"
 #include "../pkg/il.h"
+#include  "../utl/data_t.h"
 #include "../alg/till.h"
 #include "../cor/mm_m.h"
 
@@ -35,6 +36,50 @@ namespace ox
 		///
 		struct conv : conv_const_t
 		{
+			template <typename t>
+			static size_t wtoa(t& out,ox::utl::wcdata_t const& src,size_t cp)
+			{
+				if (src.is_empty()) return 0;
+				int out_size = ::WideCharToMultiByte((unsigned int)cp,0,src.begin,(int)src.size,0,0,0,0);
+				out.resize(out_size);
+				if ((int)out.size()<out_size) return 0;
+				int size = ::WideCharToMultiByte ((unsigned int)cp,0,src.begin,(int)src.size,(char*)out.data(),(int)out.size(),0,0);
+				return (size_t)size;
+			}
+			template <typename t>
+			static size_t atow(t& out,ox::utl::cdata_t const& src,size_t cp)
+			{
+				if (src.is_empty()) return 0;
+				int out_size = ::MultiByteToWideChar((UINT)cp,0,src.begin,(int)src.size,0,0);
+				out.resize(out_size);
+				if ((int)out.size()<out_size) return 0;
+				size_t size = ::MultiByteToWideChar((UINT)cp,0,src.begin,(int)src.size,(wchar_t*)out.data(),(int)out.size());
+				return size;
+			}
+
+			template <typename t>
+			static size_t w2a(t& out,ox::utl::wcdata_t const& src,size_t cp=CP_ACP)
+			{
+				return wtoa<t>(out,src,cp);
+			}
+			template <typename t>
+			static size_t a2w(t& out,ox::utl::cdata_t const& src,size_t cp=CP_ACP)
+			{
+				return atow<t>(out,src,cp);
+			}
+			
+			template <typename t>
+			static size_t w2u8(t& out,ox::utl::wcdata_t const& src,size_t cp=CP_UTF8)
+			{
+				return wtoa<t>(out,src,cp);
+			}
+			template <typename t>
+			static size_t u82w(t& out,ox::utl::cdata_t const& src,size_t cp=CP_UTF8)
+			{
+				return atow<t>(out,src,cp);
+			}
+			
+			
 		public:
 
 			/// ref-string (ref-string, ref-string)

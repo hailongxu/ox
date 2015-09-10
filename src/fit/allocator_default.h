@@ -3,6 +3,7 @@
 #include "../ox/nsab.h"
 
 
+#pragma once
 
 
 ___namespace2_begin(ox,fit)
@@ -158,104 +159,6 @@ struct malloc_pointer_default
 
 	allocator_type* _m_allocator;
 };
-
-
-
-template<class ty>
-class stl_allocator
-{
-	template<class t>
-	struct remove_const
-	{
-		typedef t type;
-	};
-
-	template<class t>
-	struct remove_const<const t>
-	{
-		typedef t type;
-	};
-
-public:
-	typedef typename remove_const<ty>::type value_type;
-	typedef value_type* pointer;
-	typedef value_type& reference;
-	typedef const value_type* const_pointer;
-	typedef const value_type& const_reference;
-
-	typedef size_t size_type;
-	typedef int difference_type;
-
-	template<class other_tn>
-	struct rebind
-	{
-		typedef stl_allocator<other_tn> other;
-	};
-
-	pointer address(reference val) const
-	{
-		return (&val);
-	}
-
-	const_pointer address(const_reference val) const
-	{
-		return (&val);
-	}
-
-	stl_allocator() throw()
-	{
-	}
-
-	stl_allocator(const stl_allocator<ty>&) throw()
-	{
-	}
-
-	template<class other>
-	stl_allocator(const stl_allocator<other>&) throw()
-	{
-	}
-
-	template<class other>
-	stl_allocator<ty>& operator=(const stl_allocator<other>&)
-	{
-		return (*this);
-	}
-
-	void deallocate(pointer ptr, size_type)
-	{
-		::operator delete(ptr);
-	}
-
-	pointer allocate(size_type count)
-	{
-		if (count <= 0) count = 0;
-		else if (((size_type)(-1) / count) < sizeof (value_type))
-			throw std::bad_alloc(0);
-		return (pointer)(::operator new(count * sizeof (ty)));
-	}
-
-	pointer allocate(size_type count, const void*)
-	{
-		return (allocate(count));
-	}
-
-	void construct(pointer ptr, const ty& val)
-	{
-		::new ((void*)ptr) ty(val);
-	}
-
-	void destroy(pointer ptr)
-	{
-		ptr->~ty();
-	}
-
-	size_type max_size() const throw()
-	{
-		size_type count = (size_type)(-1) / sizeof (ty);
-		return (0 < count ? count : 1);
-	}
-};
-
 
 
 ___namespace2_end()

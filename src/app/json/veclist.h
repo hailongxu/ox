@@ -240,7 +240,7 @@ private:
 template <size_t len,typename character>
 static bool is_length_ge(character const* str)
 {
-	static_assert(len<=8, "length should be <= 8");
+	//static_assert(len<=8, "length should be <= 8");
 	switch(len)
 	{
 	case 0: return true;
@@ -263,7 +263,7 @@ static bool is_length_g(character const* str)
 template <size_t len,typename character>
 static bool is_length_le(character const* str)
 {
-	static_assert(len<=8, "length should be <= 8");
+	//static_assert(len<=8, "length should be <= 8");
 	switch(len)
 	{
 	case 0: return !true;

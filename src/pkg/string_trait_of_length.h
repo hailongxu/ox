@@ -10,11 +10,12 @@
 /// 为了和podstring的定义不产生循环引用的，所以另立了这个文件
 
 /// for ox_string_traits
-#include <string>
+//#include <string>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
+#include "../ox/nsab.h"
 #include "../def/theory_type.h"
 #include "./character_trait.h"
 #include "./character_static_value.h"
@@ -23,10 +24,7 @@
 #pragma warning (disable : 4996)
 
 
-namespace ox
-{
-namespace str
-{
+___namespace2_begin(ox,str)
 
 
 template <typename character_tn>
@@ -80,6 +78,4 @@ struct string_traits_of_length<wchar_t>
 	}
 };
 
-
-} // end of string
-} // end of ox lib
+___namespace2_end()
