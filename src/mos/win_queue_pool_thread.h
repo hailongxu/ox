@@ -96,6 +96,8 @@ struct win_queue_pool_thread
 		_m_multi_thread.async_add(
 			tasker_t::make(this,&self::do_set_max_min,thread_max_size,thread_min_size));
 	}
+
+
 	bool astop()
 	{
 		return _m_multi_thread.astop();

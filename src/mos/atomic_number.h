@@ -136,7 +136,7 @@ struct atomic_number <long>
 	}
 	integer_type value() const
 	{
-		return InterlockedExchangeAdd(&_m_value,0);
+		return _m_value;//InterlockedExchangeAdd(&_m_value,0);
 	}
 	integer_type operator++()
 	{
@@ -207,7 +207,7 @@ struct atomic_number <long>
 	}
 
 private:
-	volatile mutable integer_type _m_value;
+	volatile /*mutable*/ integer_type _m_value;
 };
 typedef atomic_number<long> atomic_long;
 

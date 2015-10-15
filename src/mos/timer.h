@@ -42,13 +42,13 @@ struct win_high_time : win_high_time_freq
 	{
 		LARGE_INTEGER curr_ticks;
 		current_ticks(curr_ticks);
-		return curr_ticks.QuadPart*10000/__win_high_time_freq*1000;
+		return curr_ticks.QuadPart*1000*10/__win_high_time_freq*1000;
 	}
 	static LONGLONG current_as_micro_second()
 	{
 		LARGE_INTEGER curr_ticks;
 		current_ticks(curr_ticks);
-		return curr_ticks.QuadPart*1000/__win_high_time_freq*10001;
+		return curr_ticks.QuadPart*1000/__win_high_time_freq*1000;
 	}
 	static LONGLONG current_as_milli_second()
 	{

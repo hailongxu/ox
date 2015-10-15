@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <process.h>
 #include "../ox/nsab.h"
+#include "../utl/debug.h"
 #include "atomic_number.h"
 #include "scope_raii.h"
 #include "delegate_closure.h"
@@ -28,6 +29,8 @@
 ___namespace2_begin(ox,mos)
 
 
+typedef delegate<void(void*)> destroy_thread_d;
+
 template <typename function_decl_tn>
 struct win_thread
 {
@@ -37,7 +40,7 @@ struct win_thread
 	typedef typename function_closure::delegate_t function_t;
 	typedef delegate<void(self*)> stop_d;
 	typedef delegate<void(self*)> exit_d;
-	typedef delegate<void(self*)> final_d;
+	typedef delegate<void(self*)> destroy_d;
 	typedef delegate<void(self*)> started_d;
 	enum wait_enum
 	{
@@ -59,6 +62,7 @@ struct win_thread
 		__th_start_called_successfully,
 		__th_running,
 		__th_about_to_exit,
+		//__th_exit_last_instruction,
 		__th_exited,
 	};
 	struct thread_start_param
@@ -70,6 +74,7 @@ struct win_thread
 public:
 	~win_thread()
 	{
+		ox::utl::win_debug().let_format("~win_thread[this:%p] [id:%u,0x%x]\n",this,threadid(),threadid());
 		assert(!is_running());
 		if (is_running()) DebugBreak();
 		//assert (_m_phrase!=__th_running);
@@ -114,6 +119,11 @@ public:
 		_m_function.assign(o);
 	}
 
+	void register_destroy(destroy_thread_d const& _destroy)
+	{
+		_m_destroy = _destroy;
+	}
+
 	bool is_running() const
 	{
 		if (_m_threadid==(size_t)-1) return false;
@@ -126,7 +136,8 @@ public:
 	}
 	bool is_started() const
 	{
-		return _m_threadid != -1;
+		long v = _m_phrase.value();
+		return _m_threadid!=-1 && v>=__th_start_called_successfully && v<__th_about_to_exit;
 	}
 
 	void set_id(size_t your_id,char const* your_name)
@@ -233,8 +244,8 @@ public:
 	stop_d const& to_stop() const {return _m_stop;}
 	exit_d& on_exit() {return _m_on_exit;}
 	exit_d const& on_exit() const {return _m_on_exit;}
-	final_d& on_final() {return _m_on_final;}
-	final_d const& on_final() const {return _m_on_final;}
+	destroy_d& on_destroy() {return _m_on_destroy;}
+	destroy_d const& on_destroy() const {return _m_on_destroy;}
 
 	function_closure& on_run()
 	{
@@ -269,31 +280,36 @@ protected:
 #ifdef _DEBUG
 		{
 			char buff [128];
-			sprintf (buff,"thread:[%s,%u] id:[%u] started\n",me->_m_your_name,me->_m_your_id,me->_m_threadid);
+			sprintf_s (buff,128,"thread:[%s,%u] id:[%u] started\n",me->_m_your_name,me->_m_your_id,me->_m_threadid);
 			OutputDebugStringA(buff);
 		}
 #endif
 		unsigned exitcode = me->run();
+#ifdef _DEBUG
+		{
+			char buff [128];
+			sprintf_s (buff,128,"thread:[%s,%u] id:[%u] NORMALLY triggered exit event with:[%u]\n",me->_m_your_name,me->_m_your_id,me->_m_threadid,exitcode);
+			OutputDebugStringA(buff);
+		}
+#endif
 		if (!me->_m_on_exit.is_empty())
 			me->_m_on_exit(me);
-#ifdef _DEBUG
-		{
-			char buff [128];
-			sprintf (buff,"thread:[%s,%u] id:[%u] NORMALLY triggered exit event with:[%u]\n",me->_m_your_name,me->_m_your_id,me->_m_threadid,exitcode);
-			OutputDebugStringA(buff);
-		}
-#endif
 		me->_m_phrase = __th_about_to_exit;
-		if (!me->_m_on_final.is_empty())
-			me->_m_on_final(me);
-#ifdef _DEBUG
+		//me->_m_phrase = __th_exit_last_instruction;
+		//me->_m_threadid = -1;
+		if (!me->_m_on_destroy.is_empty())
 		{
-			char buff [128];
-			sprintf (buff,"thread:[%s,%u] id:[%u] NORMALLY[final] exited with:[%u]\n",me->_m_your_name,me->_m_your_id,me->_m_threadid,exitcode);
-			OutputDebugStringA(buff);
-		}
+#ifdef _DEBUG
+			{
+				char buff [128];
+				sprintf_s (buff,128,"thread:[%s,%u] id:[%u] NORMALLY[destroy] exited with:[%u]\n",me->_m_your_name,me->_m_your_id,me->_m_threadid,exitcode);
+				OutputDebugStringA(buff);
+			}
 #endif
-        me->_m_threadid = -1;
+			me->_m_on_destroy(me);
+		}
+		if (!me->_m_destroy.is_empty())
+			me->_m_destroy(me);
 		return exitcode;
 	}
 
@@ -303,10 +319,13 @@ protected:
 #ifdef _DEBUG
 		{
 			char buff [128];
-			sprintf (buff,"begin thread:[%s,%u]\n",_m_your_name,_m_your_id);
+			sprintf_s(buff,128,"begin thread:[%s,%u]\n",_m_your_name,_m_your_id);
 			OutputDebugStringA(buff);
 		}
 #endif
+		/// we should ensure the starting is atomic, because we make sure the restarting is
+		/// correct
+		scope_cs lock(_m_start_cs);
 		_m_phrase = __th_start_accepted;
 		uintptr_t h = uintptr_t(-1);
 		size_t threadid = 0;
@@ -326,7 +345,7 @@ protected:
 #ifdef _DEBUG
 		{
 			char buff [128];
-			sprintf (buff,"begin thread :[%s,%u] return h:[%p] id:[%u]\n",_m_your_name,_m_your_id,h,threadid);
+			sprintf_s(buff,128,"begin thread :[%s,%u] return h:[%p] id:[%u]\n",_m_your_name,_m_your_id,h,threadid);
 			OutputDebugStringA(buff);
 		}
 #endif
@@ -356,6 +375,7 @@ protected:
 	//}
 protected:
 	atomic_long _m_phrase;
+	critical_section _m_start_cs;
 	//HANDLE _m_sudo_thread_handle;
 	size_t _m_threadid;
 	char _m_your_name[32];
@@ -364,8 +384,9 @@ protected:
 	//atomic_long _m_exit_enabled;
 	stop_d _m_stop;
 	exit_d _m_on_exit;
-	final_d _m_on_final;
+	destroy_d _m_on_destroy;
 	started_d _m_on_started;
+	destroy_thread_d _m_destroy;
 };
 
 	

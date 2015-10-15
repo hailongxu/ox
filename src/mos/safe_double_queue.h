@@ -251,5 +251,185 @@ struct unsafe_single_queue_tt
 private:
 	single_task_queue_t _m_queue;
 };
-	
+
+
+template <typename object_tn>
+struct unsafe_double_ptrqueue_tt
+{
+	typedef object_tn* object_ptr;
+	typedef std::queue<object_ptr> single_task_queue_t;
+
+	unsafe_double_ptrqueue_tt()
+	{
+		waiting = &waiting_queue;
+		runing = &runing_queue;
+		_m_htaskadded = CreateEvent(0,FALSE,FALSE,0);
+	}
+	~unsafe_double_ptrqueue_tt()
+	{
+		CloseHandle(_m_htaskadded);
+		_m_htaskadded = 0;
+	}
+
+	HANDLE event_added_handle() const
+	{
+		return _m_htaskadded;
+	}
+	void add(object_ptr objectptr)
+	{
+		waiting->push(objectptr);
+		if (_m_htaskadded!=0)
+			SetEvent(_m_htaskadded);
+	}
+	void swap()
+	{
+		single_task_queue_t* queue = waiting;
+		waiting = runing;
+		runing = queue;
+		ResetEvent(_m_htaskadded);
+	}
+	void clear_waiting()
+	{
+		while(!waiting_queue.empty())
+			waiting_queue.pop();
+	}
+	/// for using inside
+	void clear_runing()
+	{
+		while(!runing_queue.empty())
+			runing_queue.pop();
+	}
+	object_ptr pop_from_running()
+	{
+		if (runing->empty())
+			return 0;
+		object_ptr ptr = runing->front();
+		runing->pop();
+		return ptr;
+	}
+	object_ptr pop()
+	{
+		if (runing->empty())
+			swap();
+		if (runing->empty())
+			return 0;
+		object_ptr ptr = runing->front();
+		runing->pop();
+		return ptr;
+	}
+
+	single_task_queue_t* waiting;
+	single_task_queue_t* runing;
+	single_task_queue_t waiting_queue;
+	single_task_queue_t runing_queue;
+	HANDLE _m_htaskadded;
+	//critical_section _m_cs_outer;
+	//critical_section _m_cs_inner;
+};
+
+template <typename object_tn>
+struct safe_double_ptrqueue_tt
+{
+	typedef unsafe_double_ptrqueue_tt<object_tn> unsafe_queue_t;
+	typedef typename unsafe_queue_t::object_ptr object_ptr;
+
+	safe_double_ptrqueue_tt()
+	{
+	}
+	~safe_double_ptrqueue_tt()
+	{
+	}
+	HANDLE event_added_handle() const
+	{
+		return _m_queue.event_added_handle();
+	}
+	void add(object_ptr objectptr)
+	{
+		scope_cs outer(_m_cs_outer);
+		scope_cs inner(_m_cs_inner);
+		_m_queue.add(objectptr);
+	}
+	void swap()
+	{
+		scope_cs outer(_m_cs_outer);
+		scope_cs inner(_m_cs_inner);
+		_m_queue.swap();
+	}
+	void clear_waiting()
+	{
+		scope_cs outer(_m_cs_outer);
+		_m_queue.clear_waiting();
+	}
+	/// for using inside
+	void clear_runing()
+	{
+		scope_cs inner(_m_cs_inner);
+		_m_queue.clear_runing();
+	}
+	object_ptr pop_from_running()
+	{
+		scope_cs inner(_m_cs_inner);
+		return _m_queue.pop_from_running();
+	}
+	object_ptr pop()
+	{
+		if (runing->empty())
+			swap();
+		if (runing->empty())
+			return 0;
+		object_ptr ptr = runing->front();
+		runing->pop();
+		return ptr;
+	}
+	unsafe_queue_t _m_queue;
+	critical_section _m_cs_outer;
+	critical_section _m_cs_inner;
+};
+
+template <typename object_tn>
+struct safe_single_ptrqueue_tt
+{
+	typedef object_tn* object_ptr;
+	typedef std::queue<object_ptr> single_task_queue_t;
+
+	safe_single_ptrqueue_tt()
+	{
+		_m_htaskadded = CreateEvent(0,FALSE,FALSE,0);
+	}
+	~safe_single_ptrqueue_tt()
+	{
+		CloseHandle(_m_htaskadded);
+	}
+	void add(object_ptr ptr)
+	{
+		scope_cs sync(_m_critical_section);
+		_m_queue.push(ptr);
+		SetEvent(_m_htaskadded);
+	}
+	object_ptr get()
+	{
+		scope_cs sync(_m_critical_section);
+		if (_m_queue.empty())
+			return object_ptr(0);
+		object_ptr ptr = _m_queue.front();
+		_m_queue.pop();
+		return ptr;
+	}
+	size_t size()
+	{
+		scope_cs sync(_m_critical_section);
+		return _m_queue.size();
+	}
+	HANDLE handle_added() const
+	{
+		return _m_htaskadded;
+	}
+
+private:
+	HANDLE _m_htaskadded;
+	single_task_queue_t _m_queue;
+	critical_section _m_critical_section;
+};
+
+
 ___namespace2_end()

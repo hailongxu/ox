@@ -16,6 +16,7 @@
 #include "../ox/nsab.h"
 #include "../cxx/delegate.h"
 #include "../cxx/multi_delegate.h"
+#include "../utl/debug.h"
 #include "delegate_closure.h"
 #include "atomic_number.h"
 #include "scope_raii.h"
@@ -60,7 +61,7 @@ struct win_queue_thread : win_thread<unsigned()>
 	typedef delegate<void(self*)> idle_d;
 	typedef delegate<void(self*)> busy_d;
 	typedef delegate<void(self*)> exit_d;
-	typedef delegate<void(self*)> final_d;
+	typedef delegate<void(self*)> destroy_d;
 	typedef thread_task_t task_t;
 	typedef delegate<void(HANDLE)> event_arrived_d;
 	typedef win_thread<unsigned()> base;
@@ -81,6 +82,7 @@ private:
 public:
 	~win_queue_thread()
 	{
+		ox::utl::win_debug().let_format("~win_queue_thread[this:%p] [id:%u]\n",this,threadid());
 		assert (!base::is_running());
 		if (!base::is_running()) return;
 		if (!_m_is_destroyed_at_destruction) DebugBreak();
@@ -103,7 +105,11 @@ public:
 
 	int add(task_t* task)
 	{
-		if (!_m_normal_queue.is_add_enabled() || is_exiting()) return -1;
+		if (!_m_normal_queue.is_add_enabled() || is_exiting())
+		{
+			task->destroy();
+			return -1;
+		}
 		assert (!is_exiting());
 		_m_normal_queue.add(task);
 		return 0;
@@ -114,7 +120,11 @@ public:
 	}
 	int add_high(task_t* task)
 	{
-		if (!_m_high_queue.is_add_enabled() || is_exiting()) return -1;
+		if (!_m_high_queue.is_add_enabled() || is_exiting())
+		{
+			task->destroy();
+			return -1;
+		}
 		assert (!is_exiting());
 		_m_high_queue.add(task);
 		return 0;
@@ -243,7 +253,7 @@ public:
 
 	size_t wait_added_event() const
 	{
-		DWORD id = WaitForMultipleObjects(DWORD(4+_m_service_size),_m_htaskadded,FALSE,INFINITE);
+		DWORD id = WaitForMultipleObjects(4+_m_service_size,_m_htaskadded,FALSE,INFINITE);
 		if (id!=WAIT_FAILED)
 			return id-WAIT_OBJECT_0;
 		return WAIT_FAILED;
@@ -263,8 +273,8 @@ public:
 
 	exit_d& on_exit() {return _m_on_exit;}
 	exit_d const& on_exit() const {return _m_on_exit;}
-	final_d& on_final() {return _m_on_final;}
-	final_d const& on_final() const {return _m_on_final;}
+	destroy_d& on_destroy() {return _m_on_destroy;}
+	destroy_d const& on_destroy() const {return _m_on_destroy;}
 	idle_d& on_idle() {return _m_on_idle;}
 	idle_d const& on_idle() const {return _m_on_idle;}
 	busy_d& on_busy() {return _m_on_busy;}
@@ -287,12 +297,13 @@ private:
 		clear_resource();
 		if (_m_on_exit.is_empty()) return;
 		_m_on_exit(this);
+		_m_exit_enabled = 0;
 	}
-	void on_internal_final_exit(base* thread)
+	void on_internal_destroy(base* thread)
 	{
 		assert (thread==this);
-		if (_m_on_final.is_empty()) return;
-		_m_on_final(this);
+		if (!_m_on_destroy.is_empty())
+			_m_on_destroy(this);
 	}
 	unsigned run()
 	{
@@ -454,7 +465,7 @@ private:
 		_m_service_size = 0;
 		base::on_run().assign(this,&self::run);
 		base::on_exit().assign(this,&self::on_internal_exit);
-		base::on_final().assign(this,&self::on_internal_final_exit);
+		base::on_destroy().assign(this,&self::on_internal_destroy);
 		base::init(your_name,your_id);
 	}
 
@@ -476,7 +487,7 @@ protected:
 	}
 	bool get_is_exiting_or_set()
 	{
-		return 0!=_m_exit_enabled.assign_and_return_old(1);
+		return _m_exit_enabled.assign_and_return_old(1);
 	}
 
 private:
@@ -487,7 +498,7 @@ private:
 	HANDLE _m_hcontrol[2+2];
 	atomic_long _m_exit_enabled;
 	exit_d _m_on_exit;
-	final_d _m_on_final;
+	destroy_d _m_on_destroy;
 	idle_d _m_on_idle;
 	busy_d _m_on_busy;
 	service_item_t _m_service_array[2];

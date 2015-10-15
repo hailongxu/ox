@@ -65,7 +65,6 @@ struct task_closure : task_tt<r>
 	}
 	virtual void destroy()
 	{
-		_m_closure.destruct();
 		_delete(this);
 	}
 
@@ -95,7 +94,6 @@ struct task_closure <closure,r,void> : task_tt<r>
 	}
 	virtual void destroy()
 	{
-		_m_closure.destruct();
 		_delete(this);
 	}
 
@@ -152,6 +150,48 @@ struct task_single
 		return task;
 	}
 
+	/// 1
+	template <typename c,typename p>
+	static task_closure<delegate_closure<r(p),value_holder_tt>,r,bind_t>* make(c*_c,p _p)
+	{
+		typedef delegate_closure<r(p),value_holder_tt> dc_t;
+		typedef task_closure<dc_t,r,bind_t> task_t;
+		task_t* task = task_t::_new();
+		task->_m_closure.assign(_c,dummy(),_p);
+		assert (task);
+		return task;
+	}
+	template <typename q,typename p>
+	static task_closure<delegate_closure<r(q),value_holder_tt>,r,bind_t>* make(r(*_f)(q),p _p)
+	{
+		typedef delegate_closure<r(q),value_holder_tt> dc_t;
+		typedef task_closure<dc_t,r,bind_t> task_t;
+		task_t* task = task_t::_new();
+		task->_m_closure.assign(_f,dummy(),_p);
+		assert (task);
+		return task;
+	}
+	template <typename p>
+	static task_closure<delegate_closure<r(p),value_holder_tt>,r,bind_t>* make(delegate<r(p)> const& d,p _p)
+	{
+		typedef delegate_closure<r(p),value_holder_tt> dc_t;
+		typedef task_closure<dc_t,r,bind_t> task_t;
+		task_t* task = task_t::_new();
+		task->_m_closure.assign(d,dummy(),_p);
+		assert (task);
+		return task;
+	}
+	template <typename c,typename q,typename p>
+	static task_closure<delegate_closure<r(q),value_holder_tt>,r,bind_t>* make(c* _c,r(c::* _f)(q),p _p)
+	{
+	 	typedef delegate_closure<r(q),value_holder_tt> dc_t;
+		typedef task_closure<dc_t,r,bind_t> task_t;
+		task_t* task = task_t::_new();
+		assert (task);
+		task->_m_closure.assign(_c,_f,dummy(),_p);
+		return task;
+	}
+
 #define DEF_TASK_MAKER(n) \
 	template <typename c,DEF_TYPENAMES(n)> \
 	static task_closure<delegate_closure<r(DEF_TYPES(n)),value_holder_tt>,r,bind_t>* make(c*_c,DEF_ARGS(n)) \
@@ -194,7 +234,7 @@ struct task_single
 		return task; \
 	}
 
-	DEF_TASK_MAKER(1)
+	//DEF_TASK_MAKER(1)
 	DEF_TASK_MAKER(2)
 	DEF_TASK_MAKER(3)
 	DEF_TASK_MAKER(4)

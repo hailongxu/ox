@@ -350,5 +350,38 @@ struct scope_raii<atomic_number<number_tn>>
 
 typedef scope_raii<atomic_number<long>> scope_atomic_long;
 
+template <typename number_tn,size_t delta_tc=1>
+struct scope_delta
+{
+	scope_delta(number_tn& atomic_num)
+		: _m_atomic_number(atomic_num)
+	{
+		_m_atomic_number += delta_tc;
+	}
+	~scope_delta()
+	{
+		_m_atomic_number -= delta_tc;
+	}
+	number_tn& _m_atomic_number;
+};
+
+template <typename number_tn,size_t delta_tc>
+struct scope_delta<atomic_number<number_tn>,delta_tc>
+{
+	typedef atomic_number<number_tn> atomic_number_t;
+	scope_delta(atomic_number_t& atomic_num)
+		: _m_atomic_number(atomic_num)
+	{
+		_m_atomic_number += delta_tc;
+	}
+	~scope_delta()
+	{
+		_m_atomic_number -= delta_tc;
+	}
+	atomic_number_t& _m_atomic_number;
+};
+
+typedef scope_delta<atomic_number<long>> scope_delta_atomic_long;
+
 
 ___namespace2_end()
