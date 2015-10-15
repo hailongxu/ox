@@ -18,11 +18,26 @@ namespace test_stringify
 
 }
 
+namespace test_reference
+{
+
+	void test()
+	{
+		wjson_document doc;
+		wjson_object* o = &(doc.parse(L"{\"1\":\"2\",\"11\":\"22\"}").as_object());
+		o->push_back(L"22",L"asd");
+		(*o)[L"1"];
+		//o.find(L"1");
+		std::wstring str = o->stringify();
+	};
+
+}
 
 
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	test_reference::test();
 	test_stringify::test();
 	return 0;
 }

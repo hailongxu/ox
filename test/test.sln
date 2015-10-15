@@ -19,6 +19,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "slist_test", "slist_test\sl
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "has_test", "has_test\has_test.vcproj", "{356B0AAF-626D-4D83-95C6-951514AF384F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tuple_test", "tuple_test\tuple_test.vcproj", "{6340294B-DC27-4CD6-80EC-B8E4E7D827CA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -61,6 +63,10 @@ Global
 		{356B0AAF-626D-4D83-95C6-951514AF384F}.Debug|Win32.Build.0 = Debug|Win32
 		{356B0AAF-626D-4D83-95C6-951514AF384F}.Release|Win32.ActiveCfg = Release|Win32
 		{356B0AAF-626D-4D83-95C6-951514AF384F}.Release|Win32.Build.0 = Release|Win32
+		{6340294B-DC27-4CD6-80EC-B8E4E7D827CA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6340294B-DC27-4CD6-80EC-B8E4E7D827CA}.Debug|Win32.Build.0 = Debug|Win32
+		{6340294B-DC27-4CD6-80EC-B8E4E7D827CA}.Release|Win32.ActiveCfg = Release|Win32
+		{6340294B-DC27-4CD6-80EC-B8E4E7D827CA}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
