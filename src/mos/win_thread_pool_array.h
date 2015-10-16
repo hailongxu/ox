@@ -145,9 +145,11 @@ private:
 				return -1;
 			}
 
-			task_t* runing = pop_task();
-			if (runing)
+			while (1)
 			{
+				task_t* runing = pop_task();
+				if (!runing)
+					break;
 				runing->run();
 				runing->destroy();
 			}
