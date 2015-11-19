@@ -1,7 +1,7 @@
 
 #include <string>
 #include <map>
-#include "../../kernel/delegate.h"
+#include "../cxx/delegate.h"
 #include "../pkg/string_simple_kit.h"
 
 
@@ -20,7 +20,7 @@ struct interaction_t
 	};
 	typedef std::map<std::string,action2_t> actions_t;
 	actions_t _m_actions;
-	typedef ox::string::astring_kit::split3<ox::character::__case_sensitive> splitter;
+	typedef ox::str::astring_kit::split3<ox::character::__case_sensitive> splitter;
 	splitter _m_splitter;
 	std::vector<char const*> _m_argv;
 	char _m_input[64];
@@ -72,7 +72,7 @@ struct interaction_t
 		_m_splitter.find.set_seps(seps);
 		_m_splitter.handle.assign(this,&self::on_split_commander_param);
 		char* b = buffer;
-		char* e = ox::string::astring_kit::end(buffer);
+		char* e = ox::str::astring_kit::end(buffer);
 		_m_argv.clear();
 		_m_splitter(b,e);
 	}

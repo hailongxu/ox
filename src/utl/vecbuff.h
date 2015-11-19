@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <string>
 #include "data_t.h"
+#include "shbuffer.h"
 
 
 #pragma once
@@ -12,42 +13,6 @@ namespace ox
 {
 namespace utl
 {
-	template <size_t size_tn>
-	struct good_buffer
-	{
-		good_buffer()
-		{
-			_m_buffer[0] = 0;
-		}
-		~good_buffer()
-		{
-			delete [] _m_heap_buffer.begin;
-		}
-		cdata_t allocate(size_t size)
-		{
-			if (size<=size_tn)
-				return cdata_t(_m_buffer,size);
-			if (_m_heap_buffer.size<size)
-			{
-				delete [] _m_heap_buffer.begin;
-				_m_heap_buffer.clear();
-			}
-			if (_m_heap_buffer.begin)
-				return cdata_t(_m_heap_buffer.begin,size);
-			_m_heap_buffer.begin = new (std::nothrow) char [size];
-			if (!_m_heap_buffer.begin) return cdata_t();
-			_m_heap_buffer.size = size;
-			return _m_heap_buffer;
-		}
-		cdata_t data() const
-		{
-			if (!_m_heap_buffer.is_empty()) return _m_heap_buffer;
-			return cdata_t(_m_buffer,size_tn);
-		}
-		cdata_t _m_heap_buffer;
-		char _m_buffer[size_tn];
-	};
-
 	/// veclist==>[item-count,data-offset][items]{data}
 	/// items==>[item_t,,,,]
 	/// item_t==>[offset,size]
@@ -275,6 +240,7 @@ namespace utl
 			for (size_t i=0;i<_m_item_count;++i,++p)
 				p->begin = data_begin+(size_t)(p->begin);
 			_m_data_begin = 0;
+			_m_begin_mode = __abs_address;
 		}
 		void init_rel()
 		{

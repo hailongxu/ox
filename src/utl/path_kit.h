@@ -72,13 +72,13 @@ struct localpath_kit
 	{
 		if (path.empty()) return false;
 		character const* path_begin = path.c_str();
-		character const* path_end = path_begin+path.length()-1;
+		character const* path_end = path_begin+path.length();
 		return get_ext(path_begin,path_end,ext);
 	}
 	static bool get_ext(character const* path_begin, character const*& ext)
 	{
 		assert (path_begin);
-		character const* path_end = path_begin+strkit::length(path_begin)-1;
+		character const* path_end = path_begin+strkit::length(path_begin);
 		return get_ext(path_begin,path_end,ext);
 	}
 	/// []
@@ -233,7 +233,7 @@ struct localpath_kit
 	{
 		if (end<begin) return 0;
 		character const chars[3] = {strkit::slash_character,strkit::backslash_character,0};
-		if (strkit::is_in_chset<true>(*end,chars))
+		if (strkit::is_in_chset<true>(*(end-1),chars))
 			--end;
 		if (end<=begin) return begin;
 		character const* end2 = strkit::find_last_in<true>(begin,end,chars);
@@ -313,7 +313,7 @@ struct localpath_kit
 		path += rpath;
 		return path;
 	}
-	static std::string& make_path(std_string& path,
+	static std_string& make_path(std_string& path,
 		character const* rpath1,character const*rpath2,
 		character const& slash)
 	{
@@ -321,7 +321,7 @@ struct localpath_kit
 		add_rpath(path,rpath2,slash);
 		return path;
 	}
-	static std::string make_path(
+	static std_string make_path(
 		character const* rpath1,character const*rpath2,
 		character const& slash)
 	{
@@ -329,7 +329,7 @@ struct localpath_kit
 		make_path(path,rpath1,rpath2,slash);
 		return path;
 	}
-	static std::string& make_path(std_string& path,
+	static std_string& make_path(std_string& path,
 		character const* rpath1,character const*rpath2,character const*rpath3,
 		character const& slash)
 	{
@@ -337,7 +337,7 @@ struct localpath_kit
 		add_rpath(path,rpath3,slash);
 		return path;
 	}
-	static std::string make_path(
+	static std_string make_path(
 		character const* rpath1,character const*rpath2,character const*rpath3,
 		character const& slash)
 	{
@@ -963,6 +963,12 @@ struct uri_kit
 		character const* str = strkit::strch<true>(path_begin,path_end,':',ppend);
 		if (str && ppend) *ppend = str;
 		return str?path_begin:0;
+	}
+	static character const* get_port(cdata_tt<character> const& buf)
+	{
+		character const* p = strkit::strch<true>(buf.begin,buf.size,':');
+		if (p) ++p;
+		return p;
 	}
 	/// return end offset
 	static size_t get_host_and_port(character const* host_begin,size_t* host_end_offset,size_t* port_offset=0)

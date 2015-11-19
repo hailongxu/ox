@@ -170,5 +170,40 @@ namespace ox
 			value_t value;
 		};
 		typedef kv_tt<char,char> kvch_t;
+
+		template <typename character>
+		struct buff_append_tt
+		{
+			buff_append_tt(character* ptr):p(ptr){}
+			void push_back(character const& c) {*p++ = c;}
+			character* p;
+		};
+		typedef buff_append_tt<char> buff_append;
+		typedef buff_append_tt<wdata_t> wbuff_append;
+
+		template <typename character>
+		struct buff_data_tt
+		{
+			typedef data_tt<character> data_t;
+			data_t _m_buffer;
+			size_t _m_size;
+			template <size_t n>
+			buff_data_tt(character(&array)[n]): _m_buffer(array) {}
+			buff_data_tt(character* ptr,size_t size):_m_buffer(ptr,size),_m_size(0){}
+			buff_data_tt(data_t const& data):_m_buffer(data),_m_size(0) {}
+			void push_back(character const& c)
+			{assert(_m_size<_m_buffer.size);_m_buffer.begin[_m_size++] = c;}
+			size_t size() const {return _m_size;}
+			size_t capacity() const {return _m_buffer.size;}
+			character* data() {return _m_buffer.begin;}
+			character const* data() const {return _m_buffer.begin;}
+			void resize(size_t size)
+			{
+				_m_buffer.size>=size ? _m_size=size : 0;
+			}
+			data_t as_data() const {return data_t(_m_buffer.begin,_m_size);}
+		};
+		typedef buff_data_tt<char> buff_data;
+		typedef buff_data_tt<wdata_t> wbuff_data;
 	}
 }
