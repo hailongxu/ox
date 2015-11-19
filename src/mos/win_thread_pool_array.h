@@ -59,6 +59,10 @@ struct win_thread_pool_array
 		_m_hcontrol[__exit] = CreateEvent(0,TRUE,FALSE,0);
 	}
 
+	size_t size() const
+	{
+		_m_multi_thread.size();
+	}
 	/// return threadid
 	size_t create_thread()
 	{
@@ -89,6 +93,15 @@ struct win_thread_pool_array
 	{
 		SetEvent(_m_hcontrol[__exit]);
 		_m_multi_thread.stop_all(timeout_ms);
+	}
+	void stop_notified()
+	{
+		SetEvent(_m_hcontrol[__exit]);
+		_m_multi_thread.stop_notified_all();
+	}
+	void wait(size_t timeout_ms=-1)
+	{
+		_m_multi_thread.wait(timeout_ms);
 	}
 
 	started_d& on_started() {return _m_on_started;}

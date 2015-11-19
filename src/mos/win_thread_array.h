@@ -211,8 +211,7 @@ struct win_thread_array
 		return th;
 	}
 
-
-	void stop_all(size_t timeout_ms=-1)
+	void stop_all(size_t timeout_ms=-1,bool call_stop_next=true)
 	{
 		typedef std::vector<HANDLE> handle_vector;
 
@@ -224,7 +223,8 @@ struct win_thread_array
 				thread_t* th = *i;
 				HANDLE h = th->create_thread_handle();
 				handles.push_back(h);
-				th->stop_next();
+				if(call_stop_next)
+					th->stop_next();
 			}
 			if (handles.empty())
 				return;
@@ -244,10 +244,27 @@ struct win_thread_array
 			_m_on_exited();
 	}
 
+	void stop_notified_all()
+	{
+		scope_cs lock(_m_cs_vector);
+		unsafe_stop_notified_all();
+	}
+	void unsafe_stop_notified_all()
+	{
+		for (thi i=_m_thread_vector.begin();i!=_m_thread_vector.end();++i)
+		{
+			thread_t* th = *i;
+			th->stop_next();
+		}
+	}
 	void stop_notified(size_t threadid)
 	{
 		scope_cs lock(_m_cs_vector);
 		unsafe_stop_notified(threadid);
+	}
+	void wait(size_t timeout_ms=-1)
+	{
+		stop_all(timeout_ms,false);
 	}
 	void unsafe_stop_notified(size_t threadid)
 	{
