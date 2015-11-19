@@ -38,8 +38,8 @@ struct vector_append : head_tn
 	};
 	value_pointer append(value_type const& value)
 	{
-		static on_event_fail on_fail;
-		return append(value,on_fail);
+		static on_event_fail on_fail_do_nothing;
+		return append(value,on_fail_do_nothing);
 	}
 	template <typename on_fail_tn>
 	value_pointer append(value_type const& value,on_fail_tn& on_fail)

@@ -8,7 +8,13 @@
 #include "cpmv.h"
 
 
+/*
+vector 的设计分成两个部分,
+第一部分:头设计,主要掌管,整体的变化,如整体的长度,整体的内存的删除和重建工作
+第二部分:体设计,主要掌管,元素引起的变化,如一个元素的增加设删除所引起的数据的重建工作
+*/
 
+#pragma once
 
 ___namespace2_begin(ox,fit)
 
@@ -40,11 +46,14 @@ struct vector_tt : vector_rooter_tn
 	typedef typename rooter_type::value_construct value_construct;
 	typedef typename rooter_type::on_size_changed on_size_changed;
 
+	/// 元素的插入
+	/// 插入成功后,会调用on_inserted_tn事件
+	/// 返回插入元素的地址
 	template <typename on_inserted_tn>
 	value_type* insert(size_t off,value_type const& value,on_inserted_tn& on_inserted)
 	{
 		if (rooter_type::size()>=rooter_type::capacity())
-		{
+		{ /// 如果容器满, 调用root重建
 			size_t old_size = rooter_type::size();
 			rooter_type old; /// the allocator is static, so swap does not influence the objects
 			rooter_type::swap(old);
@@ -57,7 +66,7 @@ struct vector_tt : vector_rooter_tn
 			new_begin += (off+1); /// reserve one value space
 			old_begin += off;
 			cm::copy_objects(new_begin,-1,old_begin,old_size-off);
-			/// keep the old size
+			/// keep the old size, 因为交换后，是一个空的容器
 			rooter_type::add_size(old_size);
 		}
 		else
@@ -169,6 +178,45 @@ struct get_on_size_changed<void>
 {
 	typedef int const type;
 };
+
+///
+/// value trait的定义,来描述一个value的特性
+/// 参见value_trait.h的默认样例
+/// value_trait_tn
+/// {
+///		value_type;
+///		value_construct
+///		{
+///			template <typename t1>
+///			void operator()(void* begin,t1& p1)
+///		}
+/// }
+///
+
+///
+/// head_tn 用来描述vector整体的特性
+/// {
+/// 	size();
+/// 	capacity();
+///		...
+///		参见 vector_head.h
+///	}
+///	
+///	
+
+///	
+/// events_tn vector的整体事件,目前只有一个,就是元素个数发生变化的时候,会触发这个事件
+/// 如果只是更新这个元素, 则不会触发这个事件
+/// struct event
+/// {
+/// 	struct on_size_changed
+/// 	{
+///			template <typename string_rooter_tn>
+///			void operator()(string_rooter_tn* rooter,int delta);
+///		}
+///	}
+///	
+
 
 template<typename value_trait_tn,typename head_tn,typename events_tn=void,typename allocator_tn=cppmalloc>
 struct vector_rooter : head_tn

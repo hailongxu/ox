@@ -16,6 +16,14 @@ template <typename value_tn>
 struct value_trait
 {
 	typedef value_tn value_type;
+	typedef value_type* value_pointer;
+	struct value_size
+	{
+		size_t operator()(value_type const& value)
+		{
+			return sizeof(value);
+		}
+	};
 	struct value_construct
 	{
 		template <typename t1>
